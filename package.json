@@ -1,0 +1,27 @@
+{
+  "name": "bitacademy-risk-calculator",
+  "version": "1.0.0",
+  "description": "Calculadora de Risk Management para Trading de Criptomoedas",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && node server.js",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build:frontend": "cd frontend && npm run build",
+    "deploy": "./deploy.sh",
+    "setup-vps": "./setup-vps.sh"
+  },
+  "keywords": [
+    "trading",
+    "risk-management",
+    "crypto",
+    "calculator",
+    "bitacademy"
+  ],
+  "author": "BitAcademy",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,536 @@
+/* Trade Monitor Styles - Layout Limpo */
+.trade-monitor {
+  background: var(--bg-gradient-light);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #17a2b8;
+  box-shadow: var(--shadow-light);
+  animation: fadeInUp 0.5s ease-out;
+  max-width: 100%;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.monitor-header h4 {
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monitor-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monitor-status.online {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 1px solid #28a745;
+}
+
+.monitor-status.offline {
+  background: rgba(108, 117, 125, 0.2);
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+
+.monitor-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-small.secondary {
+  background: var(--bg-gradient-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-small.warning {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  color: #212529;
+  font-weight: 600;
+}
+
+.btn-small.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.btn-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Current Price Display */
+.current-price-display {
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 25px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.price-label {
+  font-size: 0.9em;
+  color: var(--text-placeholder);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.price-value {
+  font-size: 2em;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.price-change {
+  font-size: 0.7em;
+  animation: pulse 1s ease-in-out;
+}
+
+.price-change.up {
+  color: #28a745;
+}
+
+.price-change.down {
+  color: #dc3545;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Levels Monitor */
+.levels-monitor h5 {
+  color: var(--text-secondary);
+  margin-bottom: 15px;
+  font-size: 1em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.level-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border-left: 4px solid #6c757d;
+  transition: all 0.3s ease;
+}
+
+.level-item.waiting {
+  border-left-color: #6c757d;
+}
+
+.level-item.near {
+  border-left-color: #ffc107;
+  background: rgba(255, 193, 7, 0.1);
+  animation: glow-warning 2s ease-in-out infinite;
+}
+
+.level-item.hit {
+  border-left-color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+  animation: glow-success 1s ease-in-out 3;
+}
+
+@keyframes glow-warning {
+  0%, 100% { box-shadow: 0 0 5px rgba(255, 193, 7, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(255, 193, 7, 0.6); }
+}
+
+@keyframes glow-success {
+  0%, 100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); }
+}
+
+.level-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.level-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 100px;
+}
+
+.level-price {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 1.05em;
+}
+
+.level-status {
+  font-weight: 600;
+  font-size: 0.9em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Alerts History */
+.alerts-history {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.alerts-history h5 {
+  color: var(--text-secondary);
+  margin-bottom: 15px;
+  font-size: 1em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alerts-list {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-item {
+  padding: 12px 15px;
+  border-radius: 10px;
+  border-left: 4px solid;
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.alert-item.success {
+  background: rgba(40, 167, 69, 0.1);
+  border-left-color: #28a745;
+}
+
+.alert-item.warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-left-color: #ffc107;
+}
+
+.alert-item.danger {
+  background: rgba(220, 53, 69, 0.1);
+  border-left-color: #dc3545;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.alert-message {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-size: 0.9em;
+}
+
+.alert-time {
+  font-size: 0.75em;
+  color: var(--text-placeholder);
+  opacity: 0.8;
+}
+
+/* Scrollbar Styles */
+.alerts-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.alerts-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.alerts-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.alerts-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-placeholder);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .monitor-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .monitor-controls {
+    justify-content: center;
+  }
+  
+  .current-price-display {
+    padding: 15px;
+  }
+  
+  .price-value {
+    font-size: 1.5em;
+  }
+  
+  .level-info {
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+  }
+  
+  .level-label {
+    min-width: auto;
+    font-size: 0.9em;
+  }
+  
+  .level-item {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  
+  .level-status {
+    text-align: center;
+  }
+}
+
+/* Print Styles Enhancement */
+.print-operation-points {
+  margin-bottom: 20px;
+}
+
+.print-operation-points .section-title {
+  font-size: 1.1em;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.points-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.point-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.point-card.entry-point {
+  border-left: 4px solid #28a745;
+}
+
+.point-card.exit-point {
+  border-left: 4px solid #17a2b8;
+}
+
+.point-card.stop-point {
+  border-left: 4px solid #dc3545;
+}
+
+.point-icon {
+  font-size: 1.2em;
+}
+
+.point-info {
+  flex: 1;
+}
+
+.point-label {
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 2px;
+}
+
+.point-value {
+  font-size: 1em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: 'Courier New', monospace;
+}
+
+.print-financial-result {
+  margin-bottom: 20px;
+}
+
+.financial-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 15px;
+  align-items: center;
+}
+
+.financial-card {
+  text-align: center;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.financial-type {
+  font-size: 0.9em;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.financial-amount {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.financial-percentage {
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.risk-card-print {
+  text-align: center;
+  padding: 15px;
+  background: rgba(220, 53, 69, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(220, 53, 69, 0.4);
+}
+
+.risk-label {
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+}
+
+.risk-amount {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #ff6b7a;
+}
+
+.print-profit-targets {
+  margin-bottom: 20px;
+}
+
+.targets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.target-item-print {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid #17a2b8;
+}
+
+.target-level {
+  font-weight: 600;
+  color: #17a2b8;
+  font-size: 0.85em;
+}
+
+.target-price {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.target-desc {
+  font-size: 0.75em;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .points-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .financial-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .target-item-print {
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+  }
+}

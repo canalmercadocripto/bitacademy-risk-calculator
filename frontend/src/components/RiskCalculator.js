@@ -1,0 +1,301 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import Select from 'react-select';
+import toast from 'react-hot-toast';
+import { useTheme } from '../hooks/useTheme';
+import { useExchangeData } from '../hooks/useExchangeData';
+import { useCalculationHistory } from '../hooks/useCalculationHistory';
+import { usePriceUpdater } from '../hooks/usePriceUpdater';
+import { calculatorApi } from '../services/api';
+import Header from './Header';
+import Instructions from './Instructions';
+import CalculatorForm from './CalculatorForm';
+import EnhancedResults from './EnhancedResults';
+import HistoryPanel from './HistoryPanel';
+import ExchangeSelector from './ExchangeSelector';
+
+const RiskCalculator = () => {
+  const { theme, toggleTheme } = useTheme();
+  const {
+    exchanges,
+    symbols,
+    currentPrice,
+    loading,
+    loadSymbols,
+    fetchCurrentPrice,
+    filterSymbols
+  } = useExchangeData();
+  
+  const {
+    history,
+    addCalculation,
+    clearHistory,
+    removeCalculation,
+    exportToCSV
+  } = useCalculationHistory();
+
+  const [selectedExchange, setSelectedExchange] = useState(null);
+  const [selectedSymbol, setSelectedSymbol] = useState(null);
+  const [formData, setFormData] = useState({
+    entryPrice: '',
+    stopLoss: '',
+    targetPrice: '',
+    accountSize: '',
+    riskPercent: '2',
+    direction: 'LONG'
+  });
+  const [results, setResults] = useState(null);
+  const [calculating, setCalculating] = useState(false);
+  const [priceUpdateEnabled, setPriceUpdateEnabled] = useState(true);
+  const [liveCurrentPrice, setLiveCurrentPrice] = useState(currentPrice);
+
+  // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
+  const handlePriceUpdate = useCallback((newPrice) => {
+    // Atualizar APENAS o currentPrice para exibição e monitoramento
+    // NÃO tocar no campo entryPrice (entrada manual)
+    console.log('💡 Cotação atual atualizada para:', newPrice, '(Entrada permanece manual)');
+    
+    // Atualizar o preço atual para exibição
+    setLiveCurrentPrice(newPrice);
+  }, []);
+
+  // Hook para auto-atualização de preços - apenas para monitoramento
+  usePriceUpdater(selectedExchange, selectedSymbol, handlePriceUpdate, priceUpdateEnabled);
+
+  // Atualizar símbolos quando exchange muda
+  useEffect(() => {
+    if (selectedExchange) {
+      loadSymbols(selectedExchange.id);
+      setSelectedSymbol(null);
+      setFormData(prev => ({ ...prev, entryPrice: '' }));
+    }
+  }, [selectedExchange, loadSymbols]);
+
+  // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
+  useEffect(() => {
+    if (selectedExchange && selectedSymbol) {
+      fetchCurrentPrice(selectedExchange.id, selectedSymbol.symbol).then(price => {
+        if (price) {
+          // Atualizar o preço atual para exibição (NÃO o entryPrice)
+          setLiveCurrentPrice(price);
+          console.log('📊 Cotação atual disponível:', price, '- ENTRADA DEVE SER MANUAL');
+        }
+      });
+    }
+  }, [selectedExchange, selectedSymbol, fetchCurrentPrice]);
+
+  // Sincronizar liveCurrentPrice com currentPrice do hook
+  useEffect(() => {
+    if (currentPrice) {
+      setLiveCurrentPrice(currentPrice);
+    }
+  }, [currentPrice]);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleDirectionChange = (direction) => {
+    setFormData(prev => ({
+      ...prev,
+      direction
+    }));
+  };
+
+  const handleCalculate = async () => {
+    if (!validateForm()) return;
+
+    setCalculating(true);
+    try {
+      const params = {
+        entryPrice: parseFloat(formData.entryPrice),
+        stopLoss: parseFloat(formData.stopLoss),
+        targetPrice: parseFloat(formData.targetPrice),
+        accountSize: parseFloat(formData.accountSize),
+        riskPercent: parseFloat(formData.riskPercent),
+        direction: formData.direction
+      };
+
+      const response = await calculatorApi.calculateRisk(params);
+      setResults(response.data);
+      
+      // Adicionar ao histórico
+      addCalculation(response.data, selectedSymbol, selectedExchange);
+      
+      toast.success('Cálculo realizado com sucesso!');
+    } catch (error) {
+      toast.error(error.message || 'Erro ao calcular');
+      console.error('Erro no cálculo:', error);
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  const validateForm = () => {
+    const requiredFields = ['entryPrice', 'stopLoss', 'targetPrice', 'accountSize', 'riskPercent'];
+    
+    for (const field of requiredFields) {
+      const value = parseFloat(formData[field]);
+      if (!value || value <= 0) {
+        toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
+        return false;
+      }
+    }
+
+    // Validar lógica de stop loss
+    const entryPrice = parseFloat(formData.entryPrice);
+    const stopLoss = parseFloat(formData.stopLoss);
+    const targetPrice = parseFloat(formData.targetPrice);
+
+    if (formData.direction === 'LONG') {
+      if (stopLoss >= entryPrice) {
+        toast.error('Para LONG: Stop Loss deve ser menor que o preço de entrada');
+        return false;
+      }
+      if (targetPrice <= entryPrice) {
+        toast.error('Para LONG: Target deve ser maior que o preço de entrada');
+        return false;
+      }
+    } else {
+      if (stopLoss <= entryPrice) {
+        toast.error('Para SHORT: Stop Loss deve ser maior que o preço de entrada');
+        return false;
+      }
+      if (targetPrice >= entryPrice) {
+        toast.error('Para SHORT: Target deve ser menor que o preço de entrada');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const getFieldLabel = (field) => {
+    const labels = {
+      entryPrice: 'Preço de Entrada',
+      stopLoss: 'Stop Loss',
+      targetPrice: 'Target Price',
+      accountSize: 'Tamanho da Conta',
+      riskPercent: 'Risco por Trade'
+    };
+    return labels[field] || field;
+  };
+
+  const handleLoadCalculation = (historyEntry) => {
+    // Carregar dados do histórico no formulário
+    const { formData: savedData } = historyEntry;
+    
+    setFormData({
+      entryPrice: savedData.entryPrice.toString(),
+      stopLoss: savedData.stopLoss.toString(),
+      targetPrice: savedData.targetPrice.toString(),
+      accountSize: savedData.accountSize.toString(),
+      riskPercent: savedData.riskPercent.toString(),
+      direction: savedData.direction
+    });
+    
+    // Buscar e definir exchange e symbol se possível
+    const exchange = exchanges.find(ex => ex.name === historyEntry.exchange);
+    if (exchange) {
+      setSelectedExchange(exchange);
+      // Note: seria ideal buscar o symbol também, mas requer async
+    }
+    
+    toast.success('Cálculo carregado do histórico!');
+  };
+
+  const formatExchangeOptions = () => {
+    return exchanges.map(exchange => ({
+      value: exchange,
+      label: exchange.name,
+      id: exchange.id
+    }));
+  };
+
+  const formatSymbolOptions = () => {
+    return symbols.map(symbol => ({
+      value: symbol,
+      label: `${symbol.symbol} (${symbol.baseAsset}/${symbol.quoteAsset})`,
+      symbol: symbol.symbol
+    }));
+  };
+
+  return (
+    <div className="App">
+      <Header theme={theme} onToggleTheme={toggleTheme} />
+      
+      <div className="container">
+        <div className="instructions-section">
+          <Instructions />
+          <HistoryPanel 
+            history={history}
+            onClearHistory={clearHistory}
+            onRemoveCalculation={removeCalculation}
+            onExportCSV={exportToCSV}
+            onLoadCalculation={handleLoadCalculation}
+          />
+        </div>
+        
+        <div className="form-section">
+          <ExchangeSelector
+            exchanges={exchanges}
+            selectedExchange={selectedExchange}
+            onExchangeSelect={setSelectedExchange}
+            loading={loading}
+          />
+
+          <div className="input-group">
+            <label>Par de Moedas:</label>
+            <Select
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder={selectedExchange ? "Selecione um par..." : "Selecione uma corretora primeiro"}
+              options={formatSymbolOptions()}
+              value={selectedSymbol ? { value: selectedSymbol, label: `${selectedSymbol.symbol} (${selectedSymbol.baseAsset}/${selectedSymbol.quoteAsset})` } : null}
+              onChange={(option) => setSelectedSymbol(option?.value || null)}
+              isLoading={loading.symbols}
+              isDisabled={!selectedExchange}
+              isClearable
+              isSearchable
+            />
+            {selectedSymbol && (
+              <div className="price-info">
+                <span className="current-price-reference">
+                  📊 Cotação atual: {loading.price ? "Carregando..." : liveCurrentPrice ? `$${liveCurrentPrice.toFixed(4)}` : "N/A"}
+                </span>
+                {!loading.price && liveCurrentPrice && (
+                  <div className="price-update-indicator">
+                    <div className="price-update-dot"></div>
+                    Atualiza a cada 5s
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <CalculatorForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            onDirectionChange={handleDirectionChange}
+            onCalculate={handleCalculate}
+            calculating={calculating}
+            loading={loading}
+            currentPrice={liveCurrentPrice}
+          />
+        </div>
+
+        <EnhancedResults 
+          results={results} 
+          selectedSymbol={selectedSymbol}
+          selectedExchange={selectedExchange}
+          formData={formData}
+          currentPrice={liveCurrentPrice}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default RiskCalculator;

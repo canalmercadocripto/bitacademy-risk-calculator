@@ -1,0 +1,98 @@
+import { useState, useEffect, useCallback } from 'react';
+import { exchangeApi } from '../services/api';
+import toast from 'react-hot-toast';
+
+export const useExchangeData = () => {
+  const [exchanges, setExchanges] = useState([]);
+  const [symbols, setSymbols] = useState([]);
+  const [currentPrice, setCurrentPrice] = useState(null);
+  const [loading, setLoading] = useState({
+    exchanges: false,
+    symbols: false,
+    price: false
+  });
+
+  // Carregar exchanges disponíveis
+  const loadExchanges = useCallback(async () => {
+    setLoading(prev => ({ ...prev, exchanges: true }));
+    try {
+      const response = await exchangeApi.getExchanges();
+      setExchanges(response.data);
+    } catch (error) {
+      toast.error('Erro ao carregar exchanges');
+      console.error('Erro ao carregar exchanges:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, exchanges: false }));
+    }
+  }, []);
+
+  // Carregar símbolos de uma exchange
+  const loadSymbols = useCallback(async (exchange, search = '') => {
+    if (!exchange) {
+      setSymbols([]);
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, symbols: true }));
+    try {
+      // Carregar mais símbolos (500) para ter uma lista mais completa
+      const response = await exchangeApi.getSymbols(exchange, search, 500);
+      setSymbols(response.data.symbols);
+    } catch (error) {
+      toast.error(`Erro ao carregar símbolos da ${exchange}`);
+      console.error('Erro ao carregar símbolos:', error);
+      setSymbols([]);
+    } finally {
+      setLoading(prev => ({ ...prev, symbols: false }));
+    }
+  }, []);
+
+  // Buscar preço atual
+  const fetchCurrentPrice = useCallback(async (exchange, symbol) => {
+    if (!exchange || !symbol) {
+      setCurrentPrice(null);
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, price: true }));
+    try {
+      const response = await exchangeApi.getCurrentPrice(exchange, symbol);
+      setCurrentPrice(response.data.price);
+      return response.data.price;
+    } catch (error) {
+      toast.error(`Erro ao buscar preço de ${symbol}`);
+      console.error('Erro ao buscar preço:', error);
+      setCurrentPrice(null);
+      return null;
+    } finally {
+      setLoading(prev => ({ ...prev, price: false }));
+    }
+  }, []);
+
+  // Filtrar símbolos localmente
+  const filterSymbols = useCallback((searchTerm) => {
+    if (!searchTerm) return symbols;
+    
+    const term = searchTerm.toUpperCase();
+    return symbols.filter(symbol => 
+      symbol.symbol.includes(term) || 
+      symbol.baseAsset.includes(term)
+    );
+  }, [symbols]);
+
+  // Carregar exchanges no início
+  useEffect(() => {
+    loadExchanges();
+  }, [loadExchanges]);
+
+  return {
+    exchanges,
+    symbols,
+    currentPrice,
+    loading,
+    loadSymbols,
+    fetchCurrentPrice,
+    filterSymbols,
+    refreshExchanges: loadExchanges
+  };
+};

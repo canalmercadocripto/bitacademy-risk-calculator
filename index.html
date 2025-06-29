@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Gerenciamento de Risco</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Tema Claro */
+            --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-container: rgba(255, 255, 255, 0.95);
+            --bg-section: rgba(255, 255, 255, 0.9);
+            --bg-input: #f8f9fa;
+            --bg-input-focus: #ffffff;
+            --bg-button: #f8f9fa;
+            --bg-gradient-light: linear-gradient(90deg, #f8f9ff, #ffffff);
+            --bg-result: linear-gradient(135deg, #f8f9ff, #ffffff);
+            
+            --text-primary: #333;
+            --text-secondary: #1d3557;
+            --text-placeholder: #6c757d;
+            --text-disabled: #6c757d;
+        
+            --border-color: #e1e5e9;
+            --border-focus: #667eea;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.08);
+            --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.1);
+            
+            --success-bg: #d4edda;
+            --success-text: #155724;
+            --error-bg: #f8d7da;
+            --error-text: #721c24;
+        }
+
+        [data-theme="dark"] {
+            /* Tema Escuro */
+            --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --bg-container: rgba(30, 30, 30, 0.95);
+            --bg-section: rgba(40, 40, 40, 0.9);
+            --bg-input: #2d2d2d;
+            --bg-input-focus: #3d3d3d;
+            --bg-button: #2d2d2d;
+            --bg-gradient-light: linear-gradient(90deg, #2d2d2d, #3d3d3d);
+            --bg-result: linear-gradient(135deg, #2d2d2d, #3d3d3d);
+            
+            --text-primary: #e0e0e0;
+            --text-secondary: #ffffff;
+            --text-placeholder: #adb5bd;
+            --text-disabled: #6c757d;
+            
+            --border-color: #404040;
+            --border-focus: #667eea;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.3);
+            --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.4);
+            
+            --success-bg: #1e4620;
+            --success-text: #4caf50;
+            --error-bg: #5c1e1e;
+            --error-text: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--bg-section);
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .theme-toggle span {
+            font-size: 1.2em;
+        }
+
+        .theme-toggle-text {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--bg-container);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-heavy);
+            gap: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .instructions-section,
+        .form-section,
+        .settings-section {
+            background-color: var(--bg-section);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .instructions-section h3,
+        .settings-section h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .instructions-section ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .instructions-section li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            padding: 8px 12px;
+            background: var(--bg-gradient-light);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .instructions-section li strong {
+            color: var(--text-secondary);
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .form-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-section input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-section input::placeholder {
+            color: var(--text-placeholder);
+        }
+
+        .form-section input:focus {
+            background-color: var(--bg-input-focus);
+            border-color: var(--border-focus);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-section input:disabled {
+            background-color: var(--bg-input);
+            cursor: not-allowed;
+            color: var(--text-disabled);
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-section);
+            border-radius: 10px;
+            box-shadow: var(--shadow-light);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            border: 2px solid var(--border-color);
+        }
+
+        .autocomplete-items div {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+        }
+
+        .autocomplete-items div:hover {
+            background-color: var(--bg-gradient-light);
+            color: #667eea;
+        }
+
+        .autocomplete-items div:last-child {
+            border-bottom: none;
+        }
+
+        .question {
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            margin: 15px 0 10px 0;
+            color: var(--text-secondary);
+        }
+
+        .direction-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .direction-buttons button {
+            flex: 1;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 1em;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background-color: var(--bg-button);
+            color: var(--text-placeholder);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .direction-buttons button.selected.long {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-color: #28a745;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .direction-buttons button.selected.short {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+            border-color: #dc3545;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .direction-buttons button:hover:not(.selected) {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+
+        .calculate-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .calculate-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .calculate-button:active {
+            transform: translateY(-1px);
+        }
+
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .result {
+            width: 100%;
+            min-height: 250px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9ff, #ffffff);
+            border-radius: 12px;
+            border: 2px solid #e1e5e9;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 2;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .copy-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .copy-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .copy-confirmation {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .profit {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .loss {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .direction-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🚀 Calculadora de Gerenciamento de Risco</h1>
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+        <span class="theme-toggle-text" id="themeText">Escuro</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="instructions-section">
+        <h3>📋 Instruções de Uso</h3>
+        <ul>
+            <li>📈 Digite o <strong>par de moedas</strong> para buscar automaticamente</li>
+            <li>💰 A <strong>cotação atual</strong> será preenchida automaticamente</li>
+            <li>🎯 Escolha a <strong>direção</strong>: Long (compra) ou Short (venda)</li>
+            <li>📊 Preencha os valores de <strong>entrada, stop loss e alvo</strong></li>
+            <li>💼 Informe o <strong>tamanho da conta</strong> e <strong>risco por trade</strong></li>
+            <li>🧮 Clique em <strong>Calcular</strong> para ver os resultados</li>
+            <li>📈 Analise o <strong>P&L</strong> e o <strong>tamanho da posição</strong></li>
+        </ul>
+    </div>
+
+    <div class="form-section">
+        <div class="input-group">
+            <label for="symbolInput">Par de Moedas (Perpétuos USDT):</label>
+            <input id="symbolInput" type="text" placeholder="Ex: BTCUSDT, ETHUSDT..." oninput="filterSymbols()">
+            <div id="autocomplete-list" class="autocomplete-items"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="currentPrice">Cotação Atual (USD):</label>
+            <input type="text" id="currentPrice" placeholder="Aguardando seleção..." disabled>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                Carregando cotação...
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div class="question">📍 Qual a direção da sua operação?</div>
+
+        <div class="direction-buttons">
+            <button class="long" id="longButton" onclick="selectDirection('LONG')">
+                📈 LONG (Compra)
+            </button>
+            <button class="short" id="shortButton" onclick="selectDirection('SHORT')">
+                📉 SHORT (Venda)
+            </button>
+        </div>
+
+        <div class="input-group">
+            <label for="entryPrice">Preço de Entrada (USD):</label>
+            <input type="number" id="entryPrice" placeholder="0.00" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="sl">Stop Loss (USD):</label>
+            <input type="number" id="sl" placeholder="0.00" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="targetPrice">Alvo de Saída (USD):</label>
+            <input type="number" id="targetPrice" placeholder="0.00" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="accountSize">Tamanho da Conta (USD):</label>
+            <input type="number" id="accountSize" placeholder="1000" step="any">
+        </div>
+
+        <div class="input-group">
+            <label for="risk">Risco por Trade (%):</label>
+            <input type="number" id="risk" placeholder="2" step="0.1" min="0.1" max="100">
+        </div>
+
+        <button class="calculate-button" onclick="calculate()">
+            🧮 Calcular Risk Management
+        </button>
+    </div>
+
+    <div class="settings-section">
+        <h3>📊 Resultado da Análise</h3>
+        <div class="result" id="result">
+            Preencha os campos ao lado e clique em "Calcular" para ver os resultados da sua análise de risco.
+        </div>
+
+        <button class="copy-button" onclick="copyResult()">
+            📋 Copiar Resultado
+        </button>
+        <div class="copy-confirmation" id="copyConfirmation">
+            ✅ Resultado copiado para a área de transferência!
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sistema de Temas
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else if (systemPrefersDark) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
+    }
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        
+        if (theme === 'dark') {
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Claro';
+        } else {
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Escuro';
+        }
+        
+        // Salvar preferência (removemos localStorage para o ambiente atual)
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {
+            // Fallback caso localStorage não esteja disponível
+            console.log('Theme preference saved in memory only');
+        }
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+
+    // Detectar mudanças no tema do sistema
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+
+    let symbols = [
+        // Lista estática dos principais pares para funcionar offline
+        'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT', 'DOTUSDT',
+        'MATICUSDT', 'SHIBUSDT', 'DAIUSDT', 'TRXUSDT', 'AVAXUSDT', 'LINKUSDT', 'ATOMUSDT', 'UNIUSDT',
+        'LTCUSDT', 'XLMUSDT', 'NEARUSDT', 'ALGOUSDT', 'VETUSDT', 'ICPUSDT', 'FILUSDT', 'MANAUSDT',
+        'SANDUSDT', 'AXSUSDT', 'THETAUSDT', 'FTMUSDT', 'HBARUSDT', 'EGLDUSDT', 'AAVEUSDT', 'EOSUSDT',
+        'XTZUSDT', 'FLOWUSDT', 'KSMUSDT', 'NEOUSDT', 'BCHUSDT', 'ETCUSDT', 'KLAYUSDT', 'RUNEUSDT',
+        'WAVESUSDT', 'ZILUSDT', 'CAKEUSDT', 'COMPUSDT', 'SNXUSDT', 'MKRUSDT', 'YFIUSDT', 'SUSHIUSDT',
+        '1INCHUSDT', 'BATUSDT', 'ZRXUSDT', 'RENUSDT', 'ENJUSDT', 'CHZUSDT', 'HOTUSDT', 'DENTUSDT',
+        'RLCUSDT', 'STORJUSDT', 'CVCUSDT', 'KNCUSDT', 'NKNUSDT', 'SCUSDT', 'ZENUSDT', 'IOTAUSDT',
+        'DASHUSDT', 'ZECUSDT', 'XMRUSDT', 'DCRUSDT', 'LSKUSDT', 'NANEUSDT', 'RVNUSDT', 'BANUSDT'
+    ];
+    let selectedDirection = 'LONG';
+
+    // API alternativa que funciona com CORS
+    async function loadSymbols() {
+        try {
+            console.log('🔍 Tentando carregar símbolos da CoinGecko...');
+            // Usando CoinGecko que permite CORS
+            const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1');
+            
+            if (response.ok) {
+                const data = await response.json();
+                const coinGeckoSymbols = data.map(coin => coin.symbol.toUpperCase() + 'USDT');
+                symbols = [...new Set([...symbols, ...coinGeckoSymbols])]; // Combina com a lista estática
+                console.log('✅ Símbolos carregados da CoinGecko:', coinGeckoSymbols.length);
+            } else {
+                console.log('⚠️ Usando lista estática de símbolos');
+            }
+        } catch (error) {
+            console.log('⚠️ Erro ao carregar da CoinGecko, usando lista estática:', error.message);
+        }
+    }
+
+    async function fetchBinanceSymbols() {
+        const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+        if (!response.ok) throw new Error('Falha ao buscar da Binance');
+        const data = await response.json();
+        return data.symbols.filter(s => s.quoteAsset === 'USDT').map(s => s.symbol);
+    }
+
+    async function fetchBingXSymbols() {
+        const response = await fetch('https://api-swap-rest.bingbon.pro/api/v1/market/getAllContracts');
+        if (!response.ok) throw new Error('Falha ao buscar da BingX');
+        const data = await response.json();
+        return data.data.map(s => s.symbol);
+    }
+
+    async function fetchBybitSymbols() {
+        const response = await fetch('https://api.bybit.com/v2/public/symbols');
+        if (!response.ok) throw new Error('Falha ao buscar da Bybit');
+        const data = await response.json();
+        return data.result.map(s => s.name);
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    function showLoading(show = true) {
+        const loading = document.getElementById('loading');
+        loading.style.display = show ? 'block' : 'none';
+    }
+
+    function filterSymbols() {
+        const input = document.getElementById('symbolInput').value.toUpperCase();
+        const listContainer = document.getElementById('autocomplete-list');
+        listContainer.innerHTML = '';
+
+        if (input.length < 2) return;
+
+        const filteredSymbols = symbols.filter(symbol => symbol.includes(input)).slice(0, 10);
+        
+        filteredSymbols.forEach(symbol => {
+            const div = document.createElement('div');
+            div.textContent = symbol;
+            div.onclick = () => {
+                document.getElementById('symbolInput').value = symbol;
+                fetchCurrentPrice(symbol);
+                listContainer.innerHTML = '';
+            };
+            listContainer.appendChild(div);
+        });
+    }
+
+    async function fetchCurrentPrice(symbol) {
+        showLoading(true);
+        try {
+            // Primeiro, tenta buscar da CoinGecko (mais confiável para CORS)
+            const coinId = symbol.replace('USDT', '').toLowerCase();
+            let response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${getCoinGeckoId(coinId)}&vs_currencies=usd`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                const coinGeckoId = getCoinGeckoId(coinId);
+                if (data[coinGeckoId]) {
+                    const price = data[coinGeckoId].usd;
+                    document.getElementById('currentPrice').value = price.toFixed(6);
+                    console.log(`✅ Preço obtido da CoinGecko: ${price}`);
+                    return;
+                }
+            }
+
+            // Fallback: tentar APIs alternativas
+            console.log('⚠️ Tentando APIs alternativas...');
+            
+            // Tentar Coinbase (permite CORS para alguns endpoints)
+            try {
+                const coinbaseSymbol = symbol.replace('USDT', '-USD');
+                response = await fetch(`https://api.coinbase.com/v2/exchange-rates?currency=${coinbaseSymbol.split('-')[0]}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const price = parseFloat(data.data.rates.USD);
+                    if (price) {
+                        document.getElementById('currentPrice').value = price.toFixed(6);
+                        console.log(`✅ Preço obtido da Coinbase: ${price}`);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('Coinbase não funcionou');
+            }
+
+            // Se nenhuma API funcionar, permite entrada manual
+            document.getElementById('currentPrice').disabled = false;
+            document.getElementById('currentPrice').placeholder = 'Digite o preço manualmente';
+            showError('Não foi possível obter o preço automaticamente. Digite manualmente.');
+            
+        } catch (error) {
+            console.error('Erro ao buscar preço:', error);
+            document.getElementById('currentPrice').disabled = false;
+            document.getElementById('currentPrice').placeholder = 'Digite o preço manualmente';
+            showError('Erro ao buscar cotação. Digite o preço manualmente.');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Mapear símbolos para IDs do CoinGecko
+    function getCoinGeckoId(symbol) {
+        const mapping = {
+            'btc': 'bitcoin',
+            'eth': 'ethereum',
+            'bnb': 'binancecoin',
+            'ada': 'cardano',
+            'xrp': 'ripple',
+            'sol': 'solana',
+            'doge': 'dogecoin',
+            'dot': 'polkadot',
+            'matic': 'matic-network',
+            'shib': 'shiba-inu',
+            'trx': 'tron',
+            'avax': 'avalanche-2',
+            'link': 'chainlink',
+            'atom': 'cosmos',
+            'uni': 'uniswap',
+            'ltc': 'litecoin',
+            'xlm': 'stellar',
+            'near': 'near',
+            'algo': 'algorand',
+            'vet': 'vechain',
+            'icp': 'internet-computer',
+            'fil': 'filecoin',
+            'mana': 'decentraland',
+            'sand': 'the-sandbox',
+            'axs': 'axie-infinity',
+            'theta': 'theta-token',
+            'ftm': 'fantom',
+            'hbar': 'hedera-hashgraph',
+            'egld': 'elrond-erd-2',
+            'aave': 'aave',
+            'eos': 'eos',
+            'xtz': 'tezos',
+            'flow': 'flow',
+            'ksm': 'kusama',
+            'neo': 'neo',
+            'bch': 'bitcoin-cash',
+            'etc': 'ethereum-classic'
+        };
+        return mapping[symbol] || symbol;
+    }
+
+    function selectDirection(direction) {
+        selectedDirection = direction;
+        document.getElementById('longButton').classList.remove('selected');
+        document.getElementById('shortButton').classList.remove('selected');
+        
+        if (direction === 'LONG') {
+            document.getElementById('longButton').classList.add('selected', 'long');
+        } else {
+            document.getElementById('shortButton').classList.add('selected', 'short');
+        }
+    }
+
+    function validateInputs() {
+        const inputs = ['entryPrice', 'sl', 'targetPrice', 'accountSize', 'risk'];
+        for (let input of inputs) {
+            const value = parseFloat(document.getElementById(input).value);
+            if (isNaN(value) || value <= 0) {
+                showError(`Por favor, preencha corretamente: ${input}`);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function calculate() {
+        if (!validateInputs()) return;
+
+        const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+        const slPrice = parseFloat(document.getElementById('sl').value);
+        const targetPrice = parseFloat(document.getElementById('targetPrice').value);
+        const accountSize = parseFloat(document.getElementById('accountSize').value);
+        const riskPercent = parseFloat(document.getElementById('risk').value);
+
+        // Validações de lógica
+        if (selectedDirection === 'LONG' && slPrice >= entryPrice) {
+            showError('Para LONG: Stop Loss deve ser menor que o preço de entrada');
+            return;
+        }
+        if (selectedDirection === 'SHORT' && slPrice <= entryPrice) {
+            showError('Para SHORT: Stop Loss deve ser maior que o preço de entrada');
+            return;
+        }
+
+        const riskAmount = (riskPercent / 100) * accountSize;
+        const positionSize = riskAmount / Math.abs(entryPrice - slPrice);
+        const positionValue = positionSize * entryPrice;
+        
+        const profit = selectedDirection === 'LONG' 
+            ? (targetPrice - entryPrice) * positionSize 
+            : (entryPrice - targetPrice) * positionSize;
+            
+        const riskRewardRatio = Math.abs(profit / riskAmount);
+        const profitClass = profit > 0 ? 'profit' : 'loss';
+        const profitPercentage = (profit / accountSize) * 100;
+
+        document.getElementById('result').innerHTML = `
+<div style="text-align: center; margin-bottom: 20px;">
+    <h4 style="color: #1d3557; margin-bottom: 10px;">📊 ANÁLISE COMPLETA</h4>
+</div>
+
+<div style="background: linear-gradient(90deg, #f1f3f4, #ffffff); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+    <strong>💰 POSIÇÃO:</strong><br>
+    🪙 Quantidade: ${positionSize.toFixed(6)} moedas<br>
+    💵 Valor da Posição: $${positionValue.toFixed(2)}<br>
+    📍 Direção: ${selectedDirection} ${selectedDirection === 'LONG' ? '📈' : '📉'}
+</div>
+
+<div style="background: linear-gradient(90deg, #e8f5e8, #ffffff); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+    <strong>📈 RESULTADOS:</strong><br>
+    <span class="${profitClass}">💰 Lucro/Prejuízo: ${profit > 0 ? '+' : ''}$${profit.toFixed(2)}</span><br>
+    <span class="loss">🛑 Risco Máximo: -$${riskAmount.toFixed(2)}</span><br>
+    📊 % da Conta: <span class="${profitClass}">${profit > 0 ? '+' : ''}${profitPercentage.toFixed(1)}%</span>
+</div>
+
+<div style="background: linear-gradient(90deg, #fff3cd, #ffffff); padding: 15px; border-radius: 10px;">
+    <strong>⚖️ ANÁLISE R/R:</strong><br>
+    🎯 Risk/Reward: ${riskRewardRatio.toFixed(2)}/1<br>
+    ${riskRewardRatio >= 2 ? '✅ Excelente R/R!' : riskRewardRatio >= 1.5 ? '⚠️ R/R Aceitável' : '❌ R/R Baixo - Reconsidere'}
+</div>
+        `;
+    }
+
+    function copyResult() {
+        const resultText = document.getElementById('result').innerText;
+        navigator.clipboard.writeText(resultText).then(() => {
+            const confirmation = document.getElementById('copyConfirmation');
+            confirmation.style.display = 'block';
+            setTimeout(() => {
+                confirmation.style.display = 'none';
+            }, 3000);
+        }).catch(err => {
+            showError('Erro ao copiar resultado');
+        });
+    }
+
+    // Inicializar quando a página carregar
+    window.addEventListener('load', () => {
+        initTheme();
+        loadSymbols();
+        // Selecionar LONG por padrão
+        selectDirection('LONG');
+    });
+
+    // Fechar autocomplete ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.input-group')) {
+            document.getElementById('autocomplete-list').innerHTML = '';
+        }
+    });
+</script>
+
+</body>
+</html>

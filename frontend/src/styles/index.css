@@ -1,0 +1,143 @@
+:root {
+  /* Tema Claro */
+  --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-container: rgba(255, 255, 255, 0.95);
+  --bg-section: rgba(255, 255, 255, 0.9);
+  --bg-input: #f8f9fa;
+  --bg-input-focus: #ffffff;
+  --bg-button: #f8f9fa;
+  --bg-gradient-light: linear-gradient(90deg, #f8f9ff, #ffffff);
+  --bg-result: linear-gradient(135deg, #f8f9ff, #ffffff);
+  
+  --text-primary: #333;
+  --text-secondary: #1d3557;
+  --text-placeholder: #6c757d;
+  --text-disabled: #6c757d;
+  
+  --border-color: #e1e5e9;
+  --border-focus: #667eea;
+  --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.08);
+  --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.1);
+  
+  --success-bg: #d4edda;
+  --success-text: #155724;
+  --error-bg: #f8d7da;
+  --error-text: #721c24;
+}
+
+[data-theme="dark"] {
+  /* Tema Escuro */
+  --bg-primary: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --bg-container: rgba(30, 30, 30, 0.95);
+  --bg-section: rgba(40, 40, 40, 0.9);
+  --bg-input: #2d2d2d;
+  --bg-input-focus: #3d3d3d;
+  --bg-button: #2d2d2d;
+  --bg-gradient-light: linear-gradient(90deg, #2d2d2d, #3d3d3d);
+  --bg-result: linear-gradient(135deg, #2d2d2d, #3d3d3d);
+  
+  --text-primary: #e0e0e0;
+  --text-secondary: #ffffff;
+  --text-placeholder: #adb5bd;
+  --text-disabled: #6c757d;
+  
+  --border-color: #404040;
+  --border-focus: #667eea;
+  --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.3);
+  --shadow-heavy: 0 15px 35px rgba(0, 0, 0, 0.4);
+  
+  --success-bg: #1e4620;
+  --success-text: #4caf50;
+  --error-bg: #5c1e1e;
+  --error-text: #f44336;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--bg-primary);
+  min-height: 100vh;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.profit {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.loss {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* React Select customization */
+.react-select-container {
+  .react-select__control {
+    background-color: var(--bg-input);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    min-height: 50px;
+    transition: all 0.3s ease;
+  }
+
+  .react-select__control:hover,
+  .react-select__control--is-focused {
+    background-color: var(--bg-input-focus);
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .react-select__menu {
+    background-color: var(--bg-section);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow-light);
+  }
+
+  .react-select__option {
+    color: var(--text-primary);
+    transition: background-color 0.2s ease;
+  }
+
+  .react-select__option:hover,
+  .react-select__option--is-focused {
+    background-color: var(--bg-gradient-light);
+    color: #667eea;
+  }
+
+  .react-select__single-value,
+  .react-select__placeholder {
+    color: var(--text-primary);
+  }
+
+  .react-select__input-container {
+    color: var(--text-primary);
+  }
+}
