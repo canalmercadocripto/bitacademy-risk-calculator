@@ -277,3 +277,7 @@ MIT License - Veja [LICENSE](LICENSE) para detalhes.
 **Desenvolvido com ❤️ pela equipe BitAcademy**
 
 *Calculadora profissional para traders profissionais* 🚀
+
+---
+
+**🔗 Repositório GitHub:** https://github.com/canalmercadocripto/bitacademy-risk-calculator
