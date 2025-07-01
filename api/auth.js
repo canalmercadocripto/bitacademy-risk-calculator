@@ -1,6 +1,6 @@
 // API Route for Vercel - Authentication
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 // Simulação de usuários (em produção, use banco de dados)
 const users = [
@@ -16,12 +16,21 @@ const users = [
   }
 ];
 
-export default async function handler(req, res) {
-  if (req.method === 'POST' && req.url === '/api/auth/login') {
+module.exports = async function handler(req, res) {
+  // Adicionar CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  if (req.method === 'POST') {
     return handleLogin(req, res);
   }
   
-  if (req.method === 'GET' && req.url === '/api/auth/me') {
+  if (req.method === 'GET') {
     return handleMe(req, res);
   }
   
