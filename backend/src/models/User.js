@@ -1,9 +1,5 @@
-// Usar SQLite por padrão em desenvolvimento
-const dbConfig = process.env.NODE_ENV === 'production' 
-  ? '../config/database' 
-  : '../config/database-sqlite';
-
-const { query } = require(dbConfig);
+// SEMPRE usar SQLite para simplicidade
+const { query } = require('../config/database-sqlite');
 
 const bcrypt = require('bcrypt');
 

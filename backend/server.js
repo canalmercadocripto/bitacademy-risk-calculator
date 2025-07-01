@@ -1,132 +1,76 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
-const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 // Importar rotas
-const exchangeRoutes = require('./src/routes/exchangeRoutes');
-const calculatorRoutes = require('./src/routes/calculatorRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-const tradeRoutes = require('./src/routes/tradeRoutes');
-const adminRoutes = require('./src/routes/adminRoutes');
+const calculatorRoutes = require('./src/routes/calculatorRoutes');
 
-// Usar SQLite por padrão em desenvolvimento
-const dbConfig = process.env.NODE_ENV === 'production' 
-  ? './src/config/database' 
-  : './src/config/database-sqlite';
-
-const { testConnection } = require(dbConfig);
+// SEMPRE usar SQLite para simplicidade
+const { testConnection } = require('./src/config/database-sqlite');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware de segurança
-app.use(helmet());
-app.use(compression());
-
-// CORS configurado para produção
-const corsOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',') 
-  : ['http://localhost:3000', 'http://localhost:3001'];
-
+// CORS permissivo para Railway
 app.use(cors({
-  origin: corsOrigins,
+  origin: true,
   credentials: true
 }));
 
-// Middleware para IP do cliente
-app.use((req, res, next) => {
-  req.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  next();
-});
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// Middleware para session ID (usuários anônimos)
-app.use((req, res, next) => {
-  if (!req.headers.authorization) {
-    req.sessionId = req.headers['x-session-id'] || uuidv4();
-  }
-  next();
-});
-
-app.use(express.json());
-
-// Rate limiting - configuração mais flexível para desenvolvimento
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === 'production' ? 200 : 1000, // 1000 em dev, 200 em prod
-  message: {
-    error: 'Muitas requisições deste IP, tente novamente em alguns minutos.',
-    retryAfter: Math.ceil(15 * 60 / 60) + ' minutos'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-
-// Rotas
-app.use('/api/exchanges', exchangeRoutes);
-app.use('/api/calculator', calculatorRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/trades', tradeRoutes);
-app.use('/api/admin', adminRoutes);
+// Servir arquivos estáticos do frontend (para Railway)
+app.use(express.static(path.join(__dirname, '../build')));
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
+    message: 'BitAcademy Calculator API funcionando',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Reset rate limit para desenvolvimento
-if (process.env.NODE_ENV !== 'production') {
-  app.post('/api/dev/reset-rate-limit', (req, res) => {
-    // Limpar dados do rate limiter (apenas em desenvolvimento)
-    limiter.resetKey(req.ip);
-    res.json({ 
-      success: true, 
-      message: 'Rate limit resetado para este IP',
-      ip: req.ip 
-    });
-  });
-}
+// Rotas da API
+app.use('/api/auth', authRoutes);
+app.use('/api/calculator', calculatorRoutes);
 
-// Middleware de erro global
-app.use((err, req, res, next) => {
-  console.error(err.stack);
+// Fallback para React Router (SPA)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
+});
+
+// Error handler
+app.use((error, req, res, next) => {
+  console.error('Erro na aplicação:', error);
   res.status(500).json({ 
     error: 'Erro interno do servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Algo deu errado'
+    message: error.message 
   });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Endpoint não encontrado' });
 });
 
 // Inicializar servidor
 async function startServer() {
   try {
     // Testar conexão com banco
-    await testConnection();
+    const dbConnected = await testConnection();
+    if (dbConnected) {
+      console.log('✅ Banco de dados conectado');
+    } else {
+      console.warn('⚠️ Problemas na conexão do banco');
+    }
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🗄️ Banco de dados: Conectado`);
-      console.log(`🔐 Autenticação: Ativa`);
-      console.log(`👥 Sistema de usuários: Ativo`);
-      console.log(`📈 Tracking de trades: Ativo`);
+      console.log(`🌐 Acesse: http://localhost:${PORT}`);
+      console.log(`📊 Health: http://localhost:${PORT}/api/health`);
     });
-    
   } catch (error) {
-    console.error('❌ Erro ao inicializar servidor:', error.message);
-    console.log('💡 Execute: npm run setup-db para configurar o banco');
+    console.error('❌ Erro ao iniciar servidor:', error);
     process.exit(1);
   }
 }
