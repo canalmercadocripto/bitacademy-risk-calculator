@@ -10,7 +10,7 @@ const Instructions = () => {
         <li>🎯 Defina <strong>direção</strong> e <strong>preços</strong></li>
         <li>💼 Configure <strong>conta</strong> e <strong>risco</strong></li>
         <li>🧮 <strong>Calcule</strong> e analise</li>
-        <li>📊 Veja <strong>histórico</strong> abaixo</li>
+        <li>📊 Acesse seu <strong>histórico</strong> no menu lateral</li>
       </ul>
     </>
   );

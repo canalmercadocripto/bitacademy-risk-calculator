@@ -2,19 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
 import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../hooks/useAuth';
 import { useExchangeData } from '../hooks/useExchangeData';
 import { useCalculationHistory } from '../hooks/useCalculationHistory';
 import { usePriceUpdater } from '../hooks/usePriceUpdater';
 import { calculatorApi } from '../services/api';
+import { tradeApi } from '../services/authApi';
 import Header from './Header';
 import Instructions from './Instructions';
 import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
-import HistoryPanel from './HistoryPanel';
 import ExchangeSelector from './ExchangeSelector';
+import AuthModal from './AuthModal';
 
 const RiskCalculator = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, token, isAuthenticated, loading: authLoading } = useAuth();
+
+  // Se ainda está carregando autenticação, mostrar loading
+  if (authLoading) {
+    return (
+      <div className="App">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          <div style={{ fontSize: '3rem' }}>⏳</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Carregando...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não estiver autenticado, redirecionar para login será feito no App.js
   const {
     exchanges,
     symbols,
@@ -47,6 +71,10 @@ const RiskCalculator = () => {
   const [calculating, setCalculating] = useState(false);
   const [priceUpdateEnabled, setPriceUpdateEnabled] = useState(true);
   const [liveCurrentPrice, setLiveCurrentPrice] = useState(currentPrice);
+  
+  // States dos modais
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -121,16 +149,71 @@ const RiskCalculator = () => {
       const response = await calculatorApi.calculateRisk(params);
       setResults(response.data);
       
-      // Adicionar ao histórico
+      // Adicionar ao histórico local
       addCalculation(response.data, selectedSymbol, selectedExchange);
       
-      toast.success('Cálculo realizado com sucesso!');
+      // Se usuário logado, salvar no backend também
+      if (isAuthenticated && token) {
+        try {
+          const calculatedData = response.data;
+          
+          const tradeData = {
+            exchange: selectedExchange?.id || 'manual',
+            symbol: selectedSymbol?.symbol || 'MANUAL',
+            direction: formData.direction.toLowerCase(),
+            entryPrice: parseFloat(formData.entryPrice),
+            stopLoss: parseFloat(formData.stopLoss),
+            targetPrice: parseFloat(formData.targetPrice),
+            accountSize: parseFloat(formData.accountSize),
+            riskPercent: parseFloat(formData.riskPercent),
+            // Dados calculados - mapeando corretamente da resposta da API
+            positionSize: calculatedData.position?.value || 0,
+            riskAmount: calculatedData.risk?.amount || 0,
+            rewardAmount: calculatedData.profit?.amount || 0,
+            riskRewardRatio: calculatedData.analysis?.riskRewardRatio || 0,
+            currentPrice: currentPrice,
+            // Dados adicionais do cálculo
+            calculationData: {
+              takeProfits: calculatedData.takeProfits || [],
+              positionSize: calculatedData.position?.size || 0,
+              positionValue: calculatedData.position?.value || 0,
+              direction: calculatedData.position?.direction || formData.direction,
+              riskAmount: calculatedData.risk?.amount || 0,
+              riskPercentage: calculatedData.risk?.percentage || 0,
+              profitAmount: calculatedData.profit?.amount || 0,
+              profitPercentage: calculatedData.profit?.percentage || 0,
+              riskRewardRatio: calculatedData.analysis?.riskRewardRatio || 0,
+              riskLevel: calculatedData.analysis?.riskLevel || '',
+              recommendation: calculatedData.analysis?.recommendation || [],
+              details: calculatedData.details || {},
+              riskDistance: calculatedData.details?.riskDistance || 0,
+              targetDistance: calculatedData.details?.targetDistance || 0,
+              positionPercent: calculatedData.details?.positionPercent || 0,
+              ...calculatedData
+            }
+          };
+          
+          await tradeApi.saveCalculation(tradeData, token);
+          toast.success('Cálculo salvo no seu histórico!');
+        } catch (error) {
+          console.error('Erro ao salvar no backend:', error);
+          toast.success('Cálculo realizado! (Erro ao salvar no histórico)');
+        }
+      } else {
+        toast.success('Cálculo realizado com sucesso!');
+      }
     } catch (error) {
       toast.error(error.message || 'Erro ao calcular');
       console.error('Erro no cálculo:', error);
     } finally {
       setCalculating(false);
     }
+  };
+
+  // Handlers dos modais
+  const handleShowAuth = (mode = 'login') => {
+    setAuthModalMode(mode);
+    setShowAuthModal(true);
   };
 
   const validateForm = () => {
@@ -224,18 +307,15 @@ const RiskCalculator = () => {
 
   return (
     <div className="App">
-      <Header theme={theme} onToggleTheme={toggleTheme} />
-      
-      <div className="container">
+      <div style={{ padding: '20px' }}>
+        <Header 
+          theme={theme} 
+          onToggleTheme={toggleTheme}
+        />
+        
+        <div className="container">
         <div className="instructions-section">
           <Instructions />
-          <HistoryPanel 
-            history={history}
-            onClearHistory={clearHistory}
-            onRemoveCalculation={removeCalculation}
-            onExportCSV={exportToCSV}
-            onLoadCalculation={handleLoadCalculation}
-          />
         </div>
         
         <div className="form-section">
@@ -293,6 +373,15 @@ const RiskCalculator = () => {
           formData={formData}
           currentPrice={liveCurrentPrice}
         />
+      </div>
+
+        {/* Modais */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode={authModalMode}
+        />
+
       </div>
     </div>
   );
