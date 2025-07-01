@@ -1,21 +1,22 @@
-// API Route for Vercel - Health Check
+// Ultra-simple health check for Vercel
 export default function handler(req, res) {
-  // CORS Headers
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', '*');
   
-  // Handle OPTIONS for CORS preflight
+  // Handle preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return;
   }
   
-  // Return health status
-  return res.status(200).json({ 
-    status: 'OK', 
-    message: 'BitAcademy Calculator API funcionando no Vercel',
+  // Simple response
+  res.status(200).json({
+    status: 'OK',
+    message: 'API funcionando',
     timestamp: new Date().toISOString(),
-    method: req.method,
-    vercel: true
+    url: req.url,
+    method: req.method
   });
 }
