@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { tradeApi } from '../services/authApi';
+import PhoneInput from './PhoneInput';
 import toast from 'react-hot-toast';
 
 const UserProfile = () => {
@@ -9,9 +10,18 @@ const UserProfile = () => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [passwordMode, setPasswordMode] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
-    email: user?.email || ''
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    countryCode: user?.countryCode || '+55'
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
 
   useEffect(() => {
@@ -42,11 +52,76 @@ const UserProfile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      // Aqui você implementaria a API para atualizar perfil
-      toast.success('Perfil atualizado com sucesso!');
-      setEditMode(false);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/auth/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Perfil atualizado com sucesso!');
+        setEditMode(false);
+        // Atualizar os dados locais
+        window.location.reload(); // Recarrega para atualizar o contexto do usuário
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Erro ao atualizar perfil');
+      }
     } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
       toast.error('Erro ao atualizar perfil');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    try {
+      // Validações
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        toast.error('Todos os campos de senha são obrigatórios');
+        return;
+      }
+
+      if (passwordData.newPassword.length < 6) {
+        toast.error('Nova senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        toast.error('Nova senha e confirmação não coincidem');
+        return;
+      }
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/auth/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Senha alterada com sucesso!');
+        setPasswordMode(false);
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Erro ao alterar senha');
+      }
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      toast.error('Erro ao alterar senha');
     }
   };
 
@@ -90,12 +165,26 @@ const UserProfile = () => {
         <div className="profile-card">
           <div className="card-header">
             <h3>📝 Informações Pessoais</h3>
-            <button 
-              className="edit-btn"
-              onClick={() => setEditMode(!editMode)}
-            >
-              {editMode ? '❌ Cancelar' : '✏️ Editar'}
-            </button>
+            <div className="header-actions">
+              <button 
+                className="edit-btn"
+                onClick={() => {
+                  setEditMode(!editMode);
+                  if (passwordMode) setPasswordMode(false);
+                }}
+              >
+                {editMode ? '❌ Cancelar' : '✏️ Editar'}
+              </button>
+              <button 
+                className="password-btn"
+                onClick={() => {
+                  setPasswordMode(!passwordMode);
+                  if (editMode) setEditMode(false);
+                }}
+              >
+                {passwordMode ? '❌ Cancelar' : '🔐 Alterar Senha'}
+              </button>
+            </div>
           </div>
 
           <div className="profile-info">
@@ -109,7 +198,57 @@ const UserProfile = () => {
             </div>
 
             <div className="info-fields">
-              {editMode ? (
+              {passwordMode ? (
+                <>
+                  <div className="input-group">
+                    <label>Senha Atual:</label>
+                    <input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                      placeholder="Digite sua senha atual"
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Nova Senha:</label>
+                    <input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                      placeholder="Digite a nova senha (mínimo 6 caracteres)"
+                      minLength="6"
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Confirmar Nova Senha:</label>
+                    <input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                      placeholder="Confirme a nova senha"
+                      minLength="6"
+                      required
+                    />
+                  </div>
+                  <div className="profile-actions">
+                    <button className="save-btn" onClick={handleUpdatePassword}>
+                      🔐 Alterar Senha
+                    </button>
+                    <button className="cancel-btn" onClick={() => {
+                      setPasswordMode(false);
+                      setPasswordData({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      });
+                    }}>
+                      ❌ Cancelar
+                    </button>
+                  </div>
+                </>
+              ) : editMode ? (
                 <>
                   <div className="input-group">
                     <label>Nome:</label>
@@ -117,6 +256,16 @@ const UserProfile = () => {
                       type="text"
                       value={profileData.name}
                       onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Sobrenome:</label>
+                    <input
+                      type="text"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
+                      required
                     />
                   </div>
                   <div className="input-group">
@@ -125,11 +274,36 @@ const UserProfile = () => {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                      required
                     />
                   </div>
-                  <button className="save-btn" onClick={handleUpdateProfile}>
-                    💾 Salvar Alterações
-                  </button>
+                  <div className="input-group">
+                    <label>Telefone:</label>
+                    <PhoneInput
+                      value={profileData.phone}
+                      countryCode={profileData.countryCode}
+                      onChange={(phone) => setProfileData({...profileData, phone})}
+                      onCountryCodeChange={(countryCode) => setProfileData({...profileData, countryCode})}
+                      required
+                    />
+                  </div>
+                  <div className="profile-actions">
+                    <button className="save-btn" onClick={handleUpdateProfile}>
+                      💾 Salvar Alterações
+                    </button>
+                    <button className="cancel-btn" onClick={() => {
+                      setEditMode(false);
+                      setProfileData({
+                        name: user?.name || '',
+                        lastName: user?.lastName || '',
+                        email: user?.email || '',
+                        phone: user?.phone || '',
+                        countryCode: user?.countryCode || '+55'
+                      });
+                    }}>
+                      ❌ Cancelar
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -138,8 +312,22 @@ const UserProfile = () => {
                     <span>{user.name}</span>
                   </div>
                   <div className="info-item">
+                    <label>Sobrenome:</label>
+                    <span>{user.lastName}</span>
+                  </div>
+                  <div className="info-item">
                     <label>Email:</label>
                     <span>{user.email}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Telefone:</label>
+                    <span>{user.countryCode} {user.phone}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Tipo de conta:</label>
+                    <span className={`user-role ${user.role}`}>
+                      {user.role === 'admin' ? '👑 Administrador' : '👤 Usuário'}
+                    </span>
                   </div>
                   <div className="info-item">
                     <label>Membro desde:</label>

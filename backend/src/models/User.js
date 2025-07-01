@@ -70,12 +70,37 @@ class User {
   // Buscar usuário por ID
   static async findById(id) {
     const result = await query(`
-      SELECT id, email, name, phone, country_code, role, is_active, last_login, created_at
+      SELECT id, email, name, last_name, phone, country_code, role, is_active, last_login, created_at
       FROM users 
       WHERE id = ?
     `, [id]);
     
-    return result.rows[0];
+    const user = result.rows[0];
+    if (user) {
+      // Mapear campos para manter compatibilidade
+      user.lastName = user.last_name;
+      user.countryCode = user.country_code;
+    }
+    
+    return user;
+  }
+
+  // Buscar usuário por ID incluindo senha hash
+  static async findByIdWithPassword(id) {
+    const result = await query(`
+      SELECT id, email, name, last_name, phone, country_code, password_hash, role, is_active, last_login, created_at
+      FROM users 
+      WHERE id = ?
+    `, [id]);
+    
+    const user = result.rows[0];
+    if (user) {
+      // Mapear campos para manter compatibilidade
+      user.lastName = user.last_name;
+      user.countryCode = user.country_code;
+    }
+    
+    return user;
   }
   
   // Verificar senha
@@ -202,6 +227,45 @@ class User {
       SET ${fields.join(', ')} 
       WHERE id = ?
     `, values);
+  }
+
+  // Atualizar perfil do usuário
+  static async updateProfile(userId, profileData) {
+    try {
+      const { name, lastName, email, phone, countryCode } = profileData;
+      
+      const result = await query(`
+        UPDATE users 
+        SET name = ?, last_name = ?, email = ?, phone = ?, country_code = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `, [name, lastName, email, phone, countryCode, userId]);
+      
+      return result.affectedRows > 0 || result.changes > 0;
+    } catch (error) {
+      if (error.code === 'SQLITE_CONSTRAINT' || error.message.includes('UNIQUE constraint failed')) {
+        throw new Error('Email já está em uso');
+      }
+      throw error;
+    }
+  }
+
+  // Atualizar senha do usuário
+  static async updatePassword(userId, newPassword) {
+    try {
+      // Hash da nova senha
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      
+      const result = await query(`
+        UPDATE users 
+        SET password_hash = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `, [passwordHash, userId]);
+      
+      return result.affectedRows > 0 || result.changes > 0;
+    } catch (error) {
+      console.error('Erro ao atualizar senha:', error);
+      throw error;
+    }
   }
 
   // Deletar usuário (hard delete)

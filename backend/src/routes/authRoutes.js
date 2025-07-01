@@ -10,6 +10,8 @@ router.post('/login', AuthController.login);
 
 // Rotas protegidas
 router.get('/me', authenticateToken, requireUser, AuthController.me);
+router.put('/update-profile', authenticateToken, requireUser, AuthController.updateProfile);
+router.put('/change-password', authenticateToken, requireUser, AuthController.changePassword);
 router.post('/refresh', authenticateToken, AuthController.refreshToken);
 router.post('/logout', authenticateToken, AuthController.logout);
 

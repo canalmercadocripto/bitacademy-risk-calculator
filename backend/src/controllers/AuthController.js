@@ -186,6 +186,9 @@ class AuthController {
             id: user.id,
             email: user.email,
             name: user.name,
+            lastName: user.lastName,
+            phone: user.phone,
+            countryCode: user.countryCode,
             role: user.role,
             lastLogin: user.last_login,
             createdAt: user.created_at
@@ -195,6 +198,159 @@ class AuthController {
       
     } catch (error) {
       console.error('Erro ao buscar usuário:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  // Atualizar perfil do usuário
+  static async updateProfile(req, res) {
+    try {
+      const { name, lastName, email, phone, countryCode } = req.body;
+      const userId = req.user.userId;
+      
+      // Validações básicas
+      if (!name || !lastName || !email || !phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nome, sobrenome, email e telefone são obrigatórios'
+        });
+      }
+      
+      // Validar formato do email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email inválido'
+        });
+      }
+      
+      // Verificar se o email já existe (mas não para o próprio usuário)
+      const existingUser = await User.findByEmail(email.toLowerCase());
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email já está em uso por outro usuário'
+        });
+      }
+      
+      // Atualizar perfil
+      const success = await User.updateProfile(userId, {
+        name,
+        lastName,
+        email: email.toLowerCase(),
+        phone,
+        countryCode: countryCode || '+55'
+      });
+      
+      if (!success) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuário não encontrado'
+        });
+      }
+      
+      // Log da atividade
+      await AuthController.logActivity(userId, 'profile_updated', {
+        email: email.toLowerCase(),
+        name,
+        lastName
+      }, req);
+      
+      // Buscar dados atualizados
+      const updatedUser = await User.findById(userId);
+      
+      res.json({
+        success: true,
+        message: 'Perfil atualizado com sucesso',
+        data: {
+          user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            name: updatedUser.name,
+            lastName: updatedUser.lastName,
+            phone: updatedUser.phone,
+            countryCode: updatedUser.countryCode,
+            role: updatedUser.role,
+            lastLogin: updatedUser.last_login,
+            createdAt: updatedUser.created_at
+          }
+        }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  // Alterar senha do usuário
+  static async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user.userId;
+      
+      // Validações básicas
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Senha atual e nova senha são obrigatórias'
+        });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nova senha deve ter pelo menos 6 caracteres'
+        });
+      }
+      
+      // Buscar usuário atual com senha
+      const user = await User.findByIdWithPassword(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuário não encontrado'
+        });
+      }
+      
+      // Verificar senha atual
+      const isValidCurrentPassword = await User.verifyPassword(currentPassword, user.password_hash);
+      if (!isValidCurrentPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Senha atual incorreta'
+        });
+      }
+      
+      // Atualizar senha
+      const success = await User.updatePassword(userId, newPassword);
+      if (!success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Erro ao atualizar senha'
+        });
+      }
+      
+      // Log da atividade
+      await AuthController.logActivity(userId, 'password_changed', {
+        email: user.email,
+        name: user.name
+      }, req);
+      
+      res.json({
+        success: true,
+        message: 'Senha alterada com sucesso'
+      });
+      
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor'

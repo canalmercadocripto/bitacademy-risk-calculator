@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import PhoneInput from './PhoneInput';
 
 const LoginPage = () => {
   const { theme, toggleTheme } = useTheme();
@@ -8,8 +9,11 @@ const LoginPage = () => {
   const [mode, setMode] = useState('login');
   const [formData, setFormData] = useState({
     name: '',
+    lastName: '',
     email: '',
-    password: ''
+    password: '',
+    phone: '',
+    countryCode: '+55'
   });
 
   const handleSubmit = async (e) => {
@@ -18,7 +22,7 @@ const LoginPage = () => {
     if (mode === 'login') {
       await login(formData.email, formData.password);
     } else {
-      await register(formData.name, formData.email, formData.password);
+      await register(formData.name, formData.lastName, formData.email, formData.password, formData.phone, formData.countryCode);
     }
   };
 
@@ -31,7 +35,7 @@ const LoginPage = () => {
 
   const switchMode = () => {
     setMode(mode === 'login' ? 'register' : 'login');
-    setFormData({ name: '', email: '', password: '' });
+    setFormData({ name: '', lastName: '', email: '', password: '', phone: '', countryCode: '+55' });
   };
 
   return (
@@ -95,35 +99,67 @@ const LoginPage = () => {
           {/* Formulário */}
           <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
             {mode === 'register' && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500'
-                }}>
-                  Nome Completo
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    border: '2px solid var(--border-color)',
-                    borderRadius: '10px',
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    fontSize: '1rem',
-                    transition: 'border-color 0.3s ease'
-                  }}
-                  placeholder="Seu nome completo"
-                />
-              </div>
+              <>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    color: 'var(--text-secondary)',
+                    fontWeight: '500'
+                  }}>
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '10px',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '1rem',
+                      transition: 'border-color 0.3s ease'
+                    }}
+                    placeholder="Seu nome"
+                  />
+                </div>
+                
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    color: 'var(--text-secondary)',
+                    fontWeight: '500'
+                  }}>
+                    Sobrenome
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '10px',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontSize: '1rem',
+                      transition: 'border-color 0.3s ease'
+                    }}
+                    placeholder="Seu sobrenome"
+                  />
+                </div>
+              </>
             )}
 
             <div style={{ marginBottom: '1.5rem' }}>
@@ -186,6 +222,27 @@ const LoginPage = () => {
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
+
+            {mode === 'register' && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  color: 'var(--text-secondary)',
+                  fontWeight: '500'
+                }}>
+                  Telefone
+                </label>
+                <PhoneInput
+                  value={formData.phone}
+                  countryCode={formData.countryCode}
+                  onChange={(phone) => setFormData({...formData, phone})}
+                  onCountryCodeChange={(countryCode) => setFormData({...formData, countryCode})}
+                  disabled={loading}
+                  required
+                />
+              </div>
+            )}
 
             <button 
               type="submit" 

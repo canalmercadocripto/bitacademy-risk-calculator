@@ -8,8 +8,8 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm start",
     "build:frontend": "cd frontend && npm run build",
-    "deploy": "./deploy.sh",
-    "setup-vps": "./setup-vps.sh"
+    "create-admin": "node create-admin.js",
+    "reset-admin-password": "node reset-admin-password.js"
   },
   "keywords": [
     "trading",
