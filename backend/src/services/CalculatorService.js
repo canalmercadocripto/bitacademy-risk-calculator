@@ -34,6 +34,9 @@ class CalculatorService {
     const profitPercentage = (profit / accountSize) * 100;
     const lossPercentage = (riskAmount / accountSize) * 100;
 
+    // Gerar take profits múltiplos
+    const takeProfits = this.generateTakeProfits(entryPrice, targetPrice, direction, positionSize);
+
     return {
       position: {
         size: positionSize,
@@ -52,6 +55,12 @@ class CalculatorService {
         riskRewardRatio,
         riskLevel: this.getRiskLevel(riskRewardRatio),
         recommendation: this.getRecommendation(riskRewardRatio, riskPercent)
+      },
+      takeProfits: takeProfits,
+      details: {
+        riskDistance: riskDistance,
+        targetDistance: Math.abs(targetPrice - entryPrice),
+        positionPercent: (positionValue / accountSize) * 100
       }
     };
   }
@@ -138,6 +147,46 @@ class CalculatorService {
         calculation: this.calculateRiskManagement(params)
       };
     });
+  }
+
+  // Gerar take profits múltiplos
+  generateTakeProfits(entryPrice, targetPrice, direction, positionSize) {
+    const takeProfits = [];
+    const isLong = direction.toLowerCase() === 'long';
+    
+    // Percentuais padrão para take profits parciais
+    const tpPercentages = [25, 50, 75, 100];
+    
+    for (let i = 0; i < tpPercentages.length; i++) {
+      const percentage = tpPercentages[i];
+      let tpPrice;
+      
+      if (isLong) {
+        // Para LONG: interpolação entre entry e target
+        tpPrice = entryPrice + ((targetPrice - entryPrice) * (percentage / 100));
+      } else {
+        // Para SHORT: interpolação entre entry e target
+        tpPrice = entryPrice - ((entryPrice - targetPrice) * (percentage / 100));
+      }
+      
+      // Calcular lucro para este TP
+      let tpProfit;
+      if (isLong) {
+        tpProfit = (tpPrice - entryPrice) * positionSize;
+      } else {
+        tpProfit = (entryPrice - tpPrice) * positionSize;
+      }
+      
+      takeProfits.push({
+        level: i + 1,
+        percentage: percentage,
+        price: parseFloat(tpPrice.toFixed(8)),
+        profit: parseFloat(tpProfit.toFixed(2)),
+        description: `TP${i + 1} - ${percentage}% do alvo`
+      });
+    }
+    
+    return takeProfits;
   }
 }
 
