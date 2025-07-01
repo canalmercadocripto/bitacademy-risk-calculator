@@ -93,8 +93,8 @@ const createTables = async () => {
 const createDefaultAdmin = async () => {
   try {
     const bcrypt = require('bcrypt');
-    const adminEmail = 'admin@bitacademy.vip';
-    const adminPassword = 'admin123'; // Altere isso em produção!
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@bitacademy.vip';
+    const adminPassword = process.env.ADMIN_PASSWORD || require('crypto').randomBytes(16).toString('hex');
     
     // Verificar se admin já existe
     const existingAdmin = await query('SELECT id FROM users WHERE email = ?', [adminEmail]);
@@ -109,8 +109,12 @@ const createDefaultAdmin = async () => {
       
       console.log('👤 Usuário admin criado:');
       console.log(`   Email: ${adminEmail}`);
-      console.log(`   Senha: ${adminPassword}`);
-      console.log('⚠️  ALTERE A SENHA EM PRODUÇÃO!');
+      if (!process.env.ADMIN_PASSWORD) {
+        console.log(`   Senha gerada: ${adminPassword}`);
+        console.log('⚠️  SALVE ESSA SENHA - ela não será exibida novamente!');
+      } else {
+        console.log('   Senha: [definida via variável de ambiente]');
+      }
     } else {
       console.log('👤 Usuário admin já existe');
     }
