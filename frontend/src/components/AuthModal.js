@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import PhoneInput from './PhoneInput';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState(initialMode);
   const [formData, setFormData] = useState({
     name: '',
+    lastName: '',
     email: '',
-    password: ''
+    password: '',
+    phone: '',
+    countryCode: '+55'
   });
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
@@ -20,12 +24,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       if (mode === 'login') {
         result = await login(formData.email, formData.password);
       } else {
-        result = await register(formData.name, formData.email, formData.password);
+        result = await register(formData.name, formData.lastName, formData.email, formData.password, formData.phone, formData.countryCode);
       }
 
       if (result.success) {
         onClose();
-        setFormData({ name: '', email: '', password: '' });
+        setFormData({ name: '', lastName: '', email: '', password: '', phone: '', countryCode: '+55' });
       }
     } catch (error) {
       console.error('Erro na autenticação:', error);
@@ -41,9 +45,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     });
   };
 
+  const handlePhoneChange = (phone, countryCode) => {
+    setFormData({
+      ...formData,
+      phone,
+      countryCode
+    });
+  };
+
   const switchMode = () => {
     setMode(mode === 'login' ? 'register' : 'login');
-    setFormData({ name: '', email: '', password: '' });
+    setFormData({ name: '', lastName: '', email: '', password: '', phone: '', countryCode: '+55' });
   };
 
   if (!isOpen) return null;
@@ -58,18 +70,33 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'register' && (
-            <div className="form-group">
-              <label htmlFor="name">Nome</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label htmlFor="name">Nome</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="lastName">Sobrenome</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </>
           )}
 
           <div className="form-group">
@@ -98,6 +125,19 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               disabled={loading}
             />
           </div>
+
+          {mode === 'register' && (
+            <div className="form-group">
+              <label htmlFor="phone">Telefone</label>
+              <PhoneInput
+                value={formData.phone}
+                countryCode={formData.countryCode}
+                onChange={handlePhoneChange}
+                disabled={loading}
+                required
+              />
+            </div>
+          )}
 
           <button 
             type="submit" 

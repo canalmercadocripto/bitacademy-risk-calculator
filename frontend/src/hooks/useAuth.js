@@ -65,10 +65,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, lastName, email, password, phone, countryCode) => {
     try {
       setLoading(true);
-      const response = await authApi.register(name, email, password);
+      const response = await authApi.register(name, lastName, email, password, phone, countryCode);
       
       if (response.success) {
         const { user, token } = response.data;

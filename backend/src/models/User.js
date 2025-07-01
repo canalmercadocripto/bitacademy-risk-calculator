@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt');
 class User {
   
   // Criar novo usuário
-  static async create({ email, password, name, phone, countryCode = '+55', role = 'user' }) {
+  static async create({ email, password, name, lastName, phone, countryCode = '+55', role = 'user' }) {
     try {
       // Validar telefone obrigatório
       if (!phone || phone.trim().length === 0) {
@@ -25,13 +25,13 @@ class User {
       const userId = crypto.randomBytes(16).toString('hex');
       
       const result = await query(`
-        INSERT INTO users (id, email, password_hash, name, phone, country_code, role) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [userId, email, passwordHash, name, phone, countryCode, role]);
+        INSERT INTO users (id, email, password_hash, name, last_name, phone, country_code, role) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [userId, email, passwordHash, name, lastName, phone, countryCode, role]);
       
       // Buscar o usuário recém-criado
       const newUser = await query(`
-        SELECT id, email, name, phone, country_code, role, created_at
+        SELECT id, email, name, last_name, phone, country_code, role, created_at
         FROM users 
         WHERE id = ?
       `, [userId]);

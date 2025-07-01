@@ -12,6 +12,9 @@ const createTables = async () => {
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
+        last_name TEXT,
+        phone TEXT,
+        country_code TEXT DEFAULT '+55',
         role TEXT DEFAULT 'user',
         is_active INTEGER DEFAULT 1,
         last_login DATETIME,
@@ -89,6 +92,38 @@ const createTables = async () => {
   }
 };
 
+// Função para migrar tabela de usuários (adicionar campos que possam não existir)
+const migrateUsersTable = async () => {
+  try {
+    console.log('🔄 Verificando estrutura da tabela users...');
+    
+    // Adicionar campos que podem não existir em versões antigas
+    const fieldsToAdd = [
+      { name: 'last_name', type: 'TEXT' },
+      { name: 'phone', type: 'TEXT' },
+      { name: 'country_code', type: 'TEXT DEFAULT \'+55\'' }
+    ];
+    
+    for (const field of fieldsToAdd) {
+      try {
+        await query(`ALTER TABLE users ADD COLUMN ${field.name} ${field.type}`);
+        console.log(`✅ Campo ${field.name} adicionado à tabela users`);
+      } catch (error) {
+        if (error.message.includes('duplicate column name')) {
+          console.log(`ℹ️ Campo ${field.name} já existe na tabela users`);
+        } else {
+          console.error(`❌ Erro ao adicionar campo ${field.name}:`, error.message);
+        }
+      }
+    }
+    
+    console.log('✅ Migração da tabela users concluída!');
+    
+  } catch (error) {
+    console.error('❌ Erro na migração da tabela users:', error.message);
+  }
+};
+
 // Função para criar usuário admin padrão
 const createDefaultAdmin = async () => {
   try {
@@ -128,6 +163,7 @@ const createDefaultAdmin = async () => {
 const runMigrations = async () => {
   try {
     await createTables();
+    await migrateUsersTable();
     await createDefaultAdmin();
     console.log('🎉 Migrations SQLite executadas com sucesso!');
   } catch (error) {
@@ -138,6 +174,7 @@ const runMigrations = async () => {
 
 module.exports = {
   createTables,
+  migrateUsersTable,
   createDefaultAdmin,
   runMigrations
 };

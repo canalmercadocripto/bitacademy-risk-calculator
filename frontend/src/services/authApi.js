@@ -8,8 +8,15 @@ export const authApi = {
   },
 
   // Registro
-  register: async (name, email, password) => {
-    const response = await api.post('/auth/register', { name, email, password });
+  register: async (name, lastName, email, password, phone, countryCode) => {
+    const response = await api.post('/auth/register', { 
+      name, 
+      lastName, 
+      email, 
+      password, 
+      phone, 
+      countryCode 
+    });
     return response.data;
   },
 

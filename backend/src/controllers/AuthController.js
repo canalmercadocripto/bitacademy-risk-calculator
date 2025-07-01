@@ -6,13 +6,13 @@ class AuthController {
   // Registrar novo usuário
   static async register(req, res) {
     try {
-      const { email, password, name, phone, countryCode } = req.body;
+      const { email, password, name, lastName, phone, countryCode } = req.body;
       
       // Validações básicas
-      if (!email || !password || !name || !phone) {
+      if (!email || !password || !name || !lastName || !phone) {
         return res.status(400).json({
           success: false,
-          message: 'Email, senha, nome e telefone são obrigatórios'
+          message: 'Email, senha, nome, sobrenome e telefone são obrigatórios'
         });
       }
       
@@ -37,6 +37,7 @@ class AuthController {
         email: email.toLowerCase(),
         password,
         name,
+        lastName,
         phone,
         countryCode: countryCode || '+55',
         role: 'user'
