@@ -1,31 +1,37 @@
 {
-  "name": "bitacademy-risk-calculator",
+  "name": "risk-calculator-frontend",
   "version": "1.0.0",
-  "description": "Calculadora de Risk Management para Trading de Criptomoedas",
-  "main": "backend/server.js",
+  "description": "Frontend da calculadora de gerenciamento de risco",
   "scripts": {
-    "start": "cd backend && node server.js",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm start",
-    "build": "cd frontend && npm install && npm run build",
-    "vercel-build": "cd frontend && npm install && npm run build",
-    "create-admin": "node create-admin.js",
-    "reset-admin-password": "node reset-admin-password.js"
-  },
-  "keywords": [
-    "trading",
-    "risk-management",
-    "crypto",
-    "calculator",
-    "bitacademy"
-  ],
-  "author": "BitAcademy",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "vercel-build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
   "dependencies": {
-    "axios": "^1.10.0"
+    "axios": "^1.6.2",
+    "html2canvas": "^1.4.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-scripts": "5.0.1",
+    "react-select": "^5.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
