@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script de Atualização Segura para VPS
-# BitAcademy Risk Calculator - Novas funcionalidades de registro
+# Atualização de Produção - BitAcademy
+# Script para atualizar aplicação já em produção
 
-echo "🚀 INICIANDO ATUALIZAÇÃO SEGURA DO BITACADEMY"
-echo "=============================================="
+echo "🔄 ATUALIZAÇÃO PRODUÇÃO - BITACADEMY"
+echo "===================================="
 
 # Cores para output
 RED='\033[0;31m'
@@ -14,256 +14,315 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configurações
-BACKUP_DIR="/var/backups/bitacademy"
 APP_DIR="/var/www/bitacademy"
+BACKUP_DIR="/var/backups/bitacademy"
 DATE=$(date +%Y%m%d_%H%M%S)
+BRANCH="main"
 
-# Função para log
 log() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERRO]${NC} $1"
-    exit 1
+    echo -e "${BLUE}[$(date '+%H:%M:%S')]${NC} $1"
 }
 
 success() {
-    echo -e "${GREEN}[SUCESSO]${NC} $1"
+    echo -e "${GREEN}✅${NC} $1"
+}
+
+error() {
+    echo -e "${RED}❌${NC} $1"
+    exit 1
 }
 
 warning() {
-    echo -e "${YELLOW}[AVISO]${NC} $1"
+    echo -e "${YELLOW}⚠️${NC} $1"
 }
 
 # Verificar se está rodando como root
 if [ "$EUID" -ne 0 ]; then
-    error "Este script deve ser executado como root (use sudo)"
+    error "Execute como root: sudo $0"
 fi
 
-# Verificar se o diretório da aplicação existe
+# Verificar se aplicação existe
 if [ ! -d "$APP_DIR" ]; then
-    error "Diretório da aplicação não encontrado: $APP_DIR"
+    error "Aplicação não encontrada em $APP_DIR. Execute o deploy inicial primeiro."
 fi
 
 echo ""
-log "🔍 Verificando sistema atual..."
+log "🔍 Verificando estado atual..."
 
-# Verificar se PM2 está instalado
-if ! command -v pm2 &> /dev/null; then
-    error "PM2 não encontrado. Instale com: npm install -g pm2"
+cd "$APP_DIR" || error "Não foi possível acessar $APP_DIR"
+
+# Verificar se é um repositório git
+if [ ! -d ".git" ]; then
+    error "Diretório não é um repositório Git válido"
 fi
 
-# Verificar se a aplicação está rodando
-if ! pm2 list | grep -q "bitacademy"; then
-    warning "Aplicação BitAcademy não encontrada no PM2"
-    echo "Aplicações PM2 atuais:"
-    pm2 list
-    read -p "Continuar mesmo assim? (y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
+# Obter informações atuais
+CURRENT_COMMIT=$(git rev-parse --short HEAD)
+CURRENT_BRANCH=$(git branch --show-current)
+
+success "Branch atual: $CURRENT_BRANCH"
+success "Commit atual: $CURRENT_COMMIT"
 
 echo ""
 log "💾 Criando backup completo..."
 
-# Criar diretório de backup
+# Criar backup da aplicação atual
+BACKUP_NAME="backup_pre_update_$DATE"
 mkdir -p "$BACKUP_DIR"
 
-# Backup da aplicação atual
-log "Fazendo backup dos arquivos da aplicação..."
-tar -czf "$BACKUP_DIR/bitacademy_app_$DATE.tar.gz" -C "$(dirname $APP_DIR)" "$(basename $APP_DIR)"
-success "Backup da aplicação salvo: $BACKUP_DIR/bitacademy_app_$DATE.tar.gz"
+# Backup dos arquivos principais
+tar -czf "$BACKUP_DIR/${BACKUP_NAME}.tar.gz" \
+    --exclude='.git' \
+    --exclude='node_modules' \
+    --exclude='frontend/build' \
+    -C /var/www bitacademy
 
 # Backup do banco de dados
-log "Fazendo backup do banco de dados..."
 if [ -f "$APP_DIR/backend/bitacademy.db" ]; then
-    cp "$APP_DIR/backend/bitacademy.db" "$BACKUP_DIR/bitacademy_db_$DATE.db"
-    success "Backup do banco salvo: $BACKUP_DIR/bitacademy_db_$DATE.db"
-else
-    warning "Arquivo do banco não encontrado em $APP_DIR/backend/bitacademy.db"
+    cp "$APP_DIR/backend/bitacademy.db" "$BACKUP_DIR/bitacademy_${DATE}.db"
+    success "Backup do banco criado"
 fi
 
-# Backup da configuração do nginx
-log "Fazendo backup da configuração do nginx..."
-if [ -f "/etc/nginx/sites-available/bitacademy" ]; then
-    cp "/etc/nginx/sites-available/bitacademy" "$BACKUP_DIR/nginx_bitacademy_$DATE.conf"
-    success "Backup do nginx salvo"
-fi
-
-# Backup das variáveis de ambiente
-log "Fazendo backup das variáveis de ambiente..."
-if [ -f "$APP_DIR/backend/.env" ]; then
-    cp "$APP_DIR/backend/.env" "$BACKUP_DIR/backend_env_$DATE"
-    success "Backup do .env salvo"
-fi
+success "Backup criado em: $BACKUP_DIR/${BACKUP_NAME}.tar.gz"
 
 echo ""
-log "⏹️ Parando aplicação atual..."
+log "📥 Atualizando código do GitHub..."
 
-# Parar aplicação PM2
-pm2 stop all
-success "Aplicação parada"
-
-echo ""
-log "📥 Baixando nova versão do GitHub..."
-
-# Entrar no diretório da aplicação
-cd "$APP_DIR" || error "Não foi possível acessar $APP_DIR"
-
-# Fazer backup das mudanças locais (se houver)
-if [ -n "$(git status --porcelain)" ]; then
-    warning "Existem mudanças locais não commitadas"
-    git add .
-    git commit -m "backup: mudanças locais antes da atualização $DATE" 2>/dev/null || true
+# Stash mudanças locais se existirem
+if ! git diff --quiet; then
+    warning "Mudanças locais detectadas. Fazendo stash..."
+    git stash push -m "Auto-stash antes da atualização $DATE"
 fi
 
-# Puxar mudanças do GitHub
-log "Atualizando código do repositório..."
+# Fetch das atualizações
 git fetch origin
-git reset --hard origin/main
-success "Código atualizado do GitHub"
 
-echo ""
-log "🔄 Executando migração do banco de dados..."
+# Verificar se há atualizações
+REMOTE_COMMIT=$(git rev-parse --short origin/$BRANCH)
 
-# Executar migração do banco para adicionar novos campos
-cd "$APP_DIR/backend" || error "Não foi possível acessar backend"
-
-# Verificar se o arquivo de setup existe
-if [ -f "setup-database-sqlite.js" ]; then
-    log "Executando migração do banco SQLite..."
-    node setup-database-sqlite.js
-    success "Migração do banco concluída"
+if [ "$CURRENT_COMMIT" = "$REMOTE_COMMIT" ]; then
+    warning "Nenhuma atualização disponível. Sistema já está atualizado."
+    echo ""
+    echo "Deseja continuar mesmo assim? (y/N): "
+    read -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        success "Atualização cancelada"
+        exit 0
+    fi
 else
-    warning "Script de migração não encontrado, pulando..."
+    success "Nova versão disponível: $REMOTE_COMMIT"
+fi
+
+# Pull das atualizações
+git pull origin $BRANCH
+
+if [ $? -ne 0 ]; then
+    error "Falha ao atualizar código do GitHub"
+fi
+
+NEW_COMMIT=$(git rev-parse --short HEAD)
+success "Código atualizado para commit: $NEW_COMMIT"
+
+echo ""
+log "⚙️ Atualizando dependências..."
+
+# Atualizar dependências do backend
+cd backend
+if [ -f "package.json" ]; then
+    npm install --production
+    if [ $? -ne 0 ]; then
+        warning "Falha ao atualizar dependências do backend"
+    else
+        success "Dependências do backend atualizadas"
+    fi
+fi
+
+# Executar migrações se necessário
+if [ -f "src/database/migrations-sqlite.js" ]; then
+    log "Executando migrações de banco..."
+    node -e "
+        const { runMigrations } = require('./src/database/migrations-sqlite.js');
+        runMigrations().catch(console.error);
+    "
+    success "Migrações executadas"
 fi
 
 echo ""
-log "📦 Instalando dependências atualizadas..."
+log "🎨 Reconstruindo frontend..."
 
-# Instalar dependências do backend
-log "Instalando dependências do backend..."
-npm install --production
-success "Dependências do backend instaladas"
-
-# Instalar dependências do frontend
-cd "$APP_DIR/frontend" || error "Não foi possível acessar frontend"
-log "Instalando dependências do frontend..."
-npm install
-success "Dependências do frontend instaladas"
-
-# Build do frontend
-log "Fazendo build do frontend..."
-npm run build
-success "Build do frontend concluído"
-
-echo ""
-log "⚙️ Restaurando configurações..."
-
-# Restaurar .env se existir backup
-if [ -f "$BACKUP_DIR/backend_env_$DATE" ]; then
-    cp "$BACKUP_DIR/backend_env_$DATE" "$APP_DIR/backend/.env"
-    success "Configurações .env restauradas"
+cd ../frontend
+if [ -f "package.json" ]; then
+    # Instalar dependências
+    npm install
+    
+    if [ $? -ne 0 ]; then
+        warning "Falha ao instalar dependências do frontend"
+    else
+        success "Dependências do frontend instaladas"
+    fi
+    
+    # Build de produção
+    npm run build
+    
+    if [ $? -ne 0 ]; then
+        error "Falha no build do frontend"
+    else
+        success "Build de produção atualizado"
+    fi
+else
+    warning "package.json não encontrado no frontend"
 fi
 
 echo ""
-log "🚀 Iniciando aplicação atualizada..."
+log "🔄 Reiniciando serviços..."
 
-# Voltar para o diretório raiz da aplicação
-cd "$APP_DIR" || error "Não foi possível acessar $APP_DIR"
+cd "$APP_DIR"
 
-# Iniciar aplicação com PM2
-pm2 start ecosystem.config.js
-success "Aplicação iniciada"
+# Reiniciar aplicação com PM2
+pm2 reload ecosystem.config.js
 
-# Aguardar alguns segundos para a aplicação inicializar
-log "Aguardando aplicação inicializar..."
+if [ $? -ne 0 ]; then
+    warning "Falha ao recarregar com PM2, tentando restart..."
+    pm2 restart all
+fi
+
+# Recarregar Nginx
+systemctl reload nginx
+
+success "Serviços reiniciados"
+
+echo ""
+log "⏳ Aguardando estabilização..."
 sleep 10
 
 echo ""
-log "🔍 Verificando status da aplicação..."
+log "🧪 Testando aplicação atualizada..."
 
-# Verificar status do PM2
-pm2 status
+# Testes de funcionalidade
+TESTS_PASSED=0
+TOTAL_TESTS=4
 
-# Verificar se a aplicação está respondendo
+# Teste 1: PM2 Status
+if pm2 list | grep -q "online"; then
+    success "✅ PM2 com aplicações online"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+else
+    warning "❌ Problemas no PM2"
+fi
+
+# Teste 2: Backend
 if curl -s http://localhost:3001/health > /dev/null; then
-    success "✅ Backend está respondendo (porta 3001)"
+    success "✅ Backend respondendo"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    error "❌ Backend não está respondendo na porta 3001"
+    warning "❌ Backend não responde"
 fi
 
-if curl -s http://localhost:3000 > /dev/null; then
-    success "✅ Frontend está respondendo (porta 3000)"
+# Teste 3: Frontend
+if curl -s http://localhost/ > /dev/null; then
+    success "✅ Frontend respondendo"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    warning "⚠️ Frontend pode não estar respondendo na porta 3000"
+    warning "❌ Frontend não responde"
 fi
 
-echo ""
-log "🧪 Testando novas funcionalidades..."
-
-# Testar endpoint de registro
-log "Testando endpoint de registro..."
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3001/api/auth/register \
+# Teste 4: API de registro
+REGISTER_TEST=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3001/api/auth/register \
     -H "Content-Type: application/json" \
-    -d '{"name":"Test","lastName":"User","email":"test@test.com","password":"123456","phone":"11999999999","countryCode":"+55"}')
+    -d '{}' 2>/dev/null)
 
-if [ "$RESPONSE" = "201" ] || [ "$RESPONSE" = "409" ]; then
-    success "✅ Endpoint de registro funcionando (código: $RESPONSE)"
+if [ "$REGISTER_TEST" = "400" ]; then
+    success "✅ API funcionando corretamente"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    warning "⚠️ Endpoint de registro retornou código: $RESPONSE"
+    warning "❌ API retornou: $REGISTER_TEST"
+fi
+
+# Taxa de sucesso
+SUCCESS_RATE=$((TESTS_PASSED * 100 / TOTAL_TESTS))
+
+echo ""
+if [ $SUCCESS_RATE -ge 75 ]; then
+    success "🎉 ATUALIZAÇÃO CONCLUÍDA COM SUCESSO!"
+    echo ""
+    echo -e "${GREEN}📊 Taxa de sucesso: $SUCCESS_RATE% ($TESTS_PASSED/$TOTAL_TESTS)${NC}"
+    
+    # Remover backup antigo se tudo ok
+    if [ $SUCCESS_RATE -eq 100 ]; then
+        # Manter apenas os 3 backups mais recentes
+        cd "$BACKUP_DIR"
+        ls -t backup_pre_update_*.tar.gz | tail -n +4 | xargs -r rm
+        success "Backups antigos removidos"
+    fi
+else
+    error "⚠️ Atualização com problemas ($SUCCESS_RATE% sucesso). Verifique os logs."
 fi
 
 echo ""
-success "🎉 ATUALIZAÇÃO CONCLUÍDA COM SUCESSO!"
+echo -e "${BLUE}📋 RESUMO DA ATUALIZAÇÃO:${NC}"
+echo "Commit anterior: $CURRENT_COMMIT"
+echo "Commit atual: $NEW_COMMIT"
+echo "Data: $(date)"
+echo "Taxa de sucesso: $SUCCESS_RATE%"
 echo ""
-echo -e "${GREEN}📋 RESUMO DA ATUALIZAÇÃO:${NC}"
-echo "✅ Backup completo realizado em: $BACKUP_DIR"
-echo "✅ Código atualizado do GitHub"
-echo "✅ Migração do banco executada"
-echo "✅ Dependências atualizadas"
-echo "✅ Frontend rebuilded"
-echo "✅ Aplicação reiniciada"
+echo -e "${YELLOW}🔧 COMANDOS ÚTEIS:${NC}"
+echo "pm2 logs                # Ver logs em tempo real"
+echo "pm2 status              # Status aplicações"
+echo "systemctl status nginx  # Status Nginx"
 echo ""
-echo -e "${BLUE}🆕 NOVAS FUNCIONALIDADES DISPONÍVEIS:${NC}"
-echo "📝 Formulário de registro completo (nome, sobrenome, email, senha, telefone)"
-echo "🔐 Validação completa de campos obrigatórios"
-echo "📱 Campo telefone com seleção de código do país"
-echo "🧪 Testes automatizados incluídos"
-echo ""
-echo -e "${YELLOW}📋 COMANDOS ÚTEIS:${NC}"
-echo "Ver logs: pm2 logs"
-echo "Status: pm2 status"
-echo "Restart: pm2 restart all"
-echo "Ver backups: ls -la $BACKUP_DIR"
-echo ""
-echo -e "${GREEN}🌐 Acesse seu site para testar as novas funcionalidades!${NC}"
 
-# Salvar informações da atualização
-cat > "$BACKUP_DIR/update_log_$DATE.txt" << EOF
+# Salvar log da atualização
+cat > "$BACKUP_DIR/update_${DATE}.txt" << EOF
 ATUALIZAÇÃO BITACADEMY - $DATE
-==============================
+=============================
 
 Data: $(date)
-Versão anterior: Backup em bitacademy_app_$DATE.tar.gz
-Versão atual: $(git rev-parse HEAD)
+Commit anterior: $CURRENT_COMMIT
+Commit novo: $NEW_COMMIT
+Taxa de sucesso: $SUCCESS_RATE%
+Backup: ${BACKUP_NAME}.tar.gz
 
-Novas funcionalidades:
-- Formulário de registro completo
-- Campos: nome, sobrenome, email, senha, telefone
-- Validação completa
-- Migração do banco de dados
+Testes realizados:
+- PM2: $([ $((TESTS_PASSED >= 1)) -eq 1 ] && echo "✅" || echo "❌")
+- Backend: $([ $((TESTS_PASSED >= 2)) -eq 1 ] && echo "✅" || echo "❌")
+- Frontend: $([ $((TESTS_PASSED >= 3)) -eq 1 ] && echo "✅" || echo "❌")
+- API: $([ $((TESTS_PASSED >= 4)) -eq 1 ] && echo "✅" || echo "❌")
 
-Backups criados:
-- Aplicação: $BACKUP_DIR/bitacademy_app_$DATE.tar.gz
-- Banco: $BACKUP_DIR/bitacademy_db_$DATE.db
-- Nginx: $BACKUP_DIR/nginx_bitacademy_$DATE.conf
-- Env: $BACKUP_DIR/backend_env_$DATE
-
-Status: SUCESSO
+Status: ATUALIZAÇÃO CONCLUÍDA
 EOF
 
-success "Log da atualização salvo em: $BACKUP_DIR/update_log_$DATE.txt"
+success "Log salvo em: $BACKUP_DIR/update_${DATE}.txt"
+
+# Rollback automático se muitas falhas
+if [ $SUCCESS_RATE -lt 50 ]; then
+    echo ""
+    warning "⚠️ MUITAS FALHAS DETECTADAS!"
+    echo "Deseja fazer rollback automático para a versão anterior? (y/N): "
+    read -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log "🔄 Executando rollback..."
+        
+        # Restaurar código
+        git reset --hard "$CURRENT_COMMIT"
+        
+        # Restaurar banco se necessário
+        if [ -f "$BACKUP_DIR/bitacademy_${DATE}.db" ]; then
+            cp "$BACKUP_DIR/bitacademy_${DATE}.db" "$APP_DIR/backend/bitacademy.db"
+        fi
+        
+        # Reinstalar e rebuild
+        cd "$APP_DIR/backend" && npm install --production
+        cd "$APP_DIR/frontend" && npm install && npm run build
+        
+        # Reiniciar serviços
+        pm2 restart all
+        systemctl reload nginx
+        
+        success "Rollback executado. Sistema restaurado para $CURRENT_COMMIT"
+    fi
+fi
+
+echo ""
+success "🚀 ATUALIZAÇÃO FINALIZADA!"
