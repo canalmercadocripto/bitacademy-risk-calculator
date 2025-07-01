@@ -60,3 +60,18 @@ bitacademy-deploy-*/
 # Database
 *.sqlite
 *.db
+
+# Arquivos de teste e debug temporários
+debug-*.js
+test-*.csv
+test-*.json
+
+# Scripts temporários de diagnóstico
+diagnose-*.sh
+force-*.sh
+upload-*.sh
+clean-install-*.sh
+
+# Backups locais
+backup-*
+temp-*
