@@ -1,5 +1,5 @@
 // API Route for Vercel - Get Current User
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 // Usuário admin para teste
 const adminUser = {
@@ -12,7 +12,7 @@ const adminUser = {
   role: 'admin'
 };
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

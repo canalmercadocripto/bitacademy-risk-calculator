@@ -1,6 +1,5 @@
 // API Route for Vercel - Login
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+import jwt from 'jsonwebtoken';
 
 // Usuário admin para teste
 const adminUser = {
@@ -14,7 +13,7 @@ const adminUser = {
   role: 'admin'
 };
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -40,7 +39,7 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
     
-    // Para simplificar, vou aceitar a senha diretamente por enquanto
+    // Verificação simples da senha (sem bcrypt para evitar problemas no Vercel)
     if (password !== 'Admin123456!') {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
