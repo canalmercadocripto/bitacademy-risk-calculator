@@ -255,56 +255,6 @@ const LoginPage = () => {
             )}
           </div>
 
-          {/* Login Admin */}
-          <div style={{
-            textAlign: 'center',
-            padding: '1.5rem',
-            background: 'var(--bg-gradient-light)',
-            borderRadius: '10px',
-            border: '1px solid var(--border-color)'
-          }}>
-            <div style={{
-              fontSize: '1.5rem',
-              marginBottom: '0.5rem'
-            }}>👑</div>
-            <h4 style={{
-              color: 'var(--text-secondary)',
-              margin: '0 0 0.5rem 0',
-              fontSize: '1rem'
-            }}>
-              Acesso Administrativo
-            </h4>
-            <p style={{
-              color: 'var(--text-placeholder)',
-              fontSize: '0.9rem',
-              margin: '0 0 1rem 0'
-            }}>
-              Email: <strong>admin@bitacademy.vip</strong><br />
-              Senha: <strong>admin123</strong>
-            </p>
-            <button
-              onClick={() => {
-                setFormData({
-                  email: 'admin@bitacademy.vip',
-                  password: 'admin123',
-                  name: ''
-                });
-                setMode('login');
-              }}
-              style={{
-                padding: '0.5rem 1rem',
-                background: 'linear-gradient(135deg, #f39c12, #e67e22)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Login como Admin
-            </button>
-          </div>
         </div>
       </div>
     </div>

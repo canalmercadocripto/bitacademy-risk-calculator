@@ -128,7 +128,7 @@ const migrateUsersTable = async () => {
 const createDefaultAdmin = async () => {
   try {
     const bcrypt = require('bcrypt');
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@bitacademy.vip';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@seudominio.com';
     const adminPassword = process.env.ADMIN_PASSWORD || require('crypto').randomBytes(16).toString('hex');
     
     // Verificar se admin já existe
