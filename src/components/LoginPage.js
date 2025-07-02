@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import PhoneInput from './PhoneInput';
+import LoginHelp from './LoginHelp';
 
 const LoginPage = () => {
   const { theme, toggleTheme } = useTheme();
@@ -310,6 +311,9 @@ const LoginPage = () => {
                 </button>
               </p>
             )}
+            
+            {/* Login Help - only show for login mode */}
+            {mode === 'login' && <LoginHelp />}
           </div>
 
         </div>
