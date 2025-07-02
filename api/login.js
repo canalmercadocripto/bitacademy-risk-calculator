@@ -37,15 +37,17 @@ export default function handler(req, res) {
       return res.status(200).json({
         success: true,
         message: 'Login realizado com sucesso',
-        token,
-        user: {
-          id: 'admin-001',
-          email: 'admin@seudominio.com',
-          name: 'Administrador',
-          lastName: 'Sistema',
-          phone: '11999999999',
-          countryCode: '+55',
-          role: 'admin'
+        data: {
+          token,
+          user: {
+            id: 'admin-001',
+            email: 'admin@seudominio.com',
+            name: 'Administrador',
+            lastName: 'Sistema',
+            phone: '11999999999',
+            countryCode: '+55',
+            role: 'admin'
+          }
         }
       });
     } else {

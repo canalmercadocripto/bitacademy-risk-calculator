@@ -38,14 +38,16 @@ export default function handler(req, res) {
       if (userId === 'admin-001') {
         return res.status(200).json({
           success: true,
-          user: {
-            id: 'admin-001',
-            email: 'admin@seudominio.com',
-            name: 'Administrador',
-            lastName: 'Sistema',
-            phone: '11999999999',
-            countryCode: '+55',
-            role: 'admin'
+          data: {
+            user: {
+              id: 'admin-001',
+              email: 'admin@seudominio.com',
+              name: 'Administrador',
+              lastName: 'Sistema',
+              phone: '11999999999',
+              countryCode: '+55',
+              role: 'admin'
+            }
           }
         });
       } else {
