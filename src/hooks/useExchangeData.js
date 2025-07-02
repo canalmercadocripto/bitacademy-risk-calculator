@@ -35,11 +35,17 @@ export const useExchangeData = () => {
 
     setLoading(prev => ({ ...prev, symbols: true }));
     try {
+      // Garantir que exchange seja string
+      const exchangeId = typeof exchange === 'string' ? exchange : exchange.id;
+      console.log('🔍 Carregando símbolos para exchange:', exchangeId);
+      
       // Carregar todos os símbolos disponíveis
-      const response = await exchangeApi.getSymbols(exchange, search, 1000);
+      const response = await exchangeApi.getSymbols(exchangeId, search, 1000);
+      console.log('📊 Símbolos carregados:', response.data.length, 'para', exchangeId);
       setSymbols(response.data);
     } catch (error) {
-      toast.error(`Erro ao carregar símbolos da ${exchange}`);
+      const exchangeName = typeof exchange === 'string' ? exchange : exchange.id;
+      toast.error(`Erro ao carregar símbolos da ${exchangeName}`);
       console.error('Erro ao carregar símbolos:', error);
       setSymbols([]);
     } finally {

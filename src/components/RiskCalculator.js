@@ -225,8 +225,14 @@ const RiskCalculator = () => {
     const requiredFields = ['entryPrice', 'stopLoss', 'targetPrice', 'accountSize', 'riskPercent'];
     
     for (const field of requiredFields) {
-      const value = parseFloat(formData[field]);
-      if (!value || value <= 0) {
+      const rawValue = formData[field];
+      if (!rawValue || rawValue.trim() === '') {
+        toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
+        return false;
+      }
+      
+      const value = parseFloat(rawValue);
+      if (isNaN(value) || value <= 0) {
         toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
         return false;
       }
