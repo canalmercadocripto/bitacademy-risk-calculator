@@ -7,12 +7,19 @@ import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
 import Profile from './pages/Profile';
 import History from './pages/History';
-import Analytics from './components/Analytics';
+import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
+import AdminTrades from './pages/AdminTrades';
+import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
 import './styles/TradeMonitor.css';
 import './styles/Sidebar.css';
+import './styles/Dashboard.css';
+import './styles/AdminPages.css';
+import './styles/Settings.css';
 import './styles/Analytics.css';
 import './styles/AdminDashboard.css';
 
@@ -65,15 +72,15 @@ const AppContent = () => {
       case 'profile':
         return <Profile />;
       case 'dashboard':
-        return <AdminDashboard />;
+        return <Dashboard />;
       case 'users':
-        return <AdminDashboard activeTab="users" />;
+        return <Users />;
       case 'trades':
-        return <AdminDashboard activeTab="trades" />;
+        return <AdminTrades />;
       case 'analytics':
         return <Analytics />;
       case 'settings':
-        return <AdminDashboard activeTab="settings" />;
+        return <Settings />;
       default:
         return <RiskCalculator />;
     }
