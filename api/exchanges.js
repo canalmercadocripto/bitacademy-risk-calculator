@@ -1,5 +1,5 @@
 // Consolidated exchanges API for Vercel
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -15,26 +15,48 @@ export default function handler(req, res) {
   
   const { action, exchange, symbol } = req.query;
   
-  // Função para buscar dados reais da Binance
-  const fetchBinanceData = async (endpoint) => {
+  // Função para buscar dados reais da Binance com timeout
+  const fetchBinanceData = async (endpoint, timeoutMs = 5000) => {
     try {
-      const response = await fetch(`https://api.binance.com/api/v3/${endpoint}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const response = await fetch(`https://api.binance.com/api/v3/${endpoint}`, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'BitAcademy-Calculator/1.0'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) throw new Error(`Binance API error: ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('Erro ao buscar dados da Binance:', error);
+      console.error('Erro ao buscar dados da Binance:', error.message);
       return null;
     }
   };
   
-  // Função para buscar dados reais da Bybit
-  const fetchBybitData = async (endpoint) => {
+  // Função para buscar dados reais da Bybit com timeout
+  const fetchBybitData = async (endpoint, timeoutMs = 5000) => {
     try {
-      const response = await fetch(`https://api.bybit.com/v5/${endpoint}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const response = await fetch(`https://api.bybit.com/v5/${endpoint}`, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'BitAcademy-Calculator/1.0'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) throw new Error(`Bybit API error: ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('Erro ao buscar dados da Bybit:', error);
+      console.error('Erro ao buscar dados da Bybit:', error.message);
       return null;
     }
   };
@@ -152,40 +174,45 @@ export default function handler(req, res) {
   
   // Get symbols for exchange
   if (action === 'symbols') {
-    const { search = '', limit = 200 } = req.query;
+    const { search = '', limit = 200, useReal = 'false' } = req.query;
     
     try {
       let symbols = [];
       
-      if (exchange.toLowerCase() === 'binance') {
-        const binanceData = await fetchBinanceData('exchangeInfo');
-        if (binanceData && binanceData.symbols) {
-          symbols = binanceData.symbols
-            .filter(s => s.status === 'TRADING' && s.symbol.includes('USDT'))
-            .map(s => ({
-              symbol: s.symbol,
-              baseAsset: s.baseAsset,
-              quoteAsset: s.quoteAsset,
-              status: s.status,
-              price: '0.00'
-            }));
-        }
-      } else if (exchange.toLowerCase() === 'bybit') {
-        const bybitData = await fetchBybitData('market/instruments-info?category=spot');
-        if (bybitData && bybitData.result && bybitData.result.list) {
-          symbols = bybitData.result.list
-            .filter(s => s.status === 'Trading' && s.symbol.includes('USDT'))
-            .map(s => ({
-              symbol: s.symbol,
-              baseAsset: s.baseCoin,
-              quoteAsset: s.quoteCoin,
-              status: 'TRADING',
-              price: '0.00'
-            }));
+      // Só buscar dados reais se explicitamente solicitado
+      if (useReal === 'true') {
+        if (exchange.toLowerCase() === 'binance') {
+          const binanceData = await fetchBinanceData('exchangeInfo', 3000); // Timeout menor
+          if (binanceData && binanceData.symbols) {
+            symbols = binanceData.symbols
+              .filter(s => s.status === 'TRADING' && s.symbol.includes('USDT'))
+              .slice(0, 500) // Limitar para performance
+              .map(s => ({
+                symbol: s.symbol,
+                baseAsset: s.baseAsset,
+                quoteAsset: s.quoteAsset,
+                status: s.status,
+                price: '0.00'
+              }));
+          }
+        } else if (exchange.toLowerCase() === 'bybit') {
+          const bybitData = await fetchBybitData('market/instruments-info?category=spot', 3000);
+          if (bybitData && bybitData.result && bybitData.result.list) {
+            symbols = bybitData.result.list
+              .filter(s => s.status === 'Trading' && s.symbol.includes('USDT'))
+              .slice(0, 500)
+              .map(s => ({
+                symbol: s.symbol,
+                baseAsset: s.baseCoin,
+                quoteAsset: s.quoteCoin,
+                status: 'TRADING',
+                price: '0.00'
+              }));
+          }
         }
       }
       
-      // Fallback para mock data se API falhar
+      // Usar mock data como padrão ou fallback
       if (symbols.length === 0) {
         symbols = allSymbols;
       }
@@ -205,17 +232,35 @@ export default function handler(req, res) {
       return res.status(200).json({
         success: true,
         data: limitedSymbols,
-        meta: { exchange, total: symbols.length, limit: parseInt(limit), search, source: symbols === allSymbols ? 'mock' : 'real' }
+        meta: { 
+          exchange, 
+          total: symbols.length, 
+          limit: parseInt(limit), 
+          search, 
+          source: symbols === allSymbols ? 'mock' : 'real',
+          useReal: useReal === 'true'
+        }
       });
       
     } catch (error) {
       console.error('Erro ao buscar símbolos:', error);
-      // Fallback para dados mock
-      const limitedSymbols = allSymbols.slice(0, parseInt(limit));
+      // Fallback garantido para dados mock
+      let symbols = allSymbols;
+      
+      if (search) {
+        const searchUpper = search.toUpperCase();
+        symbols = symbols.filter(s => 
+          s.symbol.includes(searchUpper) || 
+          s.baseAsset.includes(searchUpper) ||
+          s.quoteAsset.includes(searchUpper)
+        );
+      }
+      
+      const limitedSymbols = symbols.slice(0, parseInt(limit));
       return res.status(200).json({
         success: true,
         data: limitedSymbols,
-        meta: { exchange, total: allSymbols.length, limit: parseInt(limit), search, source: 'mock_fallback' }
+        meta: { exchange, total: symbols.length, limit: parseInt(limit), search, source: 'mock_error_fallback' }
       });
     }
   }
