@@ -21,6 +21,7 @@ import './styles/Dashboard.css';
 import './styles/AdminPages.css';
 import './styles/Settings.css';
 import './styles/Analytics.css';
+import './styles/AnalyticsExtended.css';
 import './styles/AdminDashboard.css';
 
 const AppContent = () => {

@@ -37,10 +37,10 @@ module.exports = async function handler(req, res) {
           risk_amount, reward_amount, risk_reward_ratio, 
           current_price, trade_type, notes
         ) VALUES (
-          1, ${exchange}, ${symbol.toUpperCase()}, ${accountSize || 0}, ${riskPercentage || 0},
+          1, ${exchange}, ${symbol.toUpperCase()}, ${parseFloat(accountSize || 0)}, ${parseFloat(riskPercentage || 0)},
           ${parseFloat(entryPrice)}, ${stopLoss ? parseFloat(stopLoss) : null}, 
           ${takeProfit ? parseFloat(takeProfit) : null}, ${parseFloat(positionSize)},
-          ${riskAmount || 0}, ${rewardAmount || 0}, ${riskRewardRatio || 0},
+          ${parseFloat(riskAmount || 0)}, ${parseFloat(rewardAmount || 0)}, ${parseFloat(riskRewardRatio || 0)},
           ${currentPrice ? parseFloat(currentPrice) : null}, ${tradeType}, ${notes}
         ) RETURNING *
       `;

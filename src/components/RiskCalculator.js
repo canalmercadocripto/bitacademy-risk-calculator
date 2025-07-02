@@ -166,28 +166,20 @@ const RiskCalculator = () => {
           const calculatedData = response.data;
           
           const tradeData = {
-            exchange: selectedExchange?.id || selectedExchange?.name || 'manual',
-            symbol: selectedSymbol?.symbol || 'MANUAL/USDT',
-            direction: calculatedData.direction,
-            entryPrice: calculatedData.entryPrice,
-            stopLoss: calculatedData.stopLoss,
-            targetPrice: calculatedData.targetPrice,
-            positionSize: calculatedData.positionSize,
-            riskAmount: calculatedData.riskAmount,
-            rewardAmount: calculatedData.rewardAmount,
-            riskRewardRatio: calculatedData.riskRewardRatio,
-            accountSize: calculatedData.accountSize,
-            riskPercent: calculatedData.riskPercent,
-            currentPrice: calculatedData.currentPrice,
-            positionValue: calculatedData.positionValue,
-            feeEstimate: calculatedData.feeEstimate,
-            currentPnL: calculatedData.currentPnL,
-            currentPnLPercent: calculatedData.currentPnLPercent,
-            stopDistance: calculatedData.stopDistance,
-            targetDistance: calculatedData.targetDistance,
-            calculationId: calculatedData.calculationId,
-            timestamp: calculatedData.timestamp,
-            notes: `R/R: ${calculatedData.riskRewardRatio.toFixed(2)}:1 - Calculado automaticamente`
+            exchange: selectedExchange?.name || 'Manual',
+            symbol: selectedSymbol?.symbol || 'CUSTOM',
+            accountSize: parseFloat(calculatedData.accountSize),
+            riskPercentage: parseFloat(calculatedData.riskPercent),
+            entryPrice: parseFloat(calculatedData.entryPrice),
+            stopLoss: parseFloat(calculatedData.stopLoss),
+            takeProfit: parseFloat(calculatedData.targetPrice),
+            positionSize: parseFloat(calculatedData.positionSize),
+            riskAmount: parseFloat(calculatedData.riskAmount),
+            rewardAmount: parseFloat(calculatedData.rewardAmount),
+            riskRewardRatio: parseFloat(calculatedData.riskRewardRatio),
+            currentPrice: parseFloat(calculatedData.currentPrice || calculatedData.entryPrice),
+            tradeType: calculatedData.direction?.toLowerCase() || 'long',
+            notes: `R/R: ${calculatedData.riskRewardRatio.toFixed(2)}:1 - Calculado automaticamente em ${new Date().toLocaleString('pt-BR')}`
           };
           
           await tradeApi.saveCalculation(tradeData, token);

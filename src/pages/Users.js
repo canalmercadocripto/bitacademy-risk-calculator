@@ -13,7 +13,8 @@ const Users = () => {
     name: '',
     email: '',
     phone: '',
-    role: 'user'
+    role: 'user',
+    password: ''
   });
 
   useEffect(() => {
@@ -83,10 +84,24 @@ const Users = () => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
+      // Validar campos obrigatórios
+      if (!newUser.name || !newUser.email || !newUser.phone) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+      
+      // Validar email único
+      if (users.some(u => u.email === newUser.email)) {
+        alert('Este email já está cadastrado');
+        return;
+      }
+      
       // Simular criação de usuário
+      const generatedPassword = newUser.password || 'TempPass123!';
       const user = {
         id: Date.now(),
         ...newUser,
+        password: generatedPassword,
         isActive: true,
         createdAt: new Date().toISOString().split('T')[0],
         lastLogin: null,
@@ -94,13 +109,61 @@ const Users = () => {
       };
       
       setUsers(prev => [user, ...prev]);
-      setNewUser({ name: '', email: '', phone: '', role: 'user' });
+      setNewUser({ name: '', email: '', phone: '', role: 'user', password: '' });
       setShowAddUser(false);
       
-      alert('Usuário criado com sucesso!');
+      alert(`Usuário criado com sucesso! Senha: ${generatedPassword}`);
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       alert('Erro ao criar usuário');
+    }
+  };
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    try {
+      // Validar campos obrigatórios
+      if (!editingUser.name || !editingUser.email || !editingUser.phone) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+      
+      // Validar email único (exceto o próprio usuário)
+      if (users.some(u => u.email === editingUser.email && u.id !== editingUser.id)) {
+        alert('Este email já está cadastrado');
+        return;
+      }
+      
+      setUsers(prev => prev.map(u => 
+        u.id === editingUser.id ? { ...u, ...editingUser, updatedAt: new Date().toISOString() } : u
+      ));
+      
+      setEditingUser(null);
+      alert('Usuário atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao editar usuário:', error);
+      alert('Erro ao editar usuário');
+    }
+  };
+
+  const handleChangePassword = async (userId) => {
+    const newPassword = prompt('Digite a nova senha (mínimo 8 caracteres):');
+    if (!newPassword) return;
+    
+    if (newPassword.length < 8) {
+      alert('A senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+    
+    try {
+      setUsers(prev => prev.map(u => 
+        u.id === userId ? { ...u, password: newPassword, updatedAt: new Date().toISOString() } : u
+      ));
+      
+      alert('Senha alterada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      alert('Erro ao alterar senha');
     }
   };
 
@@ -250,9 +313,16 @@ const Users = () => {
               
               <button
                 className="edit-user-btn"
-                onClick={() => setEditingUser(user)}
+                onClick={() => setEditingUser({...user})}
               >
                 ✏️ Editar
+              </button>
+              
+              <button
+                className="change-password-btn"
+                onClick={() => handleChangePassword(user.id)}
+              >
+                🔑 Senha
               </button>
               
               {user.id !== 1 && ( // Não permitir deletar o admin principal
@@ -305,6 +375,16 @@ const Users = () => {
               </div>
               
               <div className="form-group">
+                <label>Senha Inicial:</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({...prev, password: e.target.value}))}
+                  placeholder="Deixe vazio para senha automática"
+                />
+              </div>
+              
+              <div className="form-group">
                 <label>Role:</label>
                 <select
                   value={newUser.role}
@@ -321,6 +401,79 @@ const Users = () => {
                 </button>
                 <button type="submit">
                   Criar Usuário
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Usuário */}
+      {editingUser && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>✏️ Editar Usuário</h2>
+            <form onSubmit={handleEditUser}>
+              <div className="form-group">
+                <label>Nome Completo:</label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser(prev => ({...prev, name: e.target.value}))}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Email:</label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser(prev => ({...prev, email: e.target.value}))}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Telefone:</label>
+                <input
+                  type="tel"
+                  value={editingUser.phone}
+                  onChange={(e) => setEditingUser(prev => ({...prev, phone: e.target.value}))}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Role:</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser(prev => ({...prev, role: e.target.value}))}
+                  disabled={editingUser.id === 1} // Não permitir alterar role do admin principal
+                >
+                  <option value="user">Usuário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>Status:</label>
+                <select
+                  value={editingUser.isActive ? 'active' : 'inactive'}
+                  onChange={(e) => setEditingUser(prev => ({...prev, isActive: e.target.value === 'active'}))}
+                  disabled={editingUser.id === 1} // Não permitir desativar admin principal
+                >
+                  <option value="active">Ativo</option>
+                  <option value="inactive">Inativo</option>
+                </select>
+              </div>
+              
+              <div className="modal-actions">
+                <button type="button" onClick={() => setEditingUser(null)}>
+                  Cancelar
+                </button>
+                <button type="submit">
+                  Salvar Alterações
                 </button>
               </div>
             </form>
