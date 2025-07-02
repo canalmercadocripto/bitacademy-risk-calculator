@@ -25,57 +25,31 @@ const Users = () => {
     try {
       setLoading(true);
       
-      // Mock users data
-      const mockUsers = [
-        {
-          id: 1,
-          name: 'Admin BitAcademy',
-          email: 'admin@bitacademy.com',
-          phone: '+5511999999999',
-          role: 'admin',
-          isActive: true,
-          createdAt: '2024-01-15',
-          lastLogin: '2024-12-02 14:30:00',
-          totalTrades: 0
-        },
-        {
-          id: 2,
-          name: 'João Silva',
-          email: 'joao@email.com',
-          phone: '+5511888888888',
-          role: 'user',
-          isActive: true,
-          createdAt: '2024-11-20',
-          lastLogin: '2024-12-02 09:15:00',
-          totalTrades: 45
-        },
-        {
-          id: 3,
-          name: 'Maria Santos',
-          email: 'maria@email.com',
-          phone: '+5511777777777',
-          role: 'user',
-          isActive: true,
-          createdAt: '2024-11-25',
-          lastLogin: '2024-12-01 16:20:00',
-          totalTrades: 32
-        },
-        {
-          id: 4,
-          name: 'Carlos Lima',
-          email: 'carlos@email.com',
-          phone: '+5511666666666',
-          role: 'user',
-          isActive: false,
-          createdAt: '2024-10-10',
-          lastLogin: '2024-11-15 10:00:00',
-          totalTrades: 12
-        }
-      ];
+      // Fetch real users from database
+      const response = await fetch('/api/users?action=list');
+      const data = await response.json();
       
-      setUsers(mockUsers);
+      if (data.success) {
+        // Transform database format to UI format
+        const transformedUsers = data.data.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isActive: user.is_active,
+          createdAt: user.created_at.split('T')[0], // Format date
+          lastLogin: user.updated_at || user.created_at,
+          totalTrades: 0 // TODO: Get from trades table
+        }));
+        setUsers(transformedUsers);
+      } else {
+        console.error('Erro ao buscar usuários:', data.message);
+        alert('Erro ao carregar usuários: ' + data.message);
+      }
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      alert('Erro de conexão ao carregar usuários');
     } finally {
       setLoading(false);
     }
@@ -90,32 +64,38 @@ const Users = () => {
         return;
       }
       
-      // Validar email único
-      if (users.some(u => u.email === newUser.email)) {
-        alert('Este email já está cadastrado');
-        return;
+      // Gerar senha se não fornecida
+      const password = newUser.password || 'TempPass123!';
+      
+      // Criar usuário via API
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          phone: newUser.phone,
+          password: password,
+          role: newUser.role
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Recarregar lista de usuários
+        await fetchUsers();
+        setNewUser({ name: '', email: '', phone: '', role: 'user', password: '' });
+        setShowAddUser(false);
+        alert(`Usuário criado com sucesso! Senha: ${password}`);
+      } else {
+        alert('Erro ao criar usuário: ' + data.message);
       }
-      
-      // Simular criação de usuário
-      const generatedPassword = newUser.password || 'TempPass123!';
-      const user = {
-        id: Date.now(),
-        ...newUser,
-        password: generatedPassword,
-        isActive: true,
-        createdAt: new Date().toISOString().split('T')[0],
-        lastLogin: null,
-        totalTrades: 0
-      };
-      
-      setUsers(prev => [user, ...prev]);
-      setNewUser({ name: '', email: '', phone: '', role: 'user', password: '' });
-      setShowAddUser(false);
-      
-      alert(`Usuário criado com sucesso! Senha: ${generatedPassword}`);
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
-      alert('Erro ao criar usuário');
+      alert('Erro de conexão ao criar usuário');
     }
   };
 
@@ -128,21 +108,35 @@ const Users = () => {
         return;
       }
       
-      // Validar email único (exceto o próprio usuário)
-      if (users.some(u => u.email === editingUser.email && u.id !== editingUser.id)) {
-        alert('Este email já está cadastrado');
-        return;
+      // Editar usuário via API
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: editingUser.id,
+          name: editingUser.name,
+          email: editingUser.email,
+          phone: editingUser.phone,
+          role: editingUser.role,
+          isActive: editingUser.isActive
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Recarregar lista de usuários
+        await fetchUsers();
+        setEditingUser(null);
+        alert('Usuário atualizado com sucesso!');
+      } else {
+        alert('Erro ao editar usuário: ' + data.message);
       }
-      
-      setUsers(prev => prev.map(u => 
-        u.id === editingUser.id ? { ...u, ...editingUser, updatedAt: new Date().toISOString() } : u
-      ));
-      
-      setEditingUser(null);
-      alert('Usuário atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao editar usuário:', error);
-      alert('Erro ao editar usuário');
+      alert('Erro de conexão ao editar usuário');
     }
   };
 
@@ -156,27 +150,57 @@ const Users = () => {
     }
     
     try {
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, password: newPassword, updatedAt: new Date().toISOString() } : u
-      ));
+      // Alterar senha via API
+      const response = await fetch('/api/users?action=password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          newPassword: newPassword
+        })
+      });
       
-      alert('Senha alterada com sucesso!');
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Senha alterada com sucesso!');
+      } else {
+        alert('Erro ao alterar senha: ' + data.message);
+      }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
-      alert('Erro ao alterar senha');
+      alert('Erro de conexão ao alterar senha');
     }
   };
 
   const handleToggleActive = async (userId, currentStatus) => {
     try {
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, isActive: !currentStatus } : u
-      ));
+      // Alterar status via API
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          isActive: !currentStatus
+        })
+      });
       
-      alert(`Usuário ${currentStatus ? 'desativado' : 'ativado'} com sucesso!`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Recarregar lista de usuários
+        await fetchUsers();
+        alert(`Usuário ${currentStatus ? 'desativado' : 'ativado'} com sucesso!`);
+      } else {
+        alert('Erro ao alterar status: ' + data.message);
+      }
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      alert('Erro ao alterar status do usuário');
+      alert('Erro de conexão ao alterar status');
     }
   };
 
@@ -186,11 +210,23 @@ const Users = () => {
     }
     
     try {
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      alert('Usuário deletado com sucesso!');
+      // Deletar usuário via API
+      const response = await fetch(`/api/users?userId=${userId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Recarregar lista de usuários
+        await fetchUsers();
+        alert('Usuário deletado com sucesso!');
+      } else {
+        alert('Erro ao deletar usuário: ' + data.message);
+      }
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
-      alert('Erro ao deletar usuário');
+      alert('Erro de conexão ao deletar usuário');
     }
   };
 

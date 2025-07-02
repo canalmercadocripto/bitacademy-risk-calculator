@@ -33,11 +33,10 @@ module.exports = async function handler(req, res) {
     
     console.log('🔐 Tentativa de login:', { email, password: '***' });
     
-    // Check credentials against multiple sources
+    // Check credentials ONLY against database
     let user = null;
     let isValidLogin = false;
     
-    // 1. Try database first
     try {
       const result = await sql`
         SELECT id, name, email, phone, role, is_active, password 
@@ -58,36 +57,18 @@ module.exports = async function handler(req, res) {
           };
           isValidLogin = true;
           console.log('✅ Login via database successful');
+        } else {
+          console.log('❌ Password mismatch for user:', email);
         }
+      } else {
+        console.log('❌ User not found:', email);
       }
     } catch (dbError) {
-      console.log('⚠️ Database login failed, trying fallback:', dbError.message);
-    }
-    
-    // 2. Fallback to hardcoded admin credentials if database fails
-    if (!isValidLogin) {
-      const validCredentials = [
-        { email: 'admin@bitacademy.com', password: 'Admin123456!' },
-        { email: 'admin@seudominio.com', password: 'Admin123456!' },
-        { email: 'admin@bitacademy.com', password: 'admin123' },
-        { email: 'admin@seudominio.com', password: 'admin123' }
-      ];
-      
-      const credential = validCredentials.find(cred => 
-        cred.email.toLowerCase() === email.toLowerCase() && cred.password === password
-      );
-      
-      if (credential) {
-        user = {
-          id: 'admin-001',
-          name: 'Admin BitAcademy',
-          email: credential.email,
-          phone: '+5511999999999',
-          role: 'admin'
-        };
-        isValidLogin = true;
-        console.log('✅ Login via fallback successful');
-      }
+      console.error('❌ Database error during login:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro de conexão com o banco de dados'
+      });
     }
     
     if (isValidLogin && user) {

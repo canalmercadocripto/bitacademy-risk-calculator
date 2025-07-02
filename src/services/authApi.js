@@ -1,59 +1,12 @@
 import api from './api';
 
-// Fallback login sem backend
-const clientSideLogin = async (email, password) => {
-  // Simular delay de API
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Múltiplas credenciais válidas para compatibilidade
-  const validCredentials = [
-    { email: 'admin@bitacademy.com', password: 'Admin123456!' },
-    { email: 'admin@seudominio.com', password: 'Admin123456!' },
-    { email: 'admin@bitacademy.com', password: 'admin123' },
-    { email: 'admin@seudominio.com', password: 'admin123' }
-  ];
-  
-  const credential = validCredentials.find(cred => 
-    cred.email.toLowerCase() === email.toLowerCase() && cred.password === password
-  );
-  
-  if (credential) {
-    const token = btoa(`${email}:${Date.now()}`);
-    return {
-      message: 'Login realizado com sucesso',
-      token,
-      user: {
-        id: 'admin-001',
-        email: credential.email,
-        name: 'Admin BitAcademy',
-        lastName: 'Sistema',
-        role: 'admin'
-      }
-    };
-  } else {
-    throw new Error('Email ou senha incorretos');
-  }
-};
+// NO FALLBACK - All authentication via database only
 
 export const authApi = {
-  // Login
+  // Login - Database only
   login: async (email, password) => {
-    try {
-      const response = await api.post('/login', { email, password });
-      return response.data;
-    } catch (error) {
-      console.log('⚠️ API login failed, trying fallback');
-      // Se a API falhar, usar fallback
-      const fallbackResult = await clientSideLogin(email, password);
-      return {
-        success: true,
-        message: fallbackResult.message,
-        data: {
-          token: fallbackResult.token,
-          user: fallbackResult.user
-        }
-      };
-    }
+    const response = await api.post('/login', { email, password });
+    return response.data;
   },
 
   // Registro

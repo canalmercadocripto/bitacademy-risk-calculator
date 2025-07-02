@@ -92,9 +92,26 @@ async function setupDatabase() {
     if (adminExists.rows.length === 0) {
       await sql`
         INSERT INTO users (name, email, phone, password, role)
-        VALUES ('Admin BitAcademy', 'admin@bitacademy.com', '+5511999999999', '$2b$10$vI0h4xVrxQJ0QGKJ7Z9F8eF7Y8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2', 'admin')
+        VALUES ('Admin BitAcademy', 'admin@bitacademy.com', '+5511999999999', 'Admin123456!', 'admin')
       `;
-      console.log('✅ Usuário admin criado!');
+      console.log('✅ Usuário admin principal criado!');
+      console.log('📧 Email: admin@bitacademy.com');
+      console.log('🔒 Senha: Admin123456!');
+    }
+    
+    // Verificar se existe usuário de teste
+    const testUserExists = await sql`
+      SELECT id FROM users WHERE email = 'teste@bitacademy.com'
+    `;
+
+    if (testUserExists.rows.length === 0) {
+      await sql`
+        INSERT INTO users (name, email, phone, password, role)
+        VALUES ('Usuário Teste', 'teste@bitacademy.com', '+5511888888888', 'teste123', 'user')
+      `;
+      console.log('✅ Usuário de teste criado!');
+      console.log('📧 Email: teste@bitacademy.com');
+      console.log('🔒 Senha: teste123');
     }
 
     // Inserir configurações padrão do sistema
