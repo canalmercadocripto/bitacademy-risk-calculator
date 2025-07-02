@@ -38,15 +38,17 @@ export const exchangeApi = {
 
   // Buscar símbolos de uma exchange
   getSymbols: async (exchange, search = '', limit = 50) => {
-    const response = await api.get(`/exchanges/${exchange}/symbols`, {
-      params: { search, limit }
+    const response = await api.get('/exchanges', {
+      params: { action: 'symbols', exchange, search, limit }
     });
     return response.data;
   },
 
   // Buscar preço atual de um símbolo
   getCurrentPrice: async (exchange, symbol) => {
-    const response = await api.get(`/exchanges/${exchange}/price/${symbol}`);
+    const response = await api.get('/exchanges', {
+      params: { action: 'price', exchange, symbol }
+    });
     return response.data;
   },
 
@@ -60,13 +62,13 @@ export const exchangeApi = {
 export const calculatorApi = {
   // Calcular risk management
   calculateRisk: async (params) => {
-    const response = await api.post('/calculator/calculate', params);
+    const response = await api.post('/calculator?action=calculate', params);
     return response.data;
   },
 
   // Calcular múltiplos cenários
   calculateScenarios: async (baseParams, scenarios) => {
-    const response = await api.post('/calculator/scenarios', {
+    const response = await api.post('/calculator?action=scenarios', {
       baseParams,
       scenarios
     });
@@ -75,13 +77,13 @@ export const calculatorApi = {
 
   // Validar trade
   validateTrade: async (params) => {
-    const response = await api.post('/calculator/validate', params);
+    const response = await api.post('/calculator?action=validate', params);
     return response.data;
   },
 
   // Informações da calculadora
   getInfo: async () => {
-    const response = await api.get('/calculator/info');
+    const response = await api.get('/calculator');
     return response.data;
   }
 };

@@ -30,7 +30,7 @@ export default function handler(req, res) {
     }
     
     // Simple credential check
-    if (email === 'admin@seudominio.com' && password === 'Admin123456!') {
+    if (email === 'admin@seudominio.com' && password === 'admin123') {
       // Create simple token
       const token = Buffer.from(`admin-001:${Date.now()}`).toString('base64');
       

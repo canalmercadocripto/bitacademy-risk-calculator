@@ -46,17 +46,17 @@ const AdminDashboard = ({ activeTab: initialTab = 'overview' }) => {
       // Carregar dados sequencialmente para melhor debug
       console.log('🔄 Carregando dados admin...');
       
-      const dashboardRes = await api.get('/admin/dashboard', { 
+      const dashboardRes = await api.get('/admin?action=dashboard', { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       console.log('📊 Dashboard data:', dashboardRes.data);
 
-      const usersRes = await api.get('/admin/users', { 
+      const usersRes = await api.get('/admin?action=users', { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       console.log('👥 Users data:', usersRes.data);
 
-      const tradesRes = await api.get('/admin/trades', { 
+      const tradesRes = await api.get('/trades?action=history', { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       console.log('💰 Trades data:', tradesRes.data);
@@ -67,17 +67,18 @@ const AdminDashboard = ({ activeTab: initialTab = 'overview' }) => {
       const tradesData = tradesRes.data?.data || tradesRes.data;
 
       setData({
-        users: usersData?.users || usersData || [],
-        trades: tradesData?.trades || tradesData || [],
+        users: usersData || [],
+        trades: tradesData || [],
         stats: {
-          summary: dashboardData?.summary || {},
-          exchanges: dashboardData?.exchanges || [],
+          overview: dashboardData?.overview || {},
+          recentActivity: dashboardData?.recentActivity || [],
+          systemMetrics: dashboardData?.systemMetrics || {},
+          popularExchanges: dashboardData?.popularExchanges || [],
           topSymbols: dashboardData?.topSymbols || [],
-          dailyActivity: dashboardData?.dailyActivity || [],
-          totalUsers: dashboardData?.summary?.users?.total || 0,
-          totalTrades: dashboardData?.summary?.trades?.total || 0,
-          totalVolume: dashboardData?.summary?.trades?.total_volume || 0,
-          recentActivity: dashboardData?.dailyActivity || []
+          performanceStats: dashboardData?.performanceStats || {},
+          totalUsers: dashboardData?.overview?.totalUsers || 0,
+          totalTrades: dashboardData?.overview?.totalTrades || 0,
+          totalVolume: dashboardData?.overview?.totalVolume || 0
         }
       });
 
