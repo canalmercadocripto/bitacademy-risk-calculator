@@ -15,57 +15,120 @@ export default function handler(req, res) {
   
   const { action, exchange, symbol } = req.query;
   
-  // Mock symbols for all exchanges
+  // Mock symbols for all exchanges - Lista expandida
   const allSymbols = [
+    // Top cryptocurrencies
     { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', price: '42500.00', status: 'TRADING' },
     { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT', price: '2800.00', status: 'TRADING' },
     { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT', price: '320.00', status: 'TRADING' },
+    { symbol: 'XRPUSDT', baseAsset: 'XRP', quoteAsset: 'USDT', price: '0.52', status: 'TRADING' },
     { symbol: 'ADAUSDT', baseAsset: 'ADA', quoteAsset: 'USDT', price: '0.45', status: 'TRADING' },
-    { symbol: 'DOGEUSDT', baseAsset: 'DOGE', quoteAsset: 'USDT', price: '0.08', status: 'TRADING' },
     { symbol: 'SOLUSDT', baseAsset: 'SOL', quoteAsset: 'USDT', price: '98.50', status: 'TRADING' },
+    { symbol: 'DOGEUSDT', baseAsset: 'DOGE', quoteAsset: 'USDT', price: '0.08', status: 'TRADING' },
     { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT', price: '0.85', status: 'TRADING' },
-    { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT', price: '6.20', status: 'TRADING' },
-    { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT', price: '15.30', status: 'TRADING' },
-    { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT', price: '28.50', status: 'TRADING' },
-    { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT', price: '7.80', status: 'TRADING' },
     { symbol: 'LTCUSDT', baseAsset: 'LTC', quoteAsset: 'USDT', price: '75.20', status: 'TRADING' },
+    { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT', price: '28.50', status: 'TRADING' },
+    
+    // DeFi tokens
+    { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT', price: '7.80', status: 'TRADING' },
+    { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT', price: '15.30', status: 'TRADING' },
+    { symbol: 'AAVEUSDT', baseAsset: 'AAVE', quoteAsset: 'USDT', price: '85.40', status: 'TRADING' },
+    { symbol: 'SUSHIUSDT', baseAsset: 'SUSHI', quoteAsset: 'USDT', price: '1.25', status: 'TRADING' },
+    { symbol: 'COMPUSDT', baseAsset: 'COMP', quoteAsset: 'USDT', price: '45.80', status: 'TRADING' },
+    { symbol: 'MKRUSDT', baseAsset: 'MKR', quoteAsset: 'USDT', price: '1580.50', status: 'TRADING' },
+    { symbol: 'CRVUSDT', baseAsset: 'CRV', quoteAsset: 'USDT', price: '0.95', status: 'TRADING' },
+    { symbol: '1INCHUSDT', baseAsset: '1INCH', quoteAsset: 'USDT', price: '0.42', status: 'TRADING' },
+    
+    // Layer 1 & Layer 2
+    { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT', price: '6.20', status: 'TRADING' },
+    { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT', price: '8.30', status: 'TRADING' },
+    { symbol: 'NEARUSDT', baseAsset: 'NEAR', quoteAsset: 'USDT', price: '2.15', status: 'TRADING' },
+    { symbol: 'ALGOUSDT', baseAsset: 'ALGO', quoteAsset: 'USDT', price: '0.18', status: 'TRADING' },
+    { symbol: 'FTMUSDT', baseAsset: 'FTM', quoteAsset: 'USDT', price: '0.35', status: 'TRADING' },
+    { symbol: 'OPUSDT', baseAsset: 'OP', quoteAsset: 'USDT', price: '2.45', status: 'TRADING' },
+    { symbol: 'ARBUSDT', baseAsset: 'ARB', quoteAsset: 'USDT', price: '1.85', status: 'TRADING' },
+    
+    // Gaming & Metaverse
+    { symbol: 'AXSUSDT', baseAsset: 'AXS', quoteAsset: 'USDT', price: '6.80', status: 'TRADING' },
+    { symbol: 'MANAUSDT', baseAsset: 'MANA', quoteAsset: 'USDT', price: '0.48', status: 'TRADING' },
+    { symbol: 'SANDUSDT', baseAsset: 'SAND', quoteAsset: 'USDT', price: '0.52', status: 'TRADING' },
+    { symbol: 'ENJUSDT', baseAsset: 'ENJ', quoteAsset: 'USDT', price: '0.38', status: 'TRADING' },
+    { symbol: 'GALAUSDT', baseAsset: 'GALA', quoteAsset: 'USDT', price: '0.025', status: 'TRADING' },
+    
+    // Meme coins
+    { symbol: 'SHIBUSDT', baseAsset: 'SHIB', quoteAsset: 'USDT', price: '0.000012', status: 'TRADING' },
+    { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT', price: '0.00000085', status: 'TRADING' },
+    { symbol: 'FLOKIUSDT', baseAsset: 'FLOKI', quoteAsset: 'USDT', price: '0.000185', status: 'TRADING' },
+    
+    // Traditional coins
     { symbol: 'BCHUSDT', baseAsset: 'BCH', quoteAsset: 'USDT', price: '245.60', status: 'TRADING' },
+    { symbol: 'ETCUSDT', baseAsset: 'ETC', quoteAsset: 'USDT', price: '18.90', status: 'TRADING' },
     { symbol: 'XLMUSDT', baseAsset: 'XLM', quoteAsset: 'USDT', price: '0.12', status: 'TRADING' },
     { symbol: 'VETUSDT', baseAsset: 'VET', quoteAsset: 'USDT', price: '0.025', status: 'TRADING' },
     { symbol: 'FILUSDT', baseAsset: 'FIL', quoteAsset: 'USDT', price: '4.50', status: 'TRADING' },
     { symbol: 'TRXUSDT', baseAsset: 'TRX', quoteAsset: 'USDT', price: '0.105', status: 'TRADING' },
-    { symbol: 'ETCUSDT', baseAsset: 'ETC', quoteAsset: 'USDT', price: '18.90', status: 'TRADING' },
-    { symbol: 'XRPUSDT', baseAsset: 'XRP', quoteAsset: 'USDT', price: '0.52', status: 'TRADING' },
-    { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT', price: '8.30', status: 'TRADING' }
+    
+    // AI & Tech
+    { symbol: 'FETUSDT', baseAsset: 'FET', quoteAsset: 'USDT', price: '1.25', status: 'TRADING' },
+    { symbol: 'AGIXUSDT', baseAsset: 'AGIX', quoteAsset: 'USDT', price: '0.48', status: 'TRADING' },
+    { symbol: 'OCEANUSDT', baseAsset: 'OCEAN', quoteAsset: 'USDT', price: '0.58', status: 'TRADING' },
+    { symbol: 'RENDERUSDT', baseAsset: 'RENDER', quoteAsset: 'USDT', price: '7.85', status: 'TRADING' },
+    
+    // Storage & Infrastructure
+    { symbol: 'ARUSDT', baseAsset: 'AR', quoteAsset: 'USDT', price: '12.50', status: 'TRADING' },
+    { symbol: 'STORJUSDT', baseAsset: 'STORJ', quoteAsset: 'USDT', price: '0.65', status: 'TRADING' },
+    
+    // Privacy coins
+    { symbol: 'XMRUSDT', baseAsset: 'XMR', quoteAsset: 'USDT', price: '158.50', status: 'TRADING' },
+    { symbol: 'ZECUSDT', baseAsset: 'ZEC', quoteAsset: 'USDT', price: '28.40', status: 'TRADING' },
+    
+    // Stablecoins pairs
+    { symbol: 'BTCBUSD', baseAsset: 'BTC', quoteAsset: 'BUSD', price: '42500.00', status: 'TRADING' },
+    { symbol: 'ETHBUSD', baseAsset: 'ETH', quoteAsset: 'BUSD', price: '2800.00', status: 'TRADING' },
+    { symbol: 'BTCUSDC', baseAsset: 'BTC', quoteAsset: 'USDC', price: '42500.00', status: 'TRADING' },
+    { symbol: 'ETHUSDC', baseAsset: 'ETH', quoteAsset: 'USDC', price: '2800.00', status: 'TRADING' },
+    
+    // Cross pairs
+    { symbol: 'ETHBTC', baseAsset: 'ETH', quoteAsset: 'BTC', price: '0.0658', status: 'TRADING' },
+    { symbol: 'BNBBTC', baseAsset: 'BNB', quoteAsset: 'BTC', price: '0.00752', status: 'TRADING' },
+    { symbol: 'ADABTC', baseAsset: 'ADA', quoteAsset: 'BTC', price: '0.00001058', status: 'TRADING' },
+    
+    // Additional popular pairs
+    { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT', price: '8.45', status: 'TRADING' },
+    { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT', price: '1.85', status: 'TRADING' },
+    { symbol: 'INJUSDT', baseAsset: 'INJ', quoteAsset: 'USDT', price: '28.50', status: 'TRADING' },
+    { symbol: 'THETAUSDT', baseAsset: 'THETA', quoteAsset: 'USDT', price: '1.45', status: 'TRADING' },
+    { symbol: 'ICPUSDT', baseAsset: 'ICP', quoteAsset: 'USDT', price: '12.85', status: 'TRADING' },
+    { symbol: 'HBARUSDT', baseAsset: 'HBAR', quoteAsset: 'USDT', price: '0.085', status: 'TRADING' },
+    { symbol: 'QNTUSDT', baseAsset: 'QNT', quoteAsset: 'USDT', price: '125.50', status: 'TRADING' },
+    { symbol: 'LDOUSDT', baseAsset: 'LDO', quoteAsset: 'USDT', price: '2.85', status: 'TRADING' },
+    { symbol: 'RPLUTUSDT', baseAsset: 'RPL', quoteAsset: 'USDT', price: '28.50', status: 'TRADING' },
+    { symbol: 'IMXUSDT', baseAsset: 'IMX', quoteAsset: 'USDT', price: '1.65', status: 'TRADING' }
   ];
   
-  // Mock price data
-  const prices = {
-    'BTCUSDT': { price: '42500.00', change24h: '+2.5%', volume: '1.2B' },
-    'ETHUSDT': { price: '2800.00', change24h: '+1.8%', volume: '800M' },
-    'BNBUSDT': { price: '320.00', change24h: '-0.5%', volume: '150M' },
-    'ADAUSDT': { price: '0.45', change24h: '+3.2%', volume: '90M' },
-    'DOGEUSDT': { price: '0.08', change24h: '+5.1%', volume: '200M' },
-    'SOLUSDT': { price: '98.50', change24h: '+4.3%', volume: '120M' },
-    'MATICUSDT': { price: '0.85', change24h: '+2.1%', volume: '85M' },
-    'DOTUSDT': { price: '6.20', change24h: '-1.2%', volume: '65M' },
-    'LINKUSDT': { price: '15.30', change24h: '+1.5%', volume: '45M' },
-    'AVAXUSDT': { price: '28.50', change24h: '+3.8%', volume: '70M' },
-    'UNIUSDT': { price: '7.80', change24h: '+0.9%', volume: '35M' },
-    'LTCUSDT': { price: '75.20', change24h: '+1.2%', volume: '55M' },
-    'BCHUSDT': { price: '245.60', change24h: '-0.8%', volume: '40M' },
-    'XLMUSDT': { price: '0.12', change24h: '+2.7%', volume: '25M' },
-    'VETUSDT': { price: '0.025', change24h: '+4.5%', volume: '15M' },
-    'FILUSDT': { price: '4.50', change24h: '+1.8%', volume: '30M' },
-    'TRXUSDT': { price: '0.105', change24h: '+2.3%', volume: '50M' },
-    'ETCUSDT': { price: '18.90', change24h: '+0.7%', volume: '20M' },
-    'XRPUSDT': { price: '0.52', change24h: '+1.9%', volume: '180M' },
-    'ATOMUSDT': { price: '8.30', change24h: '+3.1%', volume: '25M' }
-  };
+  // Mock price data - Expandido para corresponder aos símbolos
+  const prices = {};
+  
+  // Gerar preços automaticamente para todos os símbolos
+  allSymbols.forEach(symbolData => {
+    const basePrice = parseFloat(symbolData.price);
+    const variation = (Math.random() - 0.5) * 0.1; // Variação de -5% a +5%
+    const currentPrice = (basePrice * (1 + variation)).toFixed(8);
+    const change24h = `${variation >= 0 ? '+' : ''}${(variation * 100).toFixed(2)}%`;
+    const volume = Math.random() < 0.1 ? `${(Math.random() * 5 + 0.5).toFixed(1)}B` : 
+                  Math.random() < 0.3 ? `${(Math.random() * 900 + 100).toFixed(0)}M` : 
+                  `${(Math.random() * 90 + 10).toFixed(0)}M`;
+    
+    prices[symbolData.symbol] = {
+      price: currentPrice,
+      change24h,
+      volume
+    };
+  });
   
   // Get symbols for exchange
   if (action === 'symbols') {
-    const { search = '', limit = 50 } = req.query;
+    const { search = '', limit = 200 } = req.query;
     
     let filteredSymbols = allSymbols;
     if (search) {

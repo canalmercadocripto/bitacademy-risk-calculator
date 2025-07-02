@@ -19,8 +19,8 @@ const SymbolSelector = ({
     }
     
     if (!debouncedSearchTerm) {
-      // Mostrar apenas os primeiros 50 se não há busca
-      return symbols.slice(0, 50);
+      // Mostrar os primeiros 100 símbolos se não há busca
+      return symbols.slice(0, 100);
     }
 
     const searchUpper = debouncedSearchTerm.toUpperCase();

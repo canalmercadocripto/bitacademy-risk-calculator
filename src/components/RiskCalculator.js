@@ -101,7 +101,7 @@ const RiskCalculator = () => {
   // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
   useEffect(() => {
     if (selectedExchange && selectedSymbol) {
-      fetchCurrentPrice(selectedExchange.id, selectedSymbol.symbol).then(price => {
+      fetchCurrentPrice(selectedExchange?.id || selectedExchange, selectedSymbol?.symbol || selectedSymbol).then(price => {
         if (price) {
           // Atualizar o preço atual para exibição (NÃO o entryPrice)
           setLiveCurrentPrice(price);

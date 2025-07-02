@@ -35,8 +35,8 @@ export const useExchangeData = () => {
 
     setLoading(prev => ({ ...prev, symbols: true }));
     try {
-      // Carregar mais símbolos (500) para ter uma lista mais completa
-      const response = await exchangeApi.getSymbols(exchange, search, 500);
+      // Carregar todos os símbolos disponíveis
+      const response = await exchangeApi.getSymbols(exchange, search, 1000);
       setSymbols(response.data);
     } catch (error) {
       toast.error(`Erro ao carregar símbolos da ${exchange}`);
