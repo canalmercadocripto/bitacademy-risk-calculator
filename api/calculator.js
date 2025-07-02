@@ -12,6 +12,13 @@ module.exports = function handler(req, res) {
   const { action } = req.query;
   
   console.log('📊 Calculator API:', { method: req.method, action, url: req.url });
+  console.log('🔍 Testando condições:', { 
+    isPost: req.method === 'POST', 
+    noAction: !action, 
+    isCalculate: action === 'calculate',
+    condition1: req.method === 'POST' && (!action || action === 'calculate'),
+    condition2: req.method === 'POST' && action === 'scenarios'
+  });
   
   // Calculator info endpoint
   if (req.method === 'GET' && !action) {
@@ -43,14 +50,18 @@ module.exports = function handler(req, res) {
   
   // Calculate endpoint - aceitar POST sem action ou com action=calculate
   if (req.method === 'POST' && (!action || action === 'calculate')) {
+    console.log('✅ Entrando no endpoint de cálculo');
     try {
       const {
         exchange, symbol, direction, entryPrice, stopLoss, targetPrice,
         accountSize, riskPercent, currentPrice
       } = req.body;
       
+      console.log('📋 Dados recebidos:', { exchange, symbol, direction, entryPrice, accountSize, riskPercent });
+      
       // Validar apenas campos essenciais para o cálculo
       if (!direction || !entryPrice || !accountSize || !riskPercent) {
+        console.log('❌ Campos obrigatórios faltando');
         return res.status(400).json({
           success: false,
           message: 'Campos obrigatórios: direction, entryPrice, accountSize, riskPercent'
