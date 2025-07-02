@@ -11,14 +11,6 @@ module.exports = function handler(req, res) {
   
   const { action } = req.query;
   
-  console.log('📊 Calculator API:', { method: req.method, action, url: req.url });
-  console.log('🔍 Testando condições:', { 
-    isPost: req.method === 'POST', 
-    noAction: !action, 
-    isCalculate: action === 'calculate',
-    condition1: req.method === 'POST' && (!action || action === 'calculate'),
-    condition2: req.method === 'POST' && action === 'scenarios'
-  });
   
   // Calculator info endpoint
   if (req.method === 'GET' && !action) {
@@ -50,25 +42,19 @@ module.exports = function handler(req, res) {
   
   // Calculate endpoint - aceitar POST sem action ou com action=calculate
   if (req.method === 'POST' && (!action || action === 'calculate')) {
-    console.log('✅ Entrando no endpoint de cálculo');
     try {
       const {
         exchange, symbol, direction, entryPrice, stopLoss, targetPrice,
         accountSize, riskPercent, currentPrice
       } = req.body;
       
-      console.log('📋 Dados recebidos:', { exchange, symbol, direction, entryPrice, accountSize, riskPercent });
-      
       // Validar apenas campos essenciais para o cálculo
       if (!direction || !entryPrice || !accountSize || !riskPercent) {
-        console.log('❌ Campos obrigatórios faltando');
         return res.status(400).json({
           success: false,
           message: 'Campos obrigatórios: direction, entryPrice, accountSize, riskPercent'
         });
       }
-      
-      console.log('✅ Validação passou, processando cálculo...');
       
       const entry = parseFloat(entryPrice);
       const stop = stopLoss ? parseFloat(stopLoss) : null;
@@ -76,8 +62,6 @@ module.exports = function handler(req, res) {
       const account = parseFloat(accountSize);
       const risk = parseFloat(riskPercent);
       const current = currentPrice ? parseFloat(currentPrice) : entry;
-      
-      console.log('🔢 Valores parseados:', { entry, stop, target, account, risk, current });
       
       const riskAmount = (account * risk) / 100;
       let positionSize = 0;
@@ -110,8 +94,6 @@ module.exports = function handler(req, res) {
         currentPnLPercent = (currentPnL / riskAmount) * 100;
       }
       
-      console.log('💰 Cálculo concluído, retornando resultado...');
-      
       return res.status(200).json({
         success: true,
         data: {
@@ -133,7 +115,6 @@ module.exports = function handler(req, res) {
         }
       });
     } catch (error) {
-      console.error('❌ Erro no cálculo:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro interno do servidor',
