@@ -11,6 +11,8 @@ module.exports = function handler(req, res) {
   
   const { action } = req.query;
   
+  console.log('📊 Calculator API:', { method: req.method, action, url: req.url });
+  
   // Calculator info endpoint
   if (req.method === 'GET' && !action) {
     return res.status(200).json({
