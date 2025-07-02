@@ -41,8 +41,8 @@ module.exports = function handler(req, res) {
     });
   }
   
-  // Calculate endpoint
-  if (req.method === 'POST' && action === 'calculate') {
+  // Calculate endpoint - aceitar POST sem action ou com action=calculate
+  if (req.method === 'POST' && (!action || action === 'calculate')) {
     try {
       const {
         exchange, symbol, direction, entryPrice, stopLoss, targetPrice,
