@@ -68,12 +68,16 @@ module.exports = function handler(req, res) {
         });
       }
       
+      console.log('✅ Validação passou, processando cálculo...');
+      
       const entry = parseFloat(entryPrice);
       const stop = stopLoss ? parseFloat(stopLoss) : null;
       const target = targetPrice ? parseFloat(targetPrice) : null;
       const account = parseFloat(accountSize);
       const risk = parseFloat(riskPercent);
       const current = currentPrice ? parseFloat(currentPrice) : entry;
+      
+      console.log('🔢 Valores parseados:', { entry, stop, target, account, risk, current });
       
       const riskAmount = (account * risk) / 100;
       let positionSize = 0;
@@ -106,6 +110,8 @@ module.exports = function handler(req, res) {
         currentPnLPercent = (currentPnL / riskAmount) * 100;
       }
       
+      console.log('💰 Cálculo concluído, retornando resultado...');
+      
       return res.status(200).json({
         success: true,
         data: {
@@ -127,6 +133,7 @@ module.exports = function handler(req, res) {
         }
       });
     } catch (error) {
+      console.error('❌ Erro no cálculo:', error);
       return res.status(500).json({
         success: false,
         message: 'Erro interno do servidor',
