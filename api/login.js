@@ -1,4 +1,4 @@
-const { sql } = require('@vercel/postgres');
+const { supabase } = require('../lib/supabase');
 
 // Login with Postgres integration
 module.exports = async function handler(req, res) {
@@ -38,30 +38,34 @@ module.exports = async function handler(req, res) {
     let isValidLogin = false;
     
     try {
-      const result = await sql`
-        SELECT id, name, email, phone, role, is_active, password 
-        FROM users 
-        WHERE email = ${email.toLowerCase()} AND is_active = true
-      `;
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, phone, role, is_active, password')
+        .eq('email', email.toLowerCase())
+        .eq('is_active', true)
+        .single();
       
-      if (result.rows.length > 0) {
-        const dbUser = result.rows[0];
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('❌ User not found:', email);
+        } else {
+          throw error;
+        }
+      } else if (data) {
         // Simple password check (in production, use bcrypt)
-        if (dbUser.password === password) {
+        if (data.password === password) {
           user = {
-            id: dbUser.id.toString(),
-            name: dbUser.name,
-            email: dbUser.email,
-            phone: dbUser.phone || '',
-            role: dbUser.role
+            id: data.id.toString(),
+            name: data.name,
+            email: data.email,
+            phone: data.phone || '',
+            role: data.role
           };
           isValidLogin = true;
           console.log('✅ Login via database successful');
         } else {
           console.log('❌ Password mismatch for user:', email);
         }
-      } else {
-        console.log('❌ User not found:', email);
       }
     } catch (dbError) {
       console.error('❌ Database error during login:', dbError);
@@ -77,10 +81,14 @@ module.exports = async function handler(req, res) {
       
       // Log successful login
       try {
-        await sql`
-          INSERT INTO activity_logs (user_id, action, description, ip_address)
-          VALUES (${user.id}, 'login', 'Login realizado com sucesso', ${req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'})
-        `;
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: parseInt(user.id),
+            action: 'login',
+            description: 'Login realizado com sucesso',
+            ip_address: req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'
+          });
       } catch (logError) {
         console.log('⚠️ Failed to log activity:', logError.message);
       }

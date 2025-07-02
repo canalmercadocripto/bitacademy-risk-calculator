@@ -1,6 +1,6 @@
-const { supabase } = require('../lib/supabase');
+const { sql } = require('@vercel/postgres');
 
-// Consolidated trades API for Vercel with Supabase
+// Consolidated trades API for Vercel with Postgres
 module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,33 +30,24 @@ module.exports = async function handler(req, res) {
       }
       
       // Inserir trade no banco
-      const { data, error } = await supabase
-        .from('trades')
-        .insert({
-          user_id: 1,
-          exchange,
-          symbol: symbol.toUpperCase(),
-          account_size: parseFloat(accountSize || 0),
-          risk_percentage: parseFloat(riskPercentage || 0),
-          entry_price: parseFloat(entryPrice),
-          stop_loss: stopLoss ? parseFloat(stopLoss) : null,
-          take_profit: takeProfit ? parseFloat(takeProfit) : null,
-          position_size: parseFloat(positionSize),
-          risk_amount: parseFloat(riskAmount || 0),
-          reward_amount: parseFloat(rewardAmount || 0),
-          risk_reward_ratio: parseFloat(riskRewardRatio || 0),
-          current_price: currentPrice ? parseFloat(currentPrice) : null,
-          trade_type: tradeType,
-          notes
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
+      const result = await sql`
+        INSERT INTO trades (
+          user_id, exchange, symbol, account_size, risk_percentage, 
+          entry_price, stop_loss, take_profit, position_size, 
+          risk_amount, reward_amount, risk_reward_ratio, 
+          current_price, trade_type, notes
+        ) VALUES (
+          1, ${exchange}, ${symbol.toUpperCase()}, ${parseFloat(accountSize || 0)}, ${parseFloat(riskPercentage || 0)},
+          ${parseFloat(entryPrice)}, ${stopLoss ? parseFloat(stopLoss) : null}, 
+          ${takeProfit ? parseFloat(takeProfit) : null}, ${parseFloat(positionSize)},
+          ${parseFloat(riskAmount || 0)}, ${parseFloat(rewardAmount || 0)}, ${parseFloat(riskRewardRatio || 0)},
+          ${currentPrice ? parseFloat(currentPrice) : null}, ${tradeType}, ${notes}
+        ) RETURNING *
+      `;
       
       return res.status(200).json({
         success: true,
-        data: data,
+        data: result.rows[0],
         message: 'Trade salvo com sucesso no banco de dados'
       });
     }
@@ -71,29 +62,24 @@ module.exports = async function handler(req, res) {
         });
       }
       
-      const { data, error } = await supabase
-        .from('trades')
-        .update({
-          status: status || 'active',
-          notes: notes || '',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tradeId)
-        .select()
-        .single();
+      const result = await sql`
+        UPDATE trades 
+        SET status = ${status || 'active'}, 
+            notes = ${notes || ''}, 
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${tradeId}
+        RETURNING *
+      `;
       
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({
-            success: false, message: 'Trade não encontrado'
-          });
-        }
-        throw error;
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false, message: 'Trade não encontrado'
+        });
       }
       
       return res.status(200).json({
         success: true,
-        data: data,
+        data: result.rows[0],
         message: 'Trade atualizado com sucesso'
       });
     }
@@ -102,73 +88,86 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET' && action === 'history') {
       const { page = 1, limit = 20, status = '', exchange = '', userId = 1 } = req.query;
       
+      let query = `SELECT * FROM trades WHERE user_id = $1`;
+      let params = [userId];
+      let paramCount = 1;
+      
+      if (status) {
+        paramCount++;
+        query += ` AND status = $${paramCount}`;
+        params.push(status);
+      }
+      
+      if (exchange) {
+        paramCount++;
+        query += ` AND exchange ILIKE $${paramCount}`;
+        params.push(`%${exchange}%`);
+      }
+      
+      query += ` ORDER BY created_at DESC`;
+      
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
       
-      // Build query
-      let query = supabase
-        .from('trades')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limitNum - 1);
+      query += ` LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      params.push(limitNum, offset);
+      
+      const result = await sql.query(query, params);
+      
+      // Count total
+      let countQuery = `SELECT COUNT(*) FROM trades WHERE user_id = $1`;
+      let countParams = [userId];
+      let countParamCount = 1;
       
       if (status) {
-        query = query.eq('status', status);
+        countParamCount++;
+        countQuery += ` AND status = $${countParamCount}`;
+        countParams.push(status);
       }
       
       if (exchange) {
-        query = query.ilike('exchange', `%${exchange}%`);
+        countParamCount++;
+        countQuery += ` AND exchange ILIKE $${countParamCount}`;
+        countParams.push(`%${exchange}%`);
       }
       
-      const { data, error, count } = await query;
+      const countResult = await sql.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0].count);
       
-      if (error) throw error;
+      // Stats
+      const statsResult = await sql`
+        SELECT 
+          COUNT(*) as total_trades,
+          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_trades,
+          COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_trades,
+          COALESCE(SUM(reward_amount - risk_amount), 0) as total_pnl,
+          COALESCE(AVG(risk_reward_ratio), 0) as avg_rr_ratio
+        FROM trades 
+        WHERE user_id = ${userId}
+      `;
       
-      // Get stats
-      let statsQuery = supabase
-        .from('trades')
-        .select('status, reward_amount, risk_amount, risk_reward_ratio')
-        .eq('user_id', userId);
-        
-      if (status) {
-        statsQuery = statsQuery.eq('status', status);
-      }
-      
-      if (exchange) {
-        statsQuery = statsQuery.ilike('exchange', `%${exchange}%`);
-      }
-      
-      const { data: statsData, error: statsError } = await statsQuery;
-      
-      if (statsError) throw statsError;
-      
-      const totalTrades = statsData.length;
-      const activeTrades = statsData.filter(t => t.status === 'active').length;
-      const closedTrades = statsData.filter(t => t.status === 'closed').length;
-      const totalPnL = statsData.reduce((sum, t) => sum + (parseFloat(t.reward_amount || 0) - parseFloat(t.risk_amount || 0)), 0);
-      const avgRiskReward = totalTrades > 0 ? 
-        statsData.reduce((sum, t) => sum + parseFloat(t.risk_reward_ratio || 0), 0) / totalTrades : 0;
+      const stats = statsResult.rows[0];
       
       return res.status(200).json({
         success: true,
-        data: data,
+        data: result.rows,
         meta: {
           page: pageNum,
           limit: limitNum,
-          total: count,
-          totalPages: Math.ceil(count / limitNum),
-          hasNextPage: offset + limitNum < count,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          hasNextPage: offset + limitNum < total,
           hasPrevPage: pageNum > 1
         },
         stats: {
-          totalTrades,
-          activeTrades,
-          closedTrades,
-          totalPnL,
-          avgRiskReward,
-          winRate: totalTrades > 0 ? (closedTrades / totalTrades * 100) : 0
+          totalTrades: parseInt(stats.total_trades),
+          activeTrades: parseInt(stats.active_trades),
+          closedTrades: parseInt(stats.closed_trades),
+          totalPnL: parseFloat(stats.total_pnl),
+          avgRiskReward: parseFloat(stats.avg_rr_ratio),
+          winRate: stats.closed_trades > 0 ? 
+            (stats.closed_trades / stats.total_trades * 100) : 0
         }
       });
     }
@@ -177,21 +176,19 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET' && action === 'export') {
       const { format = 'json', userId = 1 } = req.query;
       
-      const { data, error } = await supabase
-        .from('trades')
-        .select(`
+      const result = await sql`
+        SELECT 
           id, exchange, symbol, entry_price, stop_loss, take_profit,
           position_size, risk_amount, reward_amount, risk_reward_ratio,
           trade_type, status, notes, created_at
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        FROM trades 
+        WHERE user_id = ${userId}
+        ORDER BY created_at DESC
+      `;
       
-      if (error) throw error;
-      
-      const exportData = data.map(trade => ({
+      const exportData = result.rows.map(trade => ({
         id: trade.id,
-        date: new Date(trade.created_at).toISOString().split('T')[0],
+        date: trade.created_at.toISOString().split('T')[0],
         exchange: trade.exchange,
         symbol: trade.symbol,
         type: trade.trade_type,
@@ -238,20 +235,14 @@ module.exports = async function handler(req, res) {
         });
       }
       
-      const { data, error } = await supabase
-        .from('trades')
-        .delete()
-        .eq('id', tradeId)
-        .select('id')
-        .single();
+      const result = await sql`
+        DELETE FROM trades WHERE id = ${tradeId} RETURNING id
+      `;
       
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({
-            success: false, message: 'Trade não encontrado'
-          });
-        }
-        throw error;
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false, message: 'Trade não encontrado'
+        });
       }
       
       return res.status(200).json({

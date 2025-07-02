@@ -1,4 +1,4 @@
-const { sql } = require('@vercel/postgres');
+const { supabase } = require('../lib/supabase');
 
 // Users management API
 module.exports = async function handler(req, res) {
@@ -16,15 +16,16 @@ module.exports = async function handler(req, res) {
   try {
     // Get all users
     if (req.method === 'GET' && action === 'list') {
-      const result = await sql`
-        SELECT id, name, email, phone, role, is_active, created_at, updated_at
-        FROM users 
-        ORDER BY created_at DESC
-      `;
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, phone, role, is_active, created_at, updated_at')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
       
       return res.status(200).json({
         success: true,
-        data: result.rows
+        data: data
       });
     }
     
@@ -40,11 +41,13 @@ module.exports = async function handler(req, res) {
       }
       
       // Check if email already exists
-      const existingUser = await sql`
-        SELECT id FROM users WHERE email = ${email.toLowerCase()}
-      `;
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .single();
       
-      if (existingUser.rows.length > 0) {
+      if (existingUser) {
         return res.status(400).json({
           success: false,
           message: 'Este email já está cadastrado'
@@ -52,15 +55,24 @@ module.exports = async function handler(req, res) {
       }
       
       // Create user
-      const result = await sql`
-        INSERT INTO users (name, email, phone, password, role, is_active)
-        VALUES (${name}, ${email.toLowerCase()}, ${phone}, ${password}, ${role}, true)
-        RETURNING id, name, email, phone, role, is_active, created_at
-      `;
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          name,
+          email: email.toLowerCase(),
+          phone,
+          password,
+          role,
+          is_active: true
+        })
+        .select('id, name, email, phone, role, is_active, created_at')
+        .single();
+      
+      if (error) throw error;
       
       return res.status(200).json({
         success: true,
-        data: result.rows[0],
+        data: data,
         message: 'Usuário criado com sucesso'
       });
     }
@@ -78,11 +90,14 @@ module.exports = async function handler(req, res) {
       
       // Check if email already exists for other users
       if (email) {
-        const existingUser = await sql`
-          SELECT id FROM users WHERE email = ${email.toLowerCase()} AND id != ${userId}
-        `;
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email.toLowerCase())
+          .neq('id', userId)
+          .single();
         
-        if (existingUser.rows.length > 0) {
+        if (existingUser) {
           return res.status(400).json({
             success: false,
             message: 'Este email já está cadastrado'
@@ -90,30 +105,36 @@ module.exports = async function handler(req, res) {
         }
       }
       
-      // Update user
-      const result = await sql`
-        UPDATE users 
-        SET 
-          name = COALESCE(${name}, name),
-          email = COALESCE(${email ? email.toLowerCase() : null}, email),
-          phone = COALESCE(${phone}, phone),
-          role = COALESCE(${role}, role),
-          is_active = COALESCE(${isActive}, is_active),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${userId}
-        RETURNING id, name, email, phone, role, is_active, updated_at
-      `;
+      // Build update object
+      const updateData = {};
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email.toLowerCase();
+      if (phone !== undefined) updateData.phone = phone;
+      if (role !== undefined) updateData.role = role;
+      if (isActive !== undefined) updateData.is_active = isActive;
+      updateData.updated_at = new Date().toISOString();
       
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuário não encontrado'
-        });
+      // Update user
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', userId)
+        .select('id, name, email, phone, role, is_active, updated_at')
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.status(404).json({
+            success: false,
+            message: 'Usuário não encontrado'
+          });
+        }
+        throw error;
       }
       
       return res.status(200).json({
         success: true,
-        data: result.rows[0],
+        data: data,
         message: 'Usuário atualizado com sucesso'
       });
     }
@@ -136,18 +157,24 @@ module.exports = async function handler(req, res) {
         });
       }
       
-      const result = await sql`
-        UPDATE users 
-        SET password = ${newPassword}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${userId}
-        RETURNING id, name, email
-      `;
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          password: newPassword,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select('id, name, email')
+        .single();
       
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuário não encontrado'
-        });
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.status(404).json({
+            success: false,
+            message: 'Usuário não encontrado'
+          });
+        }
+        throw error;
       }
       
       return res.status(200).json({
@@ -175,15 +202,21 @@ module.exports = async function handler(req, res) {
         });
       }
       
-      const result = await sql`
-        DELETE FROM users WHERE id = ${userId} RETURNING id
-      `;
+      const { data, error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId)
+        .select('id')
+        .single();
       
-      if (result.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Usuário não encontrado'
-        });
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.status(404).json({
+            success: false,
+            message: 'Usuário não encontrado'
+          });
+        }
+        throw error;
       }
       
       return res.status(200).json({

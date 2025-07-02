@@ -9,6 +9,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.3",
     "@vercel/postgres": "^0.10.0",
     "axios": "^1.6.2",
     "ccxt": "^4.4.92",
