@@ -10,32 +10,28 @@ module.exports = function handler(req, res) {
   }
   
   if (req.method === 'GET') {
-    // Get user profile
+    // Get user profile with stats
     const profile = {
       id: 'admin-001',
       email: 'admin@seudominio.com',
       name: 'Admin BitAcademy',
       phone: '+55 11 99999-9999',
+      bio: 'Administrador da plataforma BitAcademy',
       role: 'admin',
       preferences: {
-        defaultExchange: 'Binance',
-        defaultRiskPercent: 2.0,
-        currency: 'USD',
-        timezone: 'America/Sao_Paulo',
-        notifications: {
-          email: true,
-          trades: true,
-          alerts: true
-        }
+        defaultRisk: 2.0,
+        defaultAccountSize: 10000,
+        notifications: true,
+        darkMode: false,
+        language: 'pt-BR'
       },
       stats: {
-        totalTrades: 24,
-        activeTrades: 3,
-        totalPnL: 1250.00,
-        winRate: 68.5,
-        avgRiskReward: 1.8,
-        bestTrade: 450.00,
-        worstTrade: -125.00
+        totalCalculations: 156,
+        avgRiskReward: 2.8,
+        totalRisk: 1240.50,
+        totalPotential: 3473.40,
+        favoriteExchange: 'Binance',
+        joinDate: '2024-01-15T10:00:00Z'
       },
       createdAt: '2024-01-15T10:00:00Z',
       lastLoginAt: new Date().toISOString()
@@ -50,24 +46,21 @@ module.exports = function handler(req, res) {
   if (req.method === 'PUT') {
     // Update user profile
     try {
-      const { name, phone, preferences } = req.body;
+      const { name, phone, bio, preferences } = req.body;
       
       const updatedProfile = {
         id: 'admin-001',
         email: 'admin@seudominio.com',
         name: name || 'Admin BitAcademy',
         phone: phone || '+55 11 99999-9999',
+        bio: bio || 'Administrador da plataforma BitAcademy',
         role: 'admin',
         preferences: {
-          defaultExchange: preferences?.defaultExchange || 'Binance',
-          defaultRiskPercent: preferences?.defaultRiskPercent || 2.0,
-          currency: preferences?.currency || 'USD',
-          timezone: preferences?.timezone || 'America/Sao_Paulo',
-          notifications: preferences?.notifications || {
-            email: true,
-            trades: true,
-            alerts: true
-          }
+          defaultRisk: preferences?.defaultRisk || 2.0,
+          defaultAccountSize: preferences?.defaultAccountSize || 10000,
+          notifications: preferences?.notifications !== undefined ? preferences.notifications : true,
+          darkMode: preferences?.darkMode || false,
+          language: preferences?.language || 'pt-BR'
         },
         updatedAt: new Date().toISOString()
       };

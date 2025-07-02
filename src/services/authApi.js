@@ -108,5 +108,31 @@ export const tradeApi = {
       params: { page, limit }
     });
     return response.data;
+  },
+
+  // Exportar dados
+  exportData: async (token, format) => {
+    const response = await api.get(`/trades/export?format=${format}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  }
+};
+
+export const userApi = {
+  // Get profile
+  getProfile: async (token) => {
+    const response = await api.get('/user', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  },
+
+  // Update profile
+  updateProfile: async (profileData, token) => {
+    const response = await api.put('/user', profileData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
   }
 };

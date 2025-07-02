@@ -166,39 +166,28 @@ const RiskCalculator = () => {
           const calculatedData = response.data;
           
           const tradeData = {
-            exchange: selectedExchange?.id || 'manual',
-            symbol: selectedSymbol?.symbol || 'MANUAL',
-            direction: formData.direction.toLowerCase(),
-            entryPrice: parseFloat(formData.entryPrice),
-            stopLoss: parseFloat(formData.stopLoss),
-            targetPrice: parseFloat(formData.targetPrice),
-            accountSize: parseFloat(formData.accountSize),
-            riskPercent: parseFloat(formData.riskPercent),
-            // Dados calculados - mapeando corretamente da resposta da API
-            positionSize: calculatedData.position?.value || 0,
-            riskAmount: calculatedData.risk?.amount || 0,
-            rewardAmount: calculatedData.profit?.amount || 0,
-            riskRewardRatio: calculatedData.analysis?.riskRewardRatio || 0,
-            currentPrice: currentPrice,
-            // Dados adicionais do cálculo
-            calculationData: {
-              takeProfits: calculatedData.takeProfits || [],
-              positionSize: calculatedData.position?.size || 0,
-              positionValue: calculatedData.position?.value || 0,
-              direction: calculatedData.position?.direction || formData.direction,
-              riskAmount: calculatedData.risk?.amount || 0,
-              riskPercentage: calculatedData.risk?.percentage || 0,
-              profitAmount: calculatedData.profit?.amount || 0,
-              profitPercentage: calculatedData.profit?.percentage || 0,
-              riskRewardRatio: calculatedData.analysis?.riskRewardRatio || 0,
-              riskLevel: calculatedData.analysis?.riskLevel || '',
-              recommendation: calculatedData.analysis?.recommendation || [],
-              details: calculatedData.details || {},
-              riskDistance: calculatedData.details?.riskDistance || 0,
-              targetDistance: calculatedData.details?.targetDistance || 0,
-              positionPercent: calculatedData.details?.positionPercent || 0,
-              ...calculatedData
-            }
+            exchange: selectedExchange?.id || selectedExchange?.name || 'manual',
+            symbol: selectedSymbol?.symbol || 'MANUAL/USDT',
+            direction: calculatedData.direction,
+            entryPrice: calculatedData.entryPrice,
+            stopLoss: calculatedData.stopLoss,
+            targetPrice: calculatedData.targetPrice,
+            positionSize: calculatedData.positionSize,
+            riskAmount: calculatedData.riskAmount,
+            rewardAmount: calculatedData.rewardAmount,
+            riskRewardRatio: calculatedData.riskRewardRatio,
+            accountSize: calculatedData.accountSize,
+            riskPercent: calculatedData.riskPercent,
+            currentPrice: calculatedData.currentPrice,
+            positionValue: calculatedData.positionValue,
+            feeEstimate: calculatedData.feeEstimate,
+            currentPnL: calculatedData.currentPnL,
+            currentPnLPercent: calculatedData.currentPnLPercent,
+            stopDistance: calculatedData.stopDistance,
+            targetDistance: calculatedData.targetDistance,
+            calculationId: calculatedData.calculationId,
+            timestamp: calculatedData.timestamp,
+            notes: `R/R: ${calculatedData.riskRewardRatio.toFixed(2)}:1 - Calculado automaticamente`
           };
           
           await tradeApi.saveCalculation(tradeData, token);
