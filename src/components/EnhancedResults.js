@@ -378,7 +378,7 @@ ${generateProfessionalRecommendations().join('\n')}
           <div className="trade-info">
             <span className="trade-pair">{selectedExchange.name} • {selectedSymbol.symbol}</span>
             <span className="current-price">
-              ${currentPrice ? currentPrice.toFixed(4) : 'N/A'}
+              ${currentPrice && typeof currentPrice === 'number' ? currentPrice.toFixed(4) : 'N/A'}
             </span>
           </div>
         )}

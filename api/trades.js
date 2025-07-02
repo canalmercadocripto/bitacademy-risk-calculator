@@ -28,8 +28,8 @@ module.exports = function handler(req, res) {
     }
   ];
   
-  // Save trade
-  if (req.method === 'POST' && action === 'save') {
+  // Save trade - aceitar POST sem action ou com action=save
+  if (req.method === 'POST' && (!action || action === 'save')) {
     try {
       const { exchange, symbol, direction, entryPrice, stopLoss, targetPrice, positionSize, riskAmount, notes } = req.body;
       
