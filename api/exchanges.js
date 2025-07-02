@@ -174,41 +174,37 @@ module.exports = async function handler(req, res) {
   
   // Get symbols for exchange
   if (action === 'symbols') {
-    const { search = '', limit = 200, useReal = 'false' } = req.query;
+    const { search = '', limit = 200 } = req.query;
     
     try {
       let symbols = [];
       
-      // Só buscar dados reais se explicitamente solicitado
-      if (useReal === 'true') {
-        if (exchange.toLowerCase() === 'binance') {
-          const binanceData = await fetchBinanceData('exchangeInfo', 3000); // Timeout menor
-          if (binanceData && binanceData.symbols) {
-            symbols = binanceData.symbols
-              .filter(s => s.status === 'TRADING' && s.symbol.includes('USDT'))
-              .slice(0, 500) // Limitar para performance
-              .map(s => ({
-                symbol: s.symbol,
-                baseAsset: s.baseAsset,
-                quoteAsset: s.quoteAsset,
-                status: s.status,
-                price: '0.00'
-              }));
-          }
-        } else if (exchange.toLowerCase() === 'bybit') {
-          const bybitData = await fetchBybitData('market/instruments-info?category=spot', 3000);
-          if (bybitData && bybitData.result && bybitData.result.list) {
-            symbols = bybitData.result.list
-              .filter(s => s.status === 'Trading' && s.symbol.includes('USDT'))
-              .slice(0, 500)
-              .map(s => ({
-                symbol: s.symbol,
-                baseAsset: s.baseCoin,
-                quoteAsset: s.quoteCoin,
-                status: 'TRADING',
-                price: '0.00'
-              }));
-          }
+      // SEMPRE buscar dados reais primeiro
+      if (exchange.toLowerCase() === 'binance') {
+        const binanceData = await fetchBinanceData('exchangeInfo', 8000); // Timeout maior
+        if (binanceData && binanceData.symbols) {
+          symbols = binanceData.symbols
+            .filter(s => s.status === 'TRADING' && s.symbol.includes('USDT'))
+            .map(s => ({
+              symbol: s.symbol,
+              baseAsset: s.baseAsset,
+              quoteAsset: s.quoteAsset,
+              status: s.status,
+              price: '0.00'
+            }));
+        }
+      } else if (exchange.toLowerCase() === 'bybit') {
+        const bybitData = await fetchBybitData('market/instruments-info?category=spot', 8000);
+        if (bybitData && bybitData.result && bybitData.result.list) {
+          symbols = bybitData.result.list
+            .filter(s => s.status === 'Trading' && s.symbol.includes('USDT'))
+            .map(s => ({
+              symbol: s.symbol,
+              baseAsset: s.baseCoin,
+              quoteAsset: s.quoteCoin,
+              status: 'TRADING',
+              price: '0.00'
+            }));
         }
       }
       
@@ -237,8 +233,7 @@ module.exports = async function handler(req, res) {
           total: symbols.length, 
           limit: parseInt(limit), 
           search, 
-          source: symbols === allSymbols ? 'mock' : 'real',
-          useReal: useReal === 'true'
+          source: symbols === allSymbols ? 'mock' : 'real'
         }
       });
       
@@ -272,9 +267,9 @@ module.exports = async function handler(req, res) {
     try {
       let priceData = null;
       
+      // SEMPRE buscar dados reais primeiro com timeout maior
       if (exchange.toLowerCase() === 'binance') {
-        // Buscar preço atual da Binance
-        const tickerData = await fetchBinanceData(`ticker/24hr?symbol=${symbolUpper}`);
+        const tickerData = await fetchBinanceData(`ticker/24hr?symbol=${symbolUpper}`, 8000);
         if (tickerData) {
           priceData = {
             price: parseFloat(tickerData.lastPrice).toFixed(8),
@@ -285,8 +280,7 @@ module.exports = async function handler(req, res) {
           };
         }
       } else if (exchange.toLowerCase() === 'bybit') {
-        // Buscar preço atual da Bybit
-        const tickerData = await fetchBybitData(`market/tickers?category=spot&symbol=${symbolUpper}`);
+        const tickerData = await fetchBybitData(`market/tickers?category=spot&symbol=${symbolUpper}`, 8000);
         if (tickerData && tickerData.result && tickerData.result.list && tickerData.result.list[0]) {
           const ticker = tickerData.result.list[0];
           priceData = {
@@ -311,6 +305,8 @@ module.exports = async function handler(req, res) {
         };
       }
       
+      const isRealData = priceData && priceData.high24h && priceData.low24h;
+      
       return res.status(200).json({
         success: true,
         data: {
@@ -321,7 +317,7 @@ module.exports = async function handler(req, res) {
           high24h: priceData.high24h,
           low24h: priceData.low24h,
           timestamp: new Date().toISOString(),
-          source: priceData.high24h ? 'real' : 'mock'
+          source: isRealData ? 'real' : 'mock'
         }
       });
       
