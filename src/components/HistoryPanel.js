@@ -74,7 +74,7 @@ const HistoryPanel = ({ history, onClearHistory, onRemoveCalculation, onExportCS
           </div>
           
           <div className="history-list">
-            {history.slice(0, 10).map((entry) => (
+            {(history || []).slice(0, 10).map((entry) => (
               <div key={entry.id} className="history-item">
                 <div className="history-item-header">
                   <span className="history-symbol">

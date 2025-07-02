@@ -14,6 +14,10 @@ const SymbolSelector = ({
 
   // Filtrar símbolos baseado na busca
   const filteredSymbols = useMemo(() => {
+    if (!symbols || !Array.isArray(symbols)) {
+      return [];
+    }
+    
     if (!debouncedSearchTerm) {
       // Mostrar apenas os primeiros 50 se não há busca
       return symbols.slice(0, 50);

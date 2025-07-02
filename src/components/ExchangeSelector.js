@@ -48,7 +48,7 @@ const ExchangeSelector = ({ exchanges, selectedExchange, onExchangeSelect, loadi
     <div className="exchange-selector">
       <label>Escolha a Corretora:</label>
       <div className="exchange-buttons">
-        {exchanges.map((exchange) => {
+        {(exchanges || []).map((exchange) => {
           const isSelected = selectedExchange?.id === exchange.id;
           const colors = exchangeColors[exchange.id] || exchangeColors.binance;
           

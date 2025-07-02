@@ -15,7 +15,7 @@ const PhoneInput = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filtrar países baseado na busca
-  const filteredCountries = countryCodes.filter(country => 
+  const filteredCountries = (countryCodes || []).filter(country => 
     country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     country.code.includes(searchTerm) ||
     country.country.toLowerCase().includes(searchTerm.toLowerCase())
