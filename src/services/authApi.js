@@ -11,7 +11,7 @@ export const authApi = {
 
   // Registro
   register: async (name, lastName, email, password, phone, countryCode) => {
-    const response = await api.post('/auth/register', { 
+    const response = await api.post('/register', { 
       name, 
       lastName, 
       email, 
