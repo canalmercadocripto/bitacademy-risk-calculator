@@ -143,12 +143,15 @@ const RiskCalculator = () => {
     setCalculating(true);
     try {
       const params = {
+        exchange: selectedExchange?.id || selectedExchange || 'manual',
+        symbol: selectedSymbol?.symbol || selectedSymbol || 'MANUAL/USDT',
+        direction: formData.direction,
         entryPrice: parseFloat(formData.entryPrice),
         stopLoss: parseFloat(formData.stopLoss),
         targetPrice: parseFloat(formData.targetPrice),
         accountSize: parseFloat(formData.accountSize),
         riskPercent: parseFloat(formData.riskPercent),
-        direction: formData.direction
+        currentPrice: liveCurrentPrice || parseFloat(formData.entryPrice)
       };
 
       const response = await calculatorApi.calculateRisk(params);

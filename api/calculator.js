@@ -47,10 +47,11 @@ module.exports = function handler(req, res) {
         accountSize, riskPercent, currentPrice
       } = req.body;
       
-      if (!exchange || !symbol || !direction || !entryPrice || !accountSize || !riskPercent) {
+      // Validar apenas campos essenciais para o cálculo
+      if (!direction || !entryPrice || !accountSize || !riskPercent) {
         return res.status(400).json({
           success: false,
-          message: 'Campos obrigatórios: exchange, symbol, direction, entryPrice, accountSize, riskPercent'
+          message: 'Campos obrigatórios: direction, entryPrice, accountSize, riskPercent'
         });
       }
       
