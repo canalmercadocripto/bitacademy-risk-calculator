@@ -1,4 +1,4 @@
-// API Route for Vercel - Risk Calculator
+// Risk calculation API for Vercel
 export default function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,10 +27,13 @@ export default function handler(req, res) {
     
     // Validações
     if (!exchange || !symbol || !direction || !entryPrice || !accountSize || !riskPercent) {
-      return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Campos obrigatórios não preenchidos' 
+      });
     }
     
-    // Cálculos
+    // Cálculos de risk management
     const riskAmount = (accountSize * riskPercent) / 100;
     
     let positionSize = 0;
@@ -39,12 +42,14 @@ export default function handler(req, res) {
     
     if (stopLoss) {
       const stopDistance = Math.abs(entryPrice - stopLoss);
-      positionSize = riskAmount / stopDistance;
-      
-      if (targetPrice) {
-        const targetDistance = Math.abs(targetPrice - entryPrice);
-        rewardAmount = positionSize * targetDistance;
-        riskRewardRatio = rewardAmount / riskAmount;
+      if (stopDistance > 0) {
+        positionSize = riskAmount / stopDistance;
+        
+        if (targetPrice) {
+          const targetDistance = Math.abs(targetPrice - entryPrice);
+          rewardAmount = positionSize * targetDistance;
+          riskRewardRatio = rewardAmount / riskAmount;
+        }
       }
     }
     
@@ -64,13 +69,17 @@ export default function handler(req, res) {
       timestamp: new Date().toISOString()
     };
     
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      calculation: result
+      calculation: result,
+      message: 'Cálculo realizado com sucesso'
     });
     
   } catch (error) {
     console.error('Erro no cálculo:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Erro interno do servidor' 
+    });
   }
 }

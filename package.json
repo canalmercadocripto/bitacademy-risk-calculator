@@ -5,7 +5,6 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "vercel-build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -16,7 +15,8 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-scripts": "5.0.1",
-    "react-select": "^5.8.0"
+    "react-select": "^5.8.0",
+    "@vercel/kv": "^1.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.45",

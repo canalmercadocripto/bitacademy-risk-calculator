@@ -1,43 +1,78 @@
-// Ultra-simple user info for Vercel
-export default function handler(req, res) {
-  // CORS headers
+// Get user info API for Vercel
+import { kv } from '@vercel/kv';
+
+export default async function handler(req, res) {
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  // Handle preflight
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
   
-  // Only GET allowed
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Método não permitido' });
-    return;
+    return res.status(405).json({ error: 'Método não permitido' });
   }
   
   try {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Token não fornecido' });
-      return;
+      return res.status(401).json({ 
+        success: false,
+        message: 'Token não fornecido' 
+      });
     }
     
-    // For now, just return admin user for any valid token
-    res.status(200).json({
-      user: {
-        id: 'admin-001',
-        email: 'admin@seudominio.com',
-        name: 'Administrador',
-        lastName: 'Sistema',
-        role: 'admin'
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Decodificar token simples
+    try {
+      const decoded = Buffer.from(token, 'base64').toString();
+      const [userId] = decoded.split(':');
+      
+      // Buscar usuário admin
+      let user;
+      try {
+        user = await kv.get('user:admin@seudominio.com');
+      } catch (error) {
+        // Fallback se KV não estiver configurado
+        user = {
+          id: 'admin-001',
+          email: 'admin@seudominio.com',
+          name: 'Administrador',
+          lastName: 'Sistema',
+          phone: '11999999999',
+          countryCode: '+55',
+          role: 'admin'
+        };
       }
-    });
+      
+      if (!user || user.id !== userId) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'Token inválido' 
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        user
+      });
+      
+    } catch (error) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Token inválido' 
+      });
+    }
     
   } catch (error) {
-    console.error('Me error:', error);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('Erro no me:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Erro interno do servidor' 
+    });
   }
 }

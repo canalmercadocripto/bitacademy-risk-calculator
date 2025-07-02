@@ -24,17 +24,10 @@ const clientSideLogin = async (email, password) => {
 };
 
 export const authApi = {
-  // Login com fallback
+  // Login
   login: async (email, password) => {
-    try {
-      // Tentar API primeiro
-      const response = await api.post('/login', { email, password });
-      return response.data;
-    } catch (error) {
-      console.warn('API falhou, usando login client-side:', error.message);
-      // Fallback para login client-side
-      return await clientSideLogin(email, password);
-    }
+    const response = await api.post('/login', { email, password });
+    return response.data;
   },
 
   // Registro
@@ -52,24 +45,10 @@ export const authApi = {
 
   // Obter dados do usuário atual
   me: async (token) => {
-    try {
-      const response = await api.get('/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.warn('API /me falhou, usando dados client-side');
-      // Fallback client-side
-      return {
-        user: {
-          id: 'admin-001',
-          email: 'admin@seudominio.com',
-          name: 'Administrador',
-          lastName: 'Sistema',
-          role: 'admin'
-        }
-      };
-    }
+    const response = await api.get('/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
   },
 
   // Refresh token
