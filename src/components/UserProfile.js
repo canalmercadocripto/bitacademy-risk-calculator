@@ -52,7 +52,7 @@ const UserProfile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/auth/update-profile`, {
+      const response = await fetch(`/api/user`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const UserProfile = () => {
         return;
       }
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/auth/change-password`, {
+      const response = await fetch(`/api/user`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

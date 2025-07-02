@@ -22,7 +22,7 @@ export const usePriceUpdater = (exchange, symbol, onPriceUpdate, enabled = true)
       lastFetchRef.current = now;
 
       try {
-        const response = await fetch(`/api/exchanges/${exchange.id}/price/${symbol.symbol}`);
+        const response = await fetch(`/api/exchanges?action=price&exchange=${exchange.id}&symbol=${symbol.symbol}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
@@ -60,7 +60,7 @@ export const usePriceUpdater = (exchange, symbol, onPriceUpdate, enabled = true)
     if (!intervalRef.current && enabled && exchange && symbol) {
       intervalRef.current = setInterval(async () => {
         try {
-          const response = await fetch(`/api/exchanges/${exchange.id}/price/${symbol.symbol}`);
+          const response = await fetch(`/api/exchanges?action=price&exchange=${exchange.id}&symbol=${symbol.symbol}`);
           if (response.ok) {
             const data = await response.json();
             if (data.success) {

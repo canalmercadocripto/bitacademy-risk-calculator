@@ -1,4 +1,4 @@
-// User profile API for Vercel
+// Consolidated user API for Vercel
 export default function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -50,11 +50,7 @@ export default function handler(req, res) {
   if (req.method === 'PUT') {
     // Update user profile
     try {
-      const {
-        name,
-        phone,
-        preferences
-      } = req.body;
+      const { name, phone, preferences } = req.body;
       
       const updatedProfile = {
         id: 'admin-001',
