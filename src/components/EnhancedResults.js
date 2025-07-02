@@ -173,7 +173,8 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     // Usar rewardAmount como lucro potencial no target
     const profitAmount = results.rewardAmount || 0;
     const isProfit = profitAmount > 0;
-    const profitPercentage = results.riskRewardRatio ? (results.riskRewardRatio * 100) : 0;
+    // Calcular % correto do lucro em relação ao capital da conta
+    const profitPercentage = results.accountSize ? (profitAmount / results.accountSize) * 100 : 0;
     
     const profitLoss = {
       type: isProfit ? 'LUCRO POTENCIAL' : 'PREJUÍZO POTENCIAL',
@@ -378,7 +379,11 @@ ${generateProfessionalRecommendations().join('\n')}
           <div className="trade-info">
             <span className="trade-pair">{selectedExchange.name} • {selectedSymbol.symbol}</span>
             <span className="current-price">
-              ${currentPrice && typeof currentPrice === 'number' ? currentPrice.toFixed(4) : 'N/A'}
+              ${(() => {
+                // Usar currentPrice primeiro, depois results.currentPrice, depois entryPrice
+                const price = currentPrice || results?.currentPrice || results?.entryPrice;
+                return price && typeof price === 'number' ? `$${price.toFixed(4)}` : 'N/A';
+              })()}
             </span>
           </div>
         )}
