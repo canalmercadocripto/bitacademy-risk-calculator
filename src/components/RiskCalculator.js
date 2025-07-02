@@ -100,13 +100,28 @@ const RiskCalculator = () => {
 
   // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
   useEffect(() => {
+    console.log('🎯 Effect disparado para buscar preço:', {
+      selectedExchange,
+      selectedSymbol,
+      exchangeId: selectedExchange?.id,
+      symbolSymbol: selectedSymbol?.symbol
+    });
+    
     if (selectedExchange && selectedSymbol) {
-      fetchCurrentPrice(selectedExchange?.id || selectedExchange, selectedSymbol?.symbol || selectedSymbol).then(price => {
+      const exchangeId = selectedExchange?.id || selectedExchange;
+      const symbolSymbol = selectedSymbol?.symbol || selectedSymbol;
+      
+      console.log('🚀 Chamando fetchCurrentPrice com:', { exchangeId, symbolSymbol });
+      
+      fetchCurrentPrice(exchangeId, symbolSymbol).then(price => {
+        console.log('🎉 Preço retornado:', price);
         if (price) {
           // Atualizar o preço atual para exibição (NÃO o entryPrice)
           setLiveCurrentPrice(price);
           console.log('📊 Cotação atual disponível:', price, '- ENTRADA DEVE SER MANUAL');
         }
+      }).catch(error => {
+        console.error('💥 Erro ao buscar preço:', error);
       });
     }
   }, [selectedExchange, selectedSymbol, fetchCurrentPrice]);

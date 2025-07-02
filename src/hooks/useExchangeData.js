@@ -49,19 +49,28 @@ export const useExchangeData = () => {
 
   // Buscar preço atual
   const fetchCurrentPrice = useCallback(async (exchange, symbol) => {
+    console.log('🔍 fetchCurrentPrice chamado:', { exchange, symbol });
+    
     if (!exchange || !symbol) {
+      console.log('❌ Exchange ou symbol não fornecido');
       setCurrentPrice(null);
       return;
     }
 
     setLoading(prev => ({ ...prev, price: true }));
     try {
+      console.log('📡 Buscando preço via API...', { exchange, symbol });
       const response = await exchangeApi.getCurrentPrice(exchange, symbol);
-      setCurrentPrice(response.data.price);
-      return response.data.price;
+      console.log('✅ Resposta da API de preço:', response);
+      
+      const price = response.data?.price;
+      console.log('💰 Preço extraído:', price);
+      
+      setCurrentPrice(price);
+      return price;
     } catch (error) {
+      console.error('❌ Erro detalhado ao buscar preço:', error);
       toast.error(`Erro ao buscar preço de ${symbol}`);
-      console.error('Erro ao buscar preço:', error);
       setCurrentPrice(null);
       return null;
     } finally {
