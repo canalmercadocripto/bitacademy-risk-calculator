@@ -15,7 +15,31 @@ export default function handler(req, res) {
   
   const { action, exchange, symbol } = req.query;
   
-  // Mock symbols for all exchanges - Lista expandida
+  // Função para buscar dados reais da Binance
+  const fetchBinanceData = async (endpoint) => {
+    try {
+      const response = await fetch(`https://api.binance.com/api/v3/${endpoint}`);
+      if (!response.ok) throw new Error(`Binance API error: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao buscar dados da Binance:', error);
+      return null;
+    }
+  };
+  
+  // Função para buscar dados reais da Bybit
+  const fetchBybitData = async (endpoint) => {
+    try {
+      const response = await fetch(`https://api.bybit.com/v5/${endpoint}`);
+      if (!response.ok) throw new Error(`Bybit API error: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao buscar dados da Bybit:', error);
+      return null;
+    }
+  };
+  
+  // Mock symbols como fallback
   const allSymbols = [
     // Top cryptocurrencies
     { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', price: '42500.00', status: 'TRADING' },
@@ -130,42 +154,151 @@ export default function handler(req, res) {
   if (action === 'symbols') {
     const { search = '', limit = 200 } = req.query;
     
-    let filteredSymbols = allSymbols;
-    if (search) {
-      const searchUpper = search.toUpperCase();
-      filteredSymbols = allSymbols.filter(s => 
-        s.symbol.includes(searchUpper) || 
-        s.baseAsset.includes(searchUpper) ||
-        s.quoteAsset.includes(searchUpper)
-      );
+    try {
+      let symbols = [];
+      
+      if (exchange.toLowerCase() === 'binance') {
+        const binanceData = await fetchBinanceData('exchangeInfo');
+        if (binanceData && binanceData.symbols) {
+          symbols = binanceData.symbols
+            .filter(s => s.status === 'TRADING' && s.symbol.includes('USDT'))
+            .map(s => ({
+              symbol: s.symbol,
+              baseAsset: s.baseAsset,
+              quoteAsset: s.quoteAsset,
+              status: s.status,
+              price: '0.00'
+            }));
+        }
+      } else if (exchange.toLowerCase() === 'bybit') {
+        const bybitData = await fetchBybitData('market/instruments-info?category=spot');
+        if (bybitData && bybitData.result && bybitData.result.list) {
+          symbols = bybitData.result.list
+            .filter(s => s.status === 'Trading' && s.symbol.includes('USDT'))
+            .map(s => ({
+              symbol: s.symbol,
+              baseAsset: s.baseCoin,
+              quoteAsset: s.quoteCoin,
+              status: 'TRADING',
+              price: '0.00'
+            }));
+        }
+      }
+      
+      // Fallback para mock data se API falhar
+      if (symbols.length === 0) {
+        symbols = allSymbols;
+      }
+      
+      // Filtrar por busca
+      if (search) {
+        const searchUpper = search.toUpperCase();
+        symbols = symbols.filter(s => 
+          s.symbol.includes(searchUpper) || 
+          s.baseAsset.includes(searchUpper) ||
+          s.quoteAsset.includes(searchUpper)
+        );
+      }
+      
+      const limitedSymbols = symbols.slice(0, parseInt(limit));
+      
+      return res.status(200).json({
+        success: true,
+        data: limitedSymbols,
+        meta: { exchange, total: symbols.length, limit: parseInt(limit), search, source: symbols === allSymbols ? 'mock' : 'real' }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao buscar símbolos:', error);
+      // Fallback para dados mock
+      const limitedSymbols = allSymbols.slice(0, parseInt(limit));
+      return res.status(200).json({
+        success: true,
+        data: limitedSymbols,
+        meta: { exchange, total: allSymbols.length, limit: parseInt(limit), search, source: 'mock_fallback' }
+      });
     }
-    
-    const limitedSymbols = filteredSymbols.slice(0, parseInt(limit));
-    
-    return res.status(200).json({
-      success: true,
-      data: limitedSymbols,
-      meta: { exchange, total: filteredSymbols.length, limit: parseInt(limit), search }
-    });
   }
   
   // Get price for symbol
   if (action === 'price' && symbol) {
     const symbolUpper = symbol.toUpperCase();
-    const priceData = prices[symbolUpper] || {
-      price: '1.00', change24h: '0.0%', volume: '0'
-    };
     
-    return res.status(200).json({
-      success: true,
-      data: {
-        exchange, symbol: symbolUpper,
-        price: priceData.price, 
-        change24h: priceData.change24h,
-        volume: priceData.volume, 
-        timestamp: new Date().toISOString()
+    try {
+      let priceData = null;
+      
+      if (exchange.toLowerCase() === 'binance') {
+        // Buscar preço atual da Binance
+        const tickerData = await fetchBinanceData(`ticker/24hr?symbol=${symbolUpper}`);
+        if (tickerData) {
+          priceData = {
+            price: parseFloat(tickerData.lastPrice).toFixed(8),
+            change24h: `${parseFloat(tickerData.priceChangePercent) >= 0 ? '+' : ''}${parseFloat(tickerData.priceChangePercent).toFixed(2)}%`,
+            volume: parseFloat(tickerData.volume).toFixed(0),
+            high24h: parseFloat(tickerData.highPrice).toFixed(8),
+            low24h: parseFloat(tickerData.lowPrice).toFixed(8)
+          };
+        }
+      } else if (exchange.toLowerCase() === 'bybit') {
+        // Buscar preço atual da Bybit
+        const tickerData = await fetchBybitData(`market/tickers?category=spot&symbol=${symbolUpper}`);
+        if (tickerData && tickerData.result && tickerData.result.list && tickerData.result.list[0]) {
+          const ticker = tickerData.result.list[0];
+          priceData = {
+            price: parseFloat(ticker.lastPrice).toFixed(8),
+            change24h: `${parseFloat(ticker.price24hPcnt) >= 0 ? '+' : ''}${(parseFloat(ticker.price24hPcnt) * 100).toFixed(2)}%`,
+            volume: parseFloat(ticker.volume24h).toFixed(0),
+            high24h: parseFloat(ticker.highPrice24h).toFixed(8),
+            low24h: parseFloat(ticker.lowPrice24h).toFixed(8)
+          };
+        }
       }
-    });
+      
+      // Fallback para dados mock se API falhar
+      if (!priceData) {
+        const mockPrice = prices[symbolUpper] || {
+          price: '1.00', change24h: '0.0%', volume: '0'
+        };
+        priceData = {
+          ...mockPrice,
+          high24h: mockPrice.price,
+          low24h: mockPrice.price
+        };
+      }
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          exchange, symbol: symbolUpper,
+          price: priceData.price,
+          change24h: priceData.change24h,
+          volume: priceData.volume,
+          high24h: priceData.high24h,
+          low24h: priceData.low24h,
+          timestamp: new Date().toISOString(),
+          source: priceData.high24h ? 'real' : 'mock'
+        }
+      });
+      
+    } catch (error) {
+      console.error('Erro ao buscar preço:', error);
+      // Fallback para dados mock
+      const mockPrice = prices[symbolUpper] || {
+        price: '1.00', change24h: '0.0%', volume: '0'
+      };
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          exchange, symbol: symbolUpper,
+          price: mockPrice.price,
+          change24h: mockPrice.change24h,
+          volume: mockPrice.volume,
+          timestamp: new Date().toISOString(),
+          source: 'mock_fallback'
+        }
+      });
+    }
   }
   
   // List all exchanges
