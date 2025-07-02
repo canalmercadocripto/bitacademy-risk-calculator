@@ -72,7 +72,7 @@ export const tradeApi = {
   // Salvar cálculo
   saveCalculation: async (data, token) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.post('/trades/calculate', data, { headers });
+    const response = await api.post('/trades', data, { headers });
     return response.data;
   },
 
