@@ -151,30 +151,21 @@ export default function handler(req, res) {
   
   // Get price for symbol
   if (action === 'price' && symbol) {
-    console.log('🔍 API: Buscando preço para:', { action, exchange, symbol });
-    
     const symbolUpper = symbol.toUpperCase();
-    const priceData = prices[symbolUpper];
-    
-    console.log('💰 API: Dados de preço encontrados:', { symbolUpper, priceData, allPricesKeys: Object.keys(prices).slice(0, 5) });
-    
-    const finalPriceData = priceData || {
+    const priceData = prices[symbolUpper] || {
       price: '1.00', change24h: '0.0%', volume: '0'
     };
     
-    const response = {
+    return res.status(200).json({
       success: true,
       data: {
         exchange, symbol: symbolUpper,
-        price: finalPriceData.price, 
-        change24h: finalPriceData.change24h,
-        volume: finalPriceData.volume, 
+        price: priceData.price, 
+        change24h: priceData.change24h,
+        volume: priceData.volume, 
         timestamp: new Date().toISOString()
       }
-    };
-    
-    console.log('✅ API: Resposta sendo enviada:', response);
-    return res.status(200).json(response);
+    });
   }
   
   // List all exchanges
