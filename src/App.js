@@ -5,18 +5,15 @@ import { useTheme } from './hooks/useTheme';
 import RiskCalculator from './components/RiskCalculator';
 import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
-import UserProfile from './components/UserProfile';
-import TradeHistory from './components/TradeHistory';
-import UserTradeHistory from './components/UserTradeHistory';
+import Profile from './pages/Profile';
+import History from './pages/History';
 import Analytics from './components/Analytics';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
 import './styles/TradeMonitor.css';
 import './styles/Sidebar.css';
-import './styles/UserProfile.css';
 import './styles/Analytics.css';
-import './styles/UserTradeHistory.css';
 import './styles/AdminDashboard.css';
 
 const AppContent = () => {
@@ -64,9 +61,9 @@ const AppContent = () => {
       case 'calculator':
         return <RiskCalculator />;
       case 'history':
-        return <UserTradeHistory />;
+        return <History />;
       case 'profile':
-        return <UserProfile />;
+        return <Profile />;
       case 'dashboard':
         return <AdminDashboard />;
       case 'users':
