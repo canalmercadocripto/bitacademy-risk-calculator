@@ -1,11 +1,10 @@
 const { supabase } = require('../lib/supabase');
+const securityMiddleware = require('../middleware/security');
 
 // Login with Postgres integration
 module.exports = async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Apply security headers
+  securityMiddleware.corsHeaders(req, res);
   
   // Handle OPTIONS for CORS preflight
   if (req.method === 'OPTIONS') {
@@ -19,6 +18,14 @@ module.exports = async function handler(req, res) {
       message: 'Método não permitido' 
     });
   }
+  
+  // Apply rate limiting
+  const rateLimitResult = securityMiddleware.loginRateLimit(req, res);
+  if (rateLimitResult) return rateLimitResult;
+  
+  // Validate and sanitize input
+  const sanitizeResult = securityMiddleware.validateAndSanitize(req, res);
+  if (sanitizeResult) return sanitizeResult;
   
   try {
     const { email, password } = req.body || {};

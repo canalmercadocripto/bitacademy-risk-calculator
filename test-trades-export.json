@@ -1,0 +1,869 @@
+{
+  "exportDate": "2025-07-01T01:07:52.185Z",
+  "totalTrades": 21,
+  "filters": {},
+  "trades": [
+    {
+      "id": "eb8d0668b81b2a77bc7d9a6269156198",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": 8896.290730050934,
+      "risk_amount": 49.160000000000004,
+      "reward_amount": 1119.2455008488967,
+      "risk_reward_ratio": 22.76740237691002,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 109941.5,
+            "profit": 279.81
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 113294,
+            "profit": 559.62
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 116646.5,
+            "profit": 839.43
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 119999,
+            "profit": 1119.25
+          }
+        ],
+        "positionSize": 0.0834634974533107,
+        "positionValue": 8896.290730050934,
+        "riskAmount": 49.160000000000004,
+        "profitAmount": 1119.2455008488967,
+        "riskRewardRatio": 22.76740237691002
+      },
+      "created_at": "2025-07-01 00:34:44",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "2d28d5e561c5ab6bd615c7912e31d2f8",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": 8896.290730050934,
+      "risk_amount": 49.160000000000004,
+      "reward_amount": 1119.2455008488967,
+      "risk_reward_ratio": 22.76740237691002,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 109941.5,
+            "profit": 279.81
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 113294,
+            "profit": 559.62
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 116646.5,
+            "profit": 839.43
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 119999,
+            "profit": 1119.25
+          }
+        ],
+        "positionSize": 0.0834634974533107,
+        "positionValue": 8896.290730050934,
+        "riskAmount": 49.160000000000004,
+        "profitAmount": 1119.2455008488967,
+        "riskRewardRatio": 22.76740237691002
+      },
+      "created_at": "2025-07-01 00:32:27",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "4d2f38c9b63bf7484b78a72a4d9eca91",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": 8896.290730050934,
+      "risk_amount": 49.160000000000004,
+      "reward_amount": 1119.2455008488967,
+      "risk_reward_ratio": 22.76740237691002,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 109941.5,
+            "profit": 279.81
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 113294,
+            "profit": 559.62
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 116646.5,
+            "profit": 839.43
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 119999,
+            "profit": 1119.25
+          }
+        ],
+        "positionSize": 0.0834634974533107,
+        "positionValue": 8896.290730050934,
+        "riskAmount": 49.160000000000004,
+        "profitAmount": 1119.2455008488967,
+        "riskRewardRatio": 22.76740237691002
+      },
+      "created_at": "2025-07-01 00:30:22",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "1a536d24c2a565bc55ad51b59d3e05f6",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": 8896.290730050934,
+      "risk_amount": 49.160000000000004,
+      "reward_amount": 1119.2455008488967,
+      "risk_reward_ratio": 22.76740237691002,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 109941.5,
+            "profit": 279.81
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 113294,
+            "profit": 559.62
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 116646.5,
+            "profit": 839.43
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 119999,
+            "profit": 1119.25
+          }
+        ],
+        "positionSize": 0.0834634974533107,
+        "positionValue": 8896.290730050934,
+        "riskAmount": 49.160000000000004,
+        "profitAmount": 1119.2455008488967,
+        "riskRewardRatio": 22.76740237691002
+      },
+      "created_at": "2025-07-01 00:20:20",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "ddf90e4e485cdc5e2afeea2c294d5a83",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": 8896.290730050934,
+      "risk_amount": 49.160000000000004,
+      "reward_amount": 1119.2455008488967,
+      "risk_reward_ratio": 22.76740237691002,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 109941.5,
+            "profit": 279.81
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 113294,
+            "profit": 559.62
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 116646.5,
+            "profit": 839.43
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 119999,
+            "profit": 1119.25
+          }
+        ],
+        "positionSize": 0.0834634974533107,
+        "positionValue": 8896.290730050934,
+        "riskAmount": 49.160000000000004,
+        "profitAmount": 1119.2455008488967,
+        "riskRewardRatio": 22.76740237691002
+      },
+      "created_at": "2025-07-01 00:16:54",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "7ff7f3589bff067eeba25dfad8dcdbfd",
+      "exchange": "bybit",
+      "symbol": "AEROUSDT",
+      "direction": "long",
+      "entry_price": 0.78,
+      "stop_loss": 0.76,
+      "target_price": 0.9,
+      "account_size": 1245,
+      "risk_percent": 2,
+      "position_size": 971.0999999999993,
+      "risk_amount": 24.900000000000002,
+      "reward_amount": 149.3999999999999,
+      "risk_reward_ratio": 5.999999999999996,
+      "current_price": 0.8064,
+      "calculation_data": {
+        "takeProfits": [
+          {
+            "level": 1,
+            "percentage": 25,
+            "price": 0.81,
+            "profit": 37.35,
+            "description": "TP1 - 25% do alvo"
+          },
+          {
+            "level": 2,
+            "percentage": 50,
+            "price": 0.84,
+            "profit": 74.7,
+            "description": "TP2 - 50% do alvo"
+          },
+          {
+            "level": 3,
+            "percentage": 75,
+            "price": 0.87,
+            "profit": 112.05,
+            "description": "TP3 - 75% do alvo"
+          },
+          {
+            "level": 4,
+            "percentage": 100,
+            "price": 0.9,
+            "profit": 149.4,
+            "description": "TP4 - 100% do alvo"
+          }
+        ],
+        "positionSize": 1244.999999999999,
+        "positionValue": 971.0999999999993,
+        "direction": "LONG",
+        "riskAmount": 24.900000000000002,
+        "riskPercentage": 2,
+        "profitAmount": 149.3999999999999,
+        "profitPercentage": 11.999999999999991,
+        "riskRewardRatio": 5.999999999999996,
+        "riskLevel": "EXCELENTE",
+        "recommendation": [
+          "✅ Excelente Risk/Reward - Operação recomendada",
+          "✅ Risco conservador - Boa gestão"
+        ],
+        "position": {
+          "size": 1244.999999999999,
+          "value": 971.0999999999993,
+          "direction": "LONG"
+        },
+        "risk": {
+          "amount": 24.900000000000002,
+          "percentage": 2
+        },
+        "profit": {
+          "amount": 149.3999999999999,
+          "percentage": 11.999999999999991
+        },
+        "analysis": {
+          "riskRewardRatio": 5.999999999999996,
+          "riskLevel": "EXCELENTE",
+          "recommendation": [
+            "✅ Excelente Risk/Reward - Operação recomendada",
+            "✅ Risco conservador - Boa gestão"
+          ]
+        },
+        "details": {
+          "riskDistance": 0.020000000000000018,
+          "targetDistance": 0.12,
+          "positionPercent": 77.99999999999994
+        }
+      },
+      "created_at": "2025-07-01 00:07:22",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "83d532eb40cca58d4b8a3b18f7e093a2",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106589,
+      "stop_loss": 106000,
+      "target_price": 119999,
+      "account_size": 2458,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": 107007.9,
+      "calculation_data": {
+        "takeProfits": [],
+        "position": {
+          "size": 0.0834634974533107,
+          "value": 8896.290730050934,
+          "direction": "LONG"
+        },
+        "risk": {
+          "amount": 49.160000000000004,
+          "percentage": 2
+        },
+        "profit": {
+          "amount": 1119.2455008488967,
+          "percentage": 45.53480475382004
+        },
+        "analysis": {
+          "riskRewardRatio": 22.76740237691002,
+          "riskLevel": "EXCELENTE",
+          "recommendation": [
+            "✅ Excelente Risk/Reward - Operação recomendada",
+            "✅ Risco conservador - Boa gestão"
+          ]
+        }
+      },
+      "created_at": "2025-06-30 23:57:16",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "fff17ee9f8d24b9e35b0dcdf9445b466",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 107000,
+      "stop_loss": 106222,
+      "target_price": 120000,
+      "account_size": 2050,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 23:02:05",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "d27812d824c005a5e89240ced2ed0b33",
+      "exchange": "binance",
+      "symbol": "ETHUSDT",
+      "direction": "long",
+      "entry_price": 2300,
+      "stop_loss": 2100,
+      "target_price": 2900,
+      "account_size": 789,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 22:26:26",
+      "user_email": "1@1.com",
+      "user_name": "3006",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "3006",
+        "email": "1@1.com",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "49c5829cfdc02e420bb19983f98d7084",
+      "exchange": "bybit",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 106500,
+      "stop_loss": 105500,
+      "target_price": 110500,
+      "account_size": 358,
+      "risk_percent": 1,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 22:24:55",
+      "user_email": "1@1.com",
+      "user_name": "3006",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "3006",
+        "email": "1@1.com",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "61f91c84984602f28ba17f15e18c770c",
+      "exchange": "bingx",
+      "symbol": "ETHUSDT",
+      "direction": "short",
+      "entry_price": 2500,
+      "stop_loss": 2600,
+      "target_price": 2000,
+      "account_size": 1245,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 16:59:06",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "010be88656cb39d2b2c5bfce2126ff92",
+      "exchange": "bingx",
+      "symbol": "ETHUSDT",
+      "direction": "short",
+      "entry_price": 2500,
+      "stop_loss": 2600,
+      "target_price": 2000,
+      "account_size": 1245,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 16:59:05",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "8c86bb71fe869d0549fbf70490b32e95",
+      "exchange": "bingx",
+      "symbol": "ETHUSDT",
+      "direction": "short",
+      "entry_price": 2500,
+      "stop_loss": 2600,
+      "target_price": 2000,
+      "account_size": 1245,
+      "risk_percent": 2,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 16:58:57",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "fc58876feac52bc302c2d0c30abaa896",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 107000,
+      "stop_loss": 106000,
+      "target_price": 120000,
+      "account_size": 1258,
+      "risk_percent": 1,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 16:21:23",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "ec44849911f211c4947fae02ff34412a",
+      "exchange": "binance",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 50000,
+      "stop_loss": 49000,
+      "target_price": 52000,
+      "account_size": 10000,
+      "risk_percent": 2,
+      "position_size": 0.2,
+      "risk_amount": 200,
+      "reward_amount": 400,
+      "risk_reward_ratio": 2,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 12:48:29",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "0c56fceb9717268010416a9af330edc7",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "short",
+      "entry_price": 110000,
+      "stop_loss": 112750,
+      "target_price": 102000,
+      "account_size": 750,
+      "risk_percent": 1,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 12:25:57",
+      "user_email": "aa@aa.com",
+      "user_name": "adm",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "adm",
+        "email": "aa@aa.com",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "7cba7bdfa67cc7731cb7b7e738f46ebe",
+      "exchange": "binance",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 50000,
+      "stop_loss": 49000,
+      "target_price": 52000,
+      "account_size": 10000,
+      "risk_percent": 2,
+      "position_size": 0.2,
+      "risk_amount": 200,
+      "reward_amount": 400,
+      "risk_reward_ratio": 2,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 11:13:32",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "1d7e07a575df2956c3b643cab1791bf4",
+      "exchange": "binance",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 50000,
+      "stop_loss": 49000,
+      "target_price": 52000,
+      "account_size": 10000,
+      "risk_percent": 2,
+      "position_size": 0.2,
+      "risk_amount": 200,
+      "reward_amount": 400,
+      "risk_reward_ratio": 2,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 11:02:51",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "507ef25abb7c1056343ab4eaac861d06",
+      "exchange": "binance",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 50000,
+      "stop_loss": 49000,
+      "target_price": 52000,
+      "account_size": 10000,
+      "risk_percent": 2,
+      "position_size": 0.2,
+      "risk_amount": 200,
+      "reward_amount": 400,
+      "risk_reward_ratio": 2,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 11:01:08",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "b8f82cf2271042eb4d5421bf8e98b129",
+      "exchange": "bybit",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 107000,
+      "stop_loss": 106000,
+      "target_price": 120000,
+      "account_size": 1245,
+      "risk_percent": 1,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 10:51:22",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    },
+    {
+      "id": "0d1d093ebc28e04e147000f738dd2e43",
+      "exchange": "bingx",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 107000,
+      "stop_loss": 106000,
+      "target_price": 125000,
+      "account_size": 121123,
+      "risk_percent": 1,
+      "position_size": null,
+      "risk_amount": null,
+      "reward_amount": null,
+      "risk_reward_ratio": null,
+      "current_price": null,
+      "calculation_data": {},
+      "created_at": "2025-06-30 10:49:22",
+      "user_email": "admin@bitacademy.vip",
+      "user_name": "Administrador",
+      "user_phone": null,
+      "country_code": "+55",
+      "user": {
+        "name": "Administrador",
+        "email": "admin@bitacademy.vip",
+        "phone": null,
+        "countryCode": "+55",
+        "fullPhone": null
+      }
+    }
+  ]
+}

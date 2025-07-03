@@ -1,0 +1,54 @@
+{
+  "exportDate": "2025-07-01T01:07:52.164Z",
+  "totalUsers": 3,
+  "users": [
+    {
+      "id": "f7e7024b9e7ce3d1f73b3f3720edc29a",
+      "email": "1@1.com",
+      "name": "3006",
+      "phone": null,
+      "countryCode": "+55",
+      "fullPhone": null,
+      "role": "user",
+      "isActive": false,
+      "lastLogin": "2025-06-30 22:24:14",
+      "createdAt": "2025-06-30 22:00:51",
+      "stats": {
+        "totalTrades": 2,
+        "totalVolume": 1147
+      }
+    },
+    {
+      "id": "e94b71757b5538c400e7f12cb50dd0af",
+      "email": "aa@aa.com",
+      "name": "adm",
+      "phone": null,
+      "countryCode": "+55",
+      "fullPhone": null,
+      "role": "user",
+      "isActive": true,
+      "lastLogin": "2025-06-30 23:46:20",
+      "createdAt": "2025-06-30 12:23:13",
+      "stats": {
+        "totalTrades": 1,
+        "totalVolume": 750
+      }
+    },
+    {
+      "id": "82edd1ef667e7734919bcbca88a70b7c",
+      "email": "admin@bitacademy.vip",
+      "name": "Administrador",
+      "phone": null,
+      "countryCode": "+55",
+      "fullPhone": null,
+      "role": "admin",
+      "isActive": true,
+      "lastLogin": "2025-07-01 01:07:52",
+      "createdAt": "2025-06-29 22:38:01",
+      "stats": {
+        "totalTrades": 18,
+        "totalVolume": 185404
+      }
+    }
+  ]
+}

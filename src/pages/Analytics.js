@@ -17,60 +17,34 @@ const Analytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, selectedView]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       
-      // Mock analytics data
-      const mockAnalytics = {
-        overview: {
-          totalUsers: 127,
-          activeUsers: 42,
-          totalTrades: 2450,
-          totalVolume: 12500000,
-          avgRiskReward: 2.3,
-          successRate: 68.5,
-          platformUsage: 85.2
-        },
-        userMetrics: {
-          newUsersThisPeriod: 23,
-          userRetentionRate: 72.5,
-          avgTradesPerUser: 19.3,
-          mostActiveUsers: [
-            { name: 'João Silva', trades: 45, volume: 150000 },
-            { name: 'Maria Santos', trades: 38, volume: 120000 },
-            { name: 'Carlos Lima', trades: 32, volume: 95000 }
-          ]
-        },
-        tradeMetrics: {
-          tradesThisPeriod: 456,
-          avgTradeSize: 5102.04,
-          mostTradedPairs: [
-            { symbol: 'BTC/USDT', count: 123, volume: 2500000 },
-            { symbol: 'ETH/USDT', count: 89, volume: 1800000 },
-            { symbol: 'ADA/USDT', count: 67, volume: 890000 }
-          ],
-          exchangeDistribution: [
-            { exchange: 'Binance', percentage: 45.2, trades: 207 },
-            { exchange: 'Bybit', percentage: 28.7, trades: 131 },
-            { exchange: 'BingX', percentage: 15.1, trades: 69 },
-            { exchange: 'Bitget', percentage: 11.0, trades: 49 }
-          ]
-        },
-        performanceData: [
-          { date: '2024-11-03', trades: 23, volume: 115000, users: 18, profits: 12500, losses: 8200, winRate: 68.2 },
-          { date: '2024-11-04', trades: 31, volume: 145000, users: 22, profits: 18200, losses: 9800, winRate: 72.1 },
-          { date: '2024-11-05', trades: 18, volume: 89000, users: 15, profits: 9200, losses: 6800, winRate: 65.3 },
-          { date: '2024-11-06', trades: 42, volume: 210000, users: 28, profits: 25800, losses: 12400, winRate: 74.5 },
-          { date: '2024-11-07', trades: 35, volume: 175000, users: 25, profits: 19600, losses: 11200, winRate: 69.8 },
-          { date: '2024-11-08', trades: 28, volume: 132000, users: 19, profits: 14200, losses: 8900, winRate: 67.4 },
-          { date: '2024-11-09', trades: 39, volume: 195000, users: 26, profits: 22400, losses: 10800, winRate: 71.2 }
-        ]
-      };
+      // Get analytics data from API
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      setAnalytics(mockAnalytics);
+      const response = await fetch(`/api/analytics?period=${selectedPeriod}&view=${selectedView}`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Analytics API error');
+      }
+      
+      setAnalytics(prevAnalytics => ({
+        ...prevAnalytics,
+        ...result.data
+      }));
     } catch (error) {
       console.error('Erro ao carregar analytics:', error);
     } finally {
