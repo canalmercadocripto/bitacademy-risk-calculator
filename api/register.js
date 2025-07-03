@@ -1,11 +1,10 @@
 const { supabase } = require('../lib/supabase');
+const securityMiddleware = require('../middleware/security');
 
 // User registration API
 module.exports = async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Apply security headers
+  securityMiddleware.corsHeaders(req, res);
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -17,6 +16,14 @@ module.exports = async function handler(req, res) {
       message: 'Método não permitido'
     });
   }
+  
+  // Apply rate limiting for registration
+  const rateLimitResult = securityMiddleware.loginRateLimit(req, res);
+  if (rateLimitResult) return rateLimitResult;
+  
+  // Validate and sanitize input
+  const sanitizeResult = securityMiddleware.validateAndSanitize(req, res);
+  if (sanitizeResult) return sanitizeResult;
   
   try {
     const { name, lastName, email, password, phone, countryCode } = req.body;

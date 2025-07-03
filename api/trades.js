@@ -1,14 +1,23 @@
 const { supabase } = require('../lib/supabase');
+const securityMiddleware = require('../middleware/security');
 
 // Consolidated trades API for Vercel with Supabase
 module.exports = async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Apply security headers
+  securityMiddleware.corsHeaders(req, res);
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+  
+  // Apply rate limiting
+  const rateLimitResult = securityMiddleware.apiRateLimit(req, res);
+  if (rateLimitResult) return rateLimitResult;
+  
+  // Validate and sanitize input for POST/PUT requests
+  if (req.method === 'POST' || req.method === 'PUT') {
+    const sanitizeResult = securityMiddleware.validateAndSanitize(req, res);
+    if (sanitizeResult) return sanitizeResult;
   }
   
   const { action } = req.query;
