@@ -20,54 +20,32 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Simular dados do dashboard admin
-      const mockStats = {
-        totalUsers: 127,
-        totalTrades: 2450,
-        activeUsers: 42,
-        systemHealth: 'Excelente',
-        totalVolume: 'R$ 2.450.000',
-        avgRiskReward: 2.3,
-        successRate: 68.5
-      };
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const mockActivity = [
-        {
-          id: 1,
-          type: 'user_registration',
-          user: 'João Silva',
-          action: 'Novo usuário registrado',
-          time: '2 minutos atrás',
-          icon: '👤'
-        },
-        {
-          id: 2,
-          type: 'trade_created',
-          user: 'Maria Santos',
-          action: 'Trade BTC/USDT criado',
-          time: '5 minutos atrás',
-          icon: '💰'
-        },
-        {
-          id: 3,
-          type: 'system_update',
-          user: 'Sistema',
-          action: 'Backup automático realizado',
-          time: '1 hora atrás',
-          icon: '🔧'
-        },
-        {
-          id: 4,
-          type: 'trade_closed',
-          user: 'Carlos Lima',
-          action: 'Trade ETH/USDT finalizado (+R$ 250)',
-          time: '2 horas atrás',
-          icon: '✅'
-        }
-      ];
+      // Get real analytics data
+      const analyticsResponse = await fetch('/api/analytics?view=overview&period=30d', { headers });
+      const analyticsData = await analyticsResponse.json();
       
-      setStats(mockStats);
-      setRecentActivity(mockActivity);
+      // Get recent activity from activity logs
+      const activityResponse = await fetch('/api/activity-logs?limit=10', { headers });
+      const activityData = await activityResponse.json();
+      
+      if (analyticsData.success) {
+        setStats({
+          totalUsers: analyticsData.data.overview?.totalUsers || 0,
+          totalTrades: analyticsData.data.overview?.totalTrades || 0,
+          activeUsers: analyticsData.data.overview?.activeUsers || 0,
+          systemHealth: 'Excelente',
+          totalVolume: `R$ ${(analyticsData.data.overview?.totalVolume || 0).toLocaleString('pt-BR')}`,
+          avgRiskReward: analyticsData.data.overview?.avgRiskReward || 0,
+          successRate: analyticsData.data.overview?.successRate || 0
+        });
+      }
+      
+      if (activityData.success) {
+        setRecentActivity(activityData.data || []);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
     } finally {

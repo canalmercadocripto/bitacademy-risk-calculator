@@ -271,11 +271,11 @@ module.exports = async function handler(req, res) {
     }
   }
   
-  // List all exchanges
+  // List all exchanges (ordem: Bingx, Bybit, Binance, Bitget)
   const exchanges = [
-    { id: 'binance', name: 'Binance', status: 'active', symbols: 2000, description: 'Maior exchange de criptomoedas do mundo' },
-    { id: 'bybit', name: 'Bybit', status: 'active', symbols: 1500, description: 'Exchange focada em derivativos' },
     { id: 'bingx', name: 'BingX', status: 'active', symbols: 800, description: 'Exchange com foco em copy trading' },
+    { id: 'bybit', name: 'Bybit', status: 'active', symbols: 1500, description: 'Exchange focada em derivativos' },
+    { id: 'binance', name: 'Binance', status: 'active', symbols: 2000, description: 'Maior exchange de criptomoedas do mundo' },
     { id: 'bitget', name: 'Bitget', status: 'active', symbols: 1000, description: 'Exchange global com trading social' }
   ];
   
