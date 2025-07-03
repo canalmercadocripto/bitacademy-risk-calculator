@@ -19,77 +19,19 @@ const AdminTrades = () => {
     try {
       setLoading(true);
       
-      // Mock data de todos os trades do sistema
-      const mockTrades = [
-        {
-          id: 1,
-          userId: 2,
-          userName: 'João Silva',
-          userEmail: 'joao@email.com',
-          exchange: 'Binance',
-          symbol: 'BTC/USDT',
-          accountSize: 10000.00,
-          riskPercentage: 2.0,
-          entryPrice: 67500.00,
-          stopLoss: 66000.00,
-          takeProfit: 70000.00,
-          positionSize: 0.148,
-          riskAmount: 200.00,
-          rewardAmount: 370.00,
-          riskRewardRatio: 1.85,
-          currentPrice: 67450.00,
-          tradeType: 'long',
-          status: 'active',
-          notes: 'Trade baseado em suporte técnico forte',
-          createdAt: '2024-12-02T10:30:00Z'
-        },
-        {
-          id: 2,
-          userId: 3,
-          userName: 'Maria Santos',
-          userEmail: 'maria@email.com',
-          exchange: 'Bybit',
-          symbol: 'ETH/USDT',
-          accountSize: 5000.00,
-          riskPercentage: 1.5,
-          entryPrice: 2800.00,
-          stopLoss: 2750.00,
-          takeProfit: 2900.00,
-          positionSize: 1.07,
-          riskAmount: 75.00,
-          rewardAmount: 107.00,
-          riskRewardRatio: 1.43,
-          currentPrice: 2795.00,
-          tradeType: 'long',
-          status: 'closed',
-          notes: 'Rompimento de resistência confirmado',
-          createdAt: '2024-12-01T14:15:00Z'
-        },
-        {
-          id: 3,
-          userId: 4,
-          userName: 'Carlos Lima',
-          userEmail: 'carlos@email.com',
-          exchange: 'BingX',
-          symbol: 'ADA/USDT',
-          accountSize: 3000.00,
-          riskPercentage: 3.0,
-          entryPrice: 0.52,
-          stopLoss: 0.49,
-          takeProfit: 0.58,
-          positionSize: 1846.15,
-          riskAmount: 90.00,
-          rewardAmount: 110.77,
-          riskRewardRatio: 1.23,
-          currentPrice: 0.51,
-          tradeType: 'long',
-          status: 'active',
-          notes: 'Entrada em zona de acumulação',
-          createdAt: '2024-12-01T09:20:00Z'
-        }
-      ];
+      // Fetch all trades from all users via API
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      setTrades(mockTrades);
+      const response = await fetch('/api/admin-trades?action=list&limit=100', { headers });
+      const data = await response.json();
+      
+      if (data.success) {
+        setTrades(data.data || []);
+      } else {
+        console.error('Erro ao buscar trades:', data.message);
+        setTrades([]);
+      }
     } catch (error) {
       console.error('Erro ao carregar trades:', error);
     } finally {

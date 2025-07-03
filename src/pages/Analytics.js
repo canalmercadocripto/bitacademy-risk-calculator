@@ -155,17 +155,29 @@ const Analytics = () => {
 
       {/* Overview Cards - Always visible */}
       <div className="analytics-overview">
-        <div className="overview-card">
-          <div className="card-icon">👥</div>
+        <div className="overview-card modern-card">
+          <div className="card-header">
+            <div className="card-icon gradient-icon users">👥</div>
+            <div className="card-trend positive">+12%</div>
+          </div>
           <div className="card-content">
             <h3>Usuários Ativos</h3>
-            <div className="card-number">{analytics.overview.activeUsers}</div>
-            <div className="card-total">de {analytics.overview.totalUsers} total</div>
+            <div className="card-number">{analytics.overview?.activeUsers || 0}</div>
+            <div className="card-total">de {analytics.overview?.totalUsers || 0} total</div>
+            <div className="card-progress">
+              <div 
+                className="progress-bar" 
+                style={{ width: `${((analytics.overview?.activeUsers || 0) / (analytics.overview?.totalUsers || 1)) * 100}%` }}
+              ></div>
+            </div>
           </div>
         </div>
         
-        <div className="overview-card">
-          <div className="card-icon">💰</div>
+        <div className="overview-card modern-card">
+          <div className="card-header">
+            <div className="card-icon gradient-icon trades">💰</div>
+            <div className="card-trend positive">+8%</div>
+          </div>
           <div className="card-content">
             <h3>Total de Trades</h3>
             <div className="card-number">{analytics.overview.totalTrades}</div>
