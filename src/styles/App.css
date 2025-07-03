@@ -89,7 +89,7 @@
   transition: all 0.3s ease;
   min-height: 80vh;
   align-items: start;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .instructions-section,
@@ -102,7 +102,7 @@
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;
   height: fit-content;
-  overflow: hidden;
+  overflow: visible;
   max-width: 100%;
   min-width: 0;
 }
