@@ -1,16 +1,16 @@
-// Ultra-simple user info without external dependencies
-module.exports = function handler(req, res) {
+const { supabase } = require('../lib/supabase');
+
+// Get current user info from token
+module.exports = async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
-  // Handle OPTIONS for CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   
-  // Only allow GET
   if (req.method !== 'GET') {
     return res.status(405).json({
       success: false,
@@ -19,43 +19,23 @@ module.exports = function handler(req, res) {
   }
   
   try {
-    const authHeader = req.headers.authorization;
+    // Get token from Authorization header or query param
+    let token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Token não fornecido'
       });
     }
     
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Decode simple token
+    // Decode simple token (userId:timestamp:role)
+    let userId, role;
     try {
-      const decoded = Buffer.from(token, 'base64').toString();
-      const [userId] = decoded.split(':');
-      
-      if (userId === 'admin-001') {
-        return res.status(200).json({
-          success: true,
-          data: {
-            user: {
-              id: 'admin-001',
-              email: 'admin@seudominio.com',
-              name: 'Administrador',
-              lastName: 'Sistema',
-              phone: '11999999999',
-              countryCode: '+55',
-              role: 'admin'
-            }
-          }
-        });
-      } else {
-        return res.status(401).json({
-          success: false,
-          message: 'Token inválido'
-        });
-      }
+      const decoded = Buffer.from(token, 'base64').toString('utf-8');
+      const parts = decoded.split(':');
+      userId = parts[0];
+      role = parts[2];
     } catch (error) {
       return res.status(401).json({
         success: false,
@@ -63,8 +43,38 @@ module.exports = function handler(req, res) {
       });
     }
     
+    // Get user from database
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, name, email, phone, role, is_active')
+      .eq('id', userId)
+      .eq('is_active', true)
+      .single();
+    
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuário não encontrado ou inativo'
+      });
+    }
+    
+    // Return user data
+    return res.status(200).json({
+      success: true,
+      message: 'Usuário autenticado',
+      data: {
+        user: {
+          id: user.id.toString(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role
+        }
+      }
+    });
+    
   } catch (error) {
-    console.error('Me error:', error);
+    console.error('Me API error:', error);
     return res.status(500).json({
       success: false,
       message: 'Erro interno do servidor'

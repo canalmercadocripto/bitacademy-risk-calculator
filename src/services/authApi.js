@@ -22,28 +22,16 @@ export const authApi = {
     return response.data;
   },
 
-  // Obter dados do usuário atual
+  // Verificar token atual
   me: async (token) => {
-    const response = await api.get('/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
-  },
-
-  // Refresh token
-  refreshToken: async (token) => {
-    const response = await api.post('/auth/refresh', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await api.get(`/me?token=${token}`);
     return response.data;
   },
 
   // Logout
   logout: async (token) => {
-    const response = await api.post('/auth/logout', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    // Just a placeholder - logout is handled client-side
+    return { success: true };
   }
 };
 
@@ -56,44 +44,23 @@ export const tradeApi = {
   },
 
   // Obter histórico
-  getHistory: async (token, page = 1, limit = 50) => {
-    const response = await api.get('/trades/history', {
-      headers: { Authorization: `Bearer ${token}` },
-      params: { page, limit }
-    });
+  getHistory: async (token, page = 1, limit = 20) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.get(`/trades?action=history&page=${page}&limit=${limit}`, { headers });
     return response.data;
   },
 
   // Obter estatísticas
   getStats: async (token) => {
-    const response = await api.get('/trades/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
-  },
-
-  // Obter estatísticas do usuário
-  getUserStats: async (token) => {
-    const response = await api.get('/trades/stats', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
-  },
-
-  // Obter histórico de trades
-  getTradeHistory: async (token, page = 1, limit = 20) => {
-    const response = await api.get('/trades/history', {
-      headers: { Authorization: `Bearer ${token}` },
-      params: { page, limit }
-    });
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.get('/trades?action=history&page=1&limit=1000', { headers });
     return response.data;
   },
 
   // Exportar dados
-  exportData: async (token, format) => {
-    const response = await api.get(`/trades/export?format=${format}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  exportData: async (token, format = 'json') => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.get(`/trades?action=export&format=${format}`, { headers });
     return response.data;
   }
 };

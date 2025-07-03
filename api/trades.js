@@ -29,11 +29,25 @@ module.exports = async function handler(req, res) {
         });
       }
       
+      // Get user ID from token if provided
+      let userId = 1; // Default user
+      const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+      
+      if (token) {
+        try {
+          const decoded = Buffer.from(token, 'base64').toString('utf-8');
+          const parts = decoded.split(':');
+          userId = parseInt(parts[0]) || 1;
+        } catch (error) {
+          console.log('⚠️ Could not decode token, using default user');
+        }
+      }
+      
       // Inserir trade no banco
       const { data, error } = await supabase
         .from('trades')
         .insert({
-          user_id: 1,
+          user_id: userId,
           exchange,
           symbol: symbol.toUpperCase(),
           account_size: parseFloat(accountSize || 0),
@@ -100,7 +114,21 @@ module.exports = async function handler(req, res) {
     
     // Get history
     if (req.method === 'GET' && action === 'history') {
-      const { page = 1, limit = 20, status = '', exchange = '', userId = 1 } = req.query;
+      const { page = 1, limit = 20, status = '', exchange = '' } = req.query;
+      
+      // Get user ID from token
+      let userId = 1; // Default user
+      const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+      
+      if (token) {
+        try {
+          const decoded = Buffer.from(token, 'base64').toString('utf-8');
+          const parts = decoded.split(':');
+          userId = parseInt(parts[0]) || 1;
+        } catch (error) {
+          console.log('⚠️ Could not decode token, using default user');
+        }
+      }
       
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
@@ -175,7 +203,21 @@ module.exports = async function handler(req, res) {
     
     // Export trades
     if (req.method === 'GET' && action === 'export') {
-      const { format = 'json', userId = 1 } = req.query;
+      const { format = 'json' } = req.query;
+      
+      // Get user ID from token
+      let userId = 1; // Default user
+      const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+      
+      if (token) {
+        try {
+          const decoded = Buffer.from(token, 'base64').toString('utf-8');
+          const parts = decoded.split(':');
+          userId = parseInt(parts[0]) || 1;
+        } catch (error) {
+          console.log('⚠️ Could not decode token, using default user');
+        }
+      }
       
       const { data, error } = await supabase
         .from('trades')
