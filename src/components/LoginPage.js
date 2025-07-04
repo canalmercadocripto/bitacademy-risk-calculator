@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import PhoneInput from './PhoneInput';
+import './LoginPage.css';
 
 const LoginPage = () => {
   const { theme, toggleTheme } = useTheme();
   const { login, register, loading } = useAuth();
   const [mode, setMode] = useState('login');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     lastName: '',
@@ -16,8 +21,71 @@ const LoginPage = () => {
     countryCode: '+55'
   });
 
+  // Validação em tempo real
+  const validateField = (name, value) => {
+    const errors = { ...validationErrors };
+    
+    switch (name) {
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          errors.email = 'Email inválido';
+        } else {
+          delete errors.email;
+        }
+        break;
+      case 'password':
+        if (value.length < 6) {
+          errors.password = 'Senha deve ter pelo menos 6 caracteres';
+        } else {
+          delete errors.password;
+        }
+        checkPasswordStrength(value);
+        break;
+      case 'name':
+      case 'lastName':
+        if (value.trim().length < 2) {
+          errors[name] = 'Deve ter pelo menos 2 caracteres';
+        } else {
+          delete errors[name];
+        }
+        break;
+      default:
+        break;
+    }
+    
+    setValidationErrors(errors);
+  };
+
+  // Verificar força da senha
+  const checkPasswordStrength = (password) => {
+    let strength = '';
+    if (password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
+      strength = 'strong';
+    } else if (password.length >= 6 && /[A-Za-z]/.test(password) && /[0-9]/.test(password)) {
+      strength = 'good';
+    } else if (password.length >= 6) {
+      strength = 'medium';
+    } else if (password.length > 0) {
+      strength = 'weak';
+    }
+    setPasswordStrength(strength);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validar todos os campos antes de enviar
+    const fields = Object.keys(formData);
+    fields.forEach(field => {
+      if (formData[field]) {
+        validateField(field, formData[field]);
+      }
+    });
+    
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
     
     if (mode === 'login') {
       await login(formData.email, formData.password);
@@ -27,21 +95,45 @@ const LoginPage = () => {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Validação em tempo real
+    validateField(name, value);
   };
 
   const switchMode = () => {
     setMode(mode === 'login' ? 'register' : 'login');
     setFormData({ name: '', lastName: '', email: '', password: '', phone: '', countryCode: '+55' });
+    setValidationErrors({});
+    setPasswordStrength('');
+    setShowPassword(false);
   };
 
+  // Auto-complete do email salvo
+  useEffect(() => {
+    if (rememberMe) {
+      const savedEmail = localStorage.getItem('rememberedEmail');
+      if (savedEmail) {
+        setFormData(prev => ({ ...prev, email: savedEmail }));
+      }
+    }
+  }, [rememberMe]);
+
+  // Salvar email se "Lembrar-me" estiver marcado
+  useEffect(() => {
+    if (rememberMe && formData.email) {
+      localStorage.setItem('rememberedEmail', formData.email);
+    }
+  }, [formData.email, rememberMe]);
+
   return (
-    <div className="App">
+    <div className="login-container">
       {/* Header com tema */}
-      <div className="header">
+      <header className="login-header">
         <h1>🚀 Calculadora de Gerenciamento de Risco</h1>
         <div className="theme-toggle" onClick={toggleTheme}>
           <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
@@ -49,304 +141,273 @@ const LoginPage = () => {
             {theme === 'dark' ? 'Claro' : 'Escuro'}
           </span>
         </div>
-      </div>
+      </header>
 
-      {/* Container centralizado */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: 'calc(100vh - 200px)',
-        padding: '2rem'
-      }}>
-        <div style={{
-          background: 'var(--bg-container)',
-          borderRadius: '20px',
-          padding: '3rem',
-          boxShadow: 'var(--shadow-heavy)',
-          border: '1px solid var(--border-color)',
-          width: '100%',
-          maxWidth: '500px'
-        }}>
-          {/* Logo e Título */}
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '2rem'
-          }}>
-            <div style={{
-              fontSize: '4rem',
-              marginBottom: '1rem'
-            }}>💰</div>
-            <h2 style={{
-              color: 'var(--text-secondary)',
-              marginBottom: '0.5rem',
-              fontSize: '1.8rem'
-            }}>
-              {mode === 'login' ? 'Entrar na Plataforma' : 'Criar Conta'}
-            </h2>
-            <p style={{
-              color: 'var(--text-placeholder)',
-              fontSize: '1rem',
-              lineHeight: '1.5'
-            }}>
-              {mode === 'login' 
-                ? 'Acesse sua calculadora profissional de risk management'
-                : 'Crie sua conta e tenha acesso completo à plataforma'
-              }
-            </p>
-          </div>
-
-          {/* Aviso Criativo e Profissional */}
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '15px',
-            padding: '1.5rem',
-            marginBottom: '2rem',
-            textAlign: 'center',
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📈</div>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '600' }}>
-              Trading Profissional Começa Aqui
-            </h3>
-            <p style={{ margin: '0', fontSize: '0.9rem', opacity: '0.9', lineHeight: '1.4' }}>
-              Calculadora avançada de risk management utilizada por traders profissionais. 
-              Gerencie seus riscos com precisão matemática.
-            </p>
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.8rem',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '10px',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <p style={{ margin: '0', fontSize: '0.8rem', opacity: '0.8' }}>
-                ⚠️ <strong>Algumas funcionalidades ainda estão em desenvolvimento</strong><br/>
-                Cadastre-se agora e tenha acesso antecipado às novidades!
+      {/* Main Content */}
+      <main className="login-main">
+        <div className="login-wrapper">
+          {/* Seção de Informações */}
+          <div className="login-info">
+            <div className="login-hero">
+              <span className="login-hero-icon">💰</span>
+              <h2>Trading Profissional Começa Aqui</h2>
+              <p>
+                Calculadora avançada de risk management utilizada por traders profissionais. 
+                Gerencie seus riscos com precisão matemática e tome decisões baseadas em dados.
               </p>
             </div>
-          </div>
 
-
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
-            {mode === 'register' && (
-              <>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: '500'
-                  }}>
-                    Nome
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '10px',
-                      background: 'var(--bg-input)',
-                      color: 'var(--text-primary)',
-                      fontSize: '1rem',
-                      transition: 'border-color 0.3s ease'
-                    }}
-                    placeholder="Seu nome"
-                  />
-                </div>
-                
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    color: 'var(--text-secondary)',
-                    fontWeight: '500'
-                  }}>
-                    Sobrenome
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                    style={{
-                      width: '100%',
-                      padding: '1rem',
-                      border: '2px solid var(--border-color)',
-                      borderRadius: '10px',
-                      background: 'var(--bg-input)',
-                      color: 'var(--text-primary)',
-                      fontSize: '1rem',
-                      transition: 'border-color 0.3s ease'
-                    }}
-                    placeholder="Seu sobrenome"
-                  />
-                </div>
-              </>
-            )}
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                color: 'var(--text-secondary)',
-                fontWeight: '500'
-              }}>
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: '10px',
-                  background: 'var(--bg-input)',
-                  color: 'var(--text-primary)',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease'
-                }}
-                placeholder="seu@email.com"
-              />
-            </div>
-
-            <div style={{ marginBottom: '2rem' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                color: 'var(--text-secondary)',
-                fontWeight: '500'
-              }}>
-                Senha
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength="6"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: '10px',
-                  background: 'var(--bg-input)',
-                  color: 'var(--text-primary)',
-                  fontSize: '1rem',
-                  transition: 'border-color 0.3s ease'
-                }}
-                placeholder="Mínimo 6 caracteres"
-              />
-            </div>
-
-            {mode === 'register' && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  color: 'var(--text-secondary)',
-                  fontWeight: '500'
-                }}>
-                  Telefone
-                </label>
-                <PhoneInput
-                  value={formData.phone}
-                  countryCode={formData.countryCode}
-                  onChange={(phone) => setFormData({...formData, phone})}
-                  onCountryCodeChange={(countryCode) => setFormData({...formData, countryCode})}
-                  disabled={loading}
-                  required
-                />
+            <div className="login-features">
+              <div className="feature-item">
+                <div className="feature-icon">📊</div>
+                <span className="feature-text">Cálculos de risco precisos</span>
               </div>
-            )}
+              <div className="feature-item">
+                <div className="feature-icon">⚡</div>
+                <span className="feature-text">Interface rápida e intuitiva</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">📈</div>
+                <span className="feature-text">Analytics avançados</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">🔒</div>
+                <span className="feature-text">Dados seguros e privados</span>
+              </div>
+            </div>
 
-            <button 
-              type="submit" 
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '1rem 2rem',
-                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                opacity: loading ? 0.6 : 1
-              }}
-              onMouseOver={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
-              onMouseOut={(e) => (e.target.style.transform = 'translateY(0)')}
-            >
-              {loading ? 'Processando...' : (mode === 'login' ? 'Entrar' : 'Criar Conta')}
-            </button>
-          </form>
-
-          {/* Switch entre login/register */}
-          <div style={{
-            textAlign: 'center',
-            color: 'var(--text-placeholder)',
-            marginBottom: '2rem'
-          }}>
-            {mode === 'login' ? (
-              <p>
-                Ainda não tem conta?{' '}
-                <button 
-                  type="button" 
-                  onClick={switchMode}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#667eea',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontWeight: '500'
-                  }}
-                >
-                  Criar conta agora
-                </button>
+            {/* Aviso Profissional */}
+            <div className="professional-notice">
+              <span className="notice-icon">📈</span>
+              <h3 className="notice-title">Acesso Antecipado</h3>
+              <p className="notice-text">
+                Calculadora profissional de risk management para traders sérios.
               </p>
-            ) : (
-              <p>
-                Já tem conta?{' '}
-                <button 
-                  type="button" 
-                  onClick={switchMode}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#667eea',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontWeight: '500'
-                  }}
-                >
-                  Fazer login
-                </button>
-              </p>
-            )}
+              <div className="notice-warning">
+                <p>
+                  ⚠️ <strong>Algumas funcionalidades em desenvolvimento</strong><br/>
+                  Cadastre-se agora e tenha acesso antecipado às novidades!
+                </p>
+              </div>
+            </div>
           </div>
 
+          {/* Formulário de Login/Registro */}
+          <div className="login-form-container">
+            <div className="form-header">
+              <h2 className="form-title">
+                {mode === 'login' ? 'Entrar na Plataforma' : 'Criar Conta'}
+              </h2>
+              <p className="form-subtitle">
+                {mode === 'login' 
+                  ? 'Acesse sua calculadora profissional'
+                  : 'Tenha acesso completo à plataforma'
+                }
+              </p>
+            </div>
+
+            {/* Toggle entre Login/Register */}
+            <div className="mode-toggle">
+              <button 
+                type="button"
+                className={mode === 'login' ? 'active' : ''}
+                onClick={() => mode !== 'login' && switchMode()}
+              >
+                Login
+              </button>
+              <button 
+                type="button"
+                className={mode === 'register' ? 'active' : ''}
+                onClick={() => mode !== 'register' && switchMode()}
+              >
+                Registrar
+              </button>
+            </div>
+
+
+            {/* Formulário */}
+            <form onSubmit={handleSubmit}>
+              {mode === 'register' && (
+                <div className="form-field half">
+                  <div className="field-group">
+                    <label className="field-label">Nome</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                      className="field-input"
+                      placeholder="Seu nome"
+                      autoComplete="given-name"
+                    />
+                    {validationErrors.name && (
+                      <div className="field-error">
+                        <span>⚠️</span> {validationErrors.name}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="field-group">
+                    <label className="field-label">Sobrenome</label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                      className="field-input"
+                      placeholder="Seu sobrenome"
+                      autoComplete="family-name"
+                    />
+                    {validationErrors.lastName && (
+                      <div className="field-error">
+                        <span>⚠️</span> {validationErrors.lastName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="form-field">
+                <div className="field-group">
+                  <label className="field-label">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                    className="field-input"
+                    placeholder="seu@email.com"
+                    autoComplete="email"
+                  />
+                  {validationErrors.email && (
+                    <div className="field-error">
+                      <span>⚠️</span> {validationErrors.email}
+                    </div>
+                  )}
+                  {!validationErrors.email && formData.email && (
+                    <div className="field-success">
+                      <span>✅</span> Email válido
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <div className="field-group">
+                  <label className="field-label">Senha</label>
+                  <div className="password-field">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      minLength="6"
+                      disabled={loading}
+                      className="field-input"
+                      placeholder="Mínimo 6 caracteres"
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                  {validationErrors.password && (
+                    <div className="field-error">
+                      <span>⚠️</span> {validationErrors.password}
+                    </div>
+                  )}
+                  {passwordStrength && mode === 'register' && (
+                    <div className="password-strength">
+                      <div className={`password-strength-bar strength-${passwordStrength}`}></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {mode === 'register' && (
+                <div className="form-field">
+                  <div className="field-group">
+                    <label className="field-label">Telefone</label>
+                    <PhoneInput
+                      value={formData.phone}
+                      countryCode={formData.countryCode}
+                      onChange={(phone) => setFormData({...formData, phone})}
+                      onCountryCodeChange={(countryCode) => setFormData({...formData, countryCode})}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="form-field">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      Lembrar-me
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <button 
+                type="submit" 
+                disabled={loading || Object.keys(validationErrors).length > 0}
+                className="submit-button"
+                aria-label={mode === 'login' ? 'Fazer login' : 'Criar conta'}
+              >
+                {loading && <span className="loading-spinner"></span>}
+                {loading ? 'Processando...' : (mode === 'login' ? 'Entrar' : 'Criar Conta')}
+              </button>
+            </form>
+
+            {/* Footer do Formulário */}
+            <div className="form-footer">
+              {mode === 'login' ? (
+                <p>
+                  Ainda não tem conta?{' '}
+                  <button 
+                    type="button" 
+                    onClick={switchMode}
+                    className="switch-mode-btn"
+                  >
+                    Criar conta agora
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Já tem conta?{' '}
+                  <button 
+                    type="button" 
+                    onClick={switchMode}
+                    className="switch-mode-btn"
+                  >
+                    Fazer login
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
