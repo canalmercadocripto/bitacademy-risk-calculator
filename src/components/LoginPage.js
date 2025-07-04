@@ -132,15 +132,9 @@ const LoginPage = () => {
 
   return (
     <div className="login-container">
-      {/* Header com tema */}
+      {/* Header simplificado */}
       <header className="login-header">
         <h1>🚀 Calculadora de Gerenciamento de Risco</h1>
-        <div className="theme-toggle" onClick={toggleTheme}>
-          <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
-          <span className="theme-toggle-text">
-            {theme === 'dark' ? 'Claro' : 'Escuro'}
-          </span>
-        </div>
       </header>
 
       {/* Main Content */}
@@ -175,21 +169,6 @@ const LoginPage = () => {
                 <span className="feature-text">Dados seguros e privados</span>
               </div>
             </div>
-
-            {/* Aviso Profissional */}
-            <div className="professional-notice">
-              <span className="notice-icon">📈</span>
-              <h3 className="notice-title">Acesso Antecipado</h3>
-              <p className="notice-text">
-                Calculadora profissional de risk management para traders sérios.
-              </p>
-              <div className="notice-warning">
-                <p>
-                  ⚠️ <strong>Algumas funcionalidades em desenvolvimento</strong><br/>
-                  Cadastre-se agora e tenha acesso antecipado às novidades!
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Formulário de Login/Registro */}
@@ -204,6 +183,16 @@ const LoginPage = () => {
                   : 'Tenha acesso completo à plataforma'
                 }
               </p>
+            </div>
+
+            {/* Aviso de Acesso Antecipado - Melhor Posicionado */}
+            <div className="access-notice">
+              <div className="notice-content">
+                <span className="notice-badge">🚀 Beta</span>
+                <span className="notice-message">
+                  Plataforma em constante evolução - Junte-se aos early adopters!
+                </span>
+              </div>
             </div>
 
             {/* Toggle entre Login/Register */}
