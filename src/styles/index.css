@@ -35,6 +35,17 @@
   --error-bg: #fef2f2;
   --error-text: #dc2626;
 
+  /* Z-index hierarchy - Sistema consistente */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-tooltip: 200;
+  --z-sticky: 300;
+  --z-sidebar: 1000;
+  --z-overlay: 2000;
+  --z-modal: 3000;
+  --z-toast: 4000;
+  --z-emergency: 9999;
+
   /* Sidebar - Tema Claro */
   --sidebar-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
   --sidebar-border: #cbd5e1;

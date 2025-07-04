@@ -89,7 +89,9 @@
   transition: all 0.3s ease;
   min-height: 80vh;
   align-items: start;
-  overflow: visible;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .instructions-section,
@@ -404,6 +406,8 @@
     gap: 15px;
     padding: 15px;
     margin: 10px;
+    max-width: calc(100vw - 20px);
+    width: calc(100% - 20px);
   }
   
   .header h1 {
@@ -435,6 +439,49 @@
   
   .result-value {
     text-align: left;
+  }
+}
+
+/* Mobile pequeno - 480px */
+@media (max-width: 480px) {
+  .container {
+    padding: 10px;
+    margin: 5px;
+    gap: 10px;
+    max-width: calc(100vw - 10px);
+    width: calc(100% - 10px);
+    border-radius: 15px;
+  }
+  
+  .header h1 {
+    font-size: 1.8em;
+    margin-bottom: 15px;
+  }
+  
+  .theme-toggle {
+    padding: 6px 10px;
+    font-size: 0.8em;
+  }
+  
+  .instructions-section,
+  .form-section,
+  .results-section {
+    padding: 15px;
+    border-radius: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 0.9em;
+    margin-bottom: 6px;
+  }
+  
+  .form-input {
+    padding: 12px;
+    font-size: 16px; /* Prevent zoom on iOS */
   }
 }
 
@@ -986,7 +1033,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: var(--z-modal);
   backdrop-filter: blur(5px);
 }
 
@@ -1466,7 +1513,7 @@
 
 /* Melhorias no React Select */
 .react-select-container .react-select__menu {
-  z-index: 1000;
+  z-index: var(--z-overlay);
 }
 
 .react-select-container .react-select__option {
@@ -1533,7 +1580,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-overlay);
 }
 
 .modal-content {
@@ -1711,7 +1758,7 @@
   border-radius: 12px;
   box-shadow: var(--shadow-heavy);
   min-width: 200px;
-  z-index: 100;
+  z-index: var(--z-dropdown);
   margin-top: 0.5rem;
   overflow: hidden;
 }
