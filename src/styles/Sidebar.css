@@ -334,8 +334,9 @@
 
 @media (max-width: 480px) {
   .sidebar {
-    width: 260px;
+    width: min(280px, calc(100vw - 40px));
     transform: translateX(-100%);
+    max-width: 320px;
   }
   
   .sidebar-header {
@@ -354,6 +355,31 @@
   
   .nav-link {
     font-size: 0.9rem;
+  }
+}
+
+/* Otimizações específicas para iOS e Android */
+@media (max-width: 768px) {
+  .sidebar {
+    /* iOS safe area */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    
+    /* Prevent scrolling issues */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  .sidebar-overlay {
+    /* iOS safe area coverage */
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+  
+  /* Touch improvements */
+  .nav-item, .sidebar-toggle {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
