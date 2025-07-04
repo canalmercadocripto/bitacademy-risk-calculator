@@ -77,9 +77,31 @@ module.exports = async function handler(req, res) {
       
       if (error) throw error;
       
+      // Map database fields to frontend expected fields
+      const mappedTrade = {
+        id: data.id,
+        exchange: data.exchange,
+        symbol: data.symbol,
+        direction: data.trade_type?.toUpperCase() || 'LONG',
+        entryPrice: parseFloat(data.entry_price),
+        stopLoss: data.stop_loss ? parseFloat(data.stop_loss) : null,
+        targetPrice: data.take_profit ? parseFloat(data.take_profit) : null,
+        positionSize: parseFloat(data.position_size),
+        riskAmount: parseFloat(data.risk_amount || 0),
+        rewardAmount: parseFloat(data.reward_amount || 0),
+        riskRewardRatio: parseFloat(data.risk_reward_ratio || 0),
+        accountSize: parseFloat(data.account_size || 0),
+        riskPercentage: parseFloat(data.risk_percentage || 0),
+        currentPrice: data.current_price ? parseFloat(data.current_price) : null,
+        status: data.status || 'calculated',
+        notes: data.notes || '',
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+
       return res.status(200).json({
         success: true,
-        data: data,
+        data: mappedTrade,
         message: 'Trade salvo com sucesso no banco de dados'
       });
     }
@@ -114,9 +136,31 @@ module.exports = async function handler(req, res) {
         throw error;
       }
       
+      // Map database fields to frontend expected fields
+      const mappedTrade = {
+        id: data.id,
+        exchange: data.exchange,
+        symbol: data.symbol,
+        direction: data.trade_type?.toUpperCase() || 'LONG',
+        entryPrice: parseFloat(data.entry_price),
+        stopLoss: data.stop_loss ? parseFloat(data.stop_loss) : null,
+        targetPrice: data.take_profit ? parseFloat(data.take_profit) : null,
+        positionSize: parseFloat(data.position_size),
+        riskAmount: parseFloat(data.risk_amount || 0),
+        rewardAmount: parseFloat(data.reward_amount || 0),
+        riskRewardRatio: parseFloat(data.risk_reward_ratio || 0),
+        accountSize: parseFloat(data.account_size || 0),
+        riskPercentage: parseFloat(data.risk_percentage || 0),
+        currentPrice: data.current_price ? parseFloat(data.current_price) : null,
+        status: data.status || 'calculated',
+        notes: data.notes || '',
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+
       return res.status(200).json({
         success: true,
-        data: data,
+        data: mappedTrade,
         message: 'Trade atualizado com sucesso'
       });
     }
@@ -188,9 +232,31 @@ module.exports = async function handler(req, res) {
       const avgRiskReward = totalTrades > 0 ? 
         statsData.reduce((sum, t) => sum + parseFloat(t.risk_reward_ratio || 0), 0) / totalTrades : 0;
       
+      // Map database fields to frontend expected fields
+      const mappedData = data.map(trade => ({
+        id: trade.id,
+        exchange: trade.exchange,
+        symbol: trade.symbol,
+        direction: trade.trade_type?.toUpperCase() || 'LONG',
+        entryPrice: parseFloat(trade.entry_price),
+        stopLoss: trade.stop_loss ? parseFloat(trade.stop_loss) : null,
+        targetPrice: trade.take_profit ? parseFloat(trade.take_profit) : null,
+        positionSize: parseFloat(trade.position_size),
+        riskAmount: parseFloat(trade.risk_amount || 0),
+        rewardAmount: parseFloat(trade.reward_amount || 0),
+        riskRewardRatio: parseFloat(trade.risk_reward_ratio || 0),
+        accountSize: parseFloat(trade.account_size || 0),
+        riskPercentage: parseFloat(trade.risk_percentage || 0),
+        currentPrice: trade.current_price ? parseFloat(trade.current_price) : null,
+        status: trade.status || 'calculated',
+        notes: trade.notes || '',
+        createdAt: trade.created_at,
+        updatedAt: trade.updated_at
+      }));
+
       return res.status(200).json({
         success: true,
-        data: data,
+        data: mappedData,
         meta: {
           page: pageNum,
           limit: limitNum,
