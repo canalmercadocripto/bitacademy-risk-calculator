@@ -11,6 +11,16 @@ const AdminTrades = () => {
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
 
+  // Função para formatar valores em USD
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    }).format(value || 0);
+  };
+
   useEffect(() => {
     fetchAllTrades();
   }, []);
@@ -242,14 +252,14 @@ const AdminTrades = () => {
             </div>
             
             <div className="col-values">
-              <div className="value-entry">Entrada: R$ {trade.entryPrice.toFixed(2)}</div>
+              <div className="value-entry">Entrada: {formatCurrency(trade.entryPrice)}</div>
               <div className="value-position">Posição: {trade.positionSize.toFixed(4)}</div>
-              <div className="value-account">Conta: R$ {trade.accountSize.toFixed(2)}</div>
+              <div className="value-account">Conta: {formatCurrency(trade.accountSize)}</div>
             </div>
             
             <div className="col-risk">
-              <div className="risk-amount">Risco: R$ {trade.riskAmount.toFixed(2)}</div>
-              <div className="reward-amount">Reward: R$ {trade.rewardAmount.toFixed(2)}</div>
+              <div className="risk-amount">Risco: {formatCurrency(trade.riskAmount)}</div>
+              <div className="reward-amount">Reward: {formatCurrency(trade.rewardAmount)}</div>
               <div className="rr-ratio">R/R: {trade.riskRewardRatio.toFixed(2)}</div>
             </div>
             
@@ -310,18 +320,18 @@ const AdminTrades = () => {
               
               <div className="details-section">
                 <h3>📈 Dados de Entrada</h3>
-                <p><strong>Tamanho da Conta:</strong> R$ {selectedTrade.accountSize.toFixed(2)}</p>
+                <p><strong>Tamanho da Conta:</strong> {formatCurrency(selectedTrade.accountSize)}</p>
                 <p><strong>Risco (%):</strong> {selectedTrade.riskPercentage}%</p>
-                <p><strong>Preço de Entrada:</strong> R$ {selectedTrade.entryPrice.toFixed(8)}</p>
-                <p><strong>Stop Loss:</strong> R$ {selectedTrade.stopLoss?.toFixed(8) || 'N/A'}</p>
-                <p><strong>Take Profit:</strong> R$ {selectedTrade.takeProfit?.toFixed(8) || 'N/A'}</p>
+                <p><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</p>
+                <p><strong>Stop Loss:</strong> {selectedTrade.stopLoss ? formatCurrency(selectedTrade.stopLoss) : 'N/A'}</p>
+                <p><strong>Take Profit:</strong> {selectedTrade.takeProfit ? formatCurrency(selectedTrade.takeProfit) : 'N/A'}</p>
               </div>
               
               <div className="details-section">
                 <h3>⚖️ Cálculos de Risco</h3>
                 <p><strong>Tamanho da Posição:</strong> {selectedTrade.positionSize.toFixed(8)}</p>
-                <p><strong>Valor do Risco:</strong> R$ {selectedTrade.riskAmount.toFixed(2)}</p>
-                <p><strong>Valor do Reward:</strong> R$ {selectedTrade.rewardAmount.toFixed(2)}</p>
+                <p><strong>Valor do Risco:</strong> {formatCurrency(selectedTrade.riskAmount)}</p>
+                <p><strong>Valor do Reward:</strong> {formatCurrency(selectedTrade.rewardAmount)}</p>
                 <p><strong>Risk/Reward Ratio:</strong> {selectedTrade.riskRewardRatio.toFixed(2)}</p>
               </div>
               
