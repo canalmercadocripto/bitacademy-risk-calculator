@@ -1,3 +1,6 @@
+/* Import Design System */
+@import url('./design-system.css');
+
 :root {
   /* Tema Claro - Melhorado para Visibilidade */
   --background-primary: #f8fafc;
