@@ -196,6 +196,9 @@
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  position: relative;
+  z-index: var(--z-content);
+  flex-wrap: wrap;
 }
 
 .direction-button {
@@ -246,6 +249,8 @@
   margin-top: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  position: relative;
+  z-index: var(--z-content);
 }
 
 .calculate-button:hover:not(:disabled) {
@@ -707,6 +712,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 8px;
+  position: relative;
+  z-index: var(--z-content);
 }
 
 .exchange-button {
@@ -1889,20 +1896,153 @@
 
 /* Landscape orientation specific fixes */
 @media (max-height: 500px) and (orientation: landscape) {
+  .header {
+    margin-bottom: 8px;
+    position: relative;
+  }
+  
   .header h1 {
-    font-size: 1.5em;
-    margin-bottom: 10px;
+    font-size: 1.3em;
+    margin-bottom: 5px;
+    line-height: 1.2;
+  }
+  
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    margin-top: 0;
   }
   
   .container {
     min-height: auto;
-    padding: 8px;
-    gap: 8px;
+    padding: 4px;
+    gap: 6px;
+    grid-template-columns: 1fr;
+    max-width: calc(100vw - 8px);
   }
   
   .instructions-section,
   .form-section,
   .results-section {
-    padding: 12px;
+    padding: 8px;
+    margin-bottom: 0;
+  }
+  
+  /* Reorganizar botões em landscape para evitar sobreposição */
+  .direction-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  
+  .direction-button {
+    flex: 1;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+  }
+  
+  .exchange-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+  }
+  
+  .exchange-button {
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 0.8em;
+  }
+  
+  .exchange-name {
+    font-size: 0.75em;
+  }
+  
+  .exchange-subtitle {
+    font-size: 0.7em;
+  }
+  
+  .calculate-button {
+    padding: 10px 16px;
+    font-size: 0.9em;
+    margin: 8px 0;
+  }
+  
+  /* Inputs compactos em landscape */
+  .input-group {
+    margin-bottom: 8px;
+  }
+  
+  .input-group label {
+    font-size: 0.85em;
+    margin-bottom: 3px;
+  }
+  
+  .input-group input {
+    padding: 8px 10px;
+    font-size: 0.9em;
+    min-height: 36px;
+  }
+}
+
+/* Altura muito crítica - dispositivos pequenos em landscape */
+@media (max-height: 400px) and (orientation: landscape) {
+  .header {
+    margin-bottom: 4px;
+  }
+  
+  .header h1 {
+    font-size: 1.1em;
+    margin-bottom: 2px;
+  }
+  
+  .theme-toggle {
+    padding: 2px 6px;
+    font-size: 0.7em;
+  }
+  
+  .container {
+    padding: 2px;
+    gap: 4px;
+    margin: 2px;
+  }
+  
+  .instructions-section,
+  .form-section,
+  .results-section {
+    padding: 6px;
+  }
+  
+  .direction-buttons,
+  .exchange-buttons {
+    margin: 4px 0;
+  }
+  
+  .direction-button,
+  .exchange-button {
+    min-height: 36px;
+    padding: 4px 6px;
+    font-size: 0.75em;
+  }
+  
+  .input-group {
+    margin-bottom: 6px;
+  }
+  
+  .input-group input {
+    padding: 6px 8px;
+    min-height: 32px;
+    font-size: 0.85em;
+  }
+  
+  .calculate-button {
+    padding: 8px 12px;
+    font-size: 0.85em;
+    margin: 6px 0;
   }
 }

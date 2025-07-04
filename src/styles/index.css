@@ -35,15 +35,17 @@
   --error-bg: #fef2f2;
   --error-text: #dc2626;
 
-  /* Z-index hierarchy - Sistema consistente */
+  /* Z-index hierarchy - Sistema reorganizado para evitar sobreposições */
   --z-base: 1;
+  --z-content: 10;
   --z-dropdown: 100;
   --z-tooltip: 200;
   --z-sticky: 300;
-  --z-sidebar: 1000;
-  --z-overlay: 2000;
-  --z-modal: 3000;
-  --z-toast: 4000;
+  --z-floating: 400;
+  --z-sidebar: 500;
+  --z-overlay: 600;
+  --z-modal: 700;
+  --z-toast: 800;
   --z-emergency: 9999;
 
   /* Sidebar - Tema Claro */

@@ -78,6 +78,8 @@
   left: 0;
   right: 0;
   z-index: var(--z-dropdown);
+  max-height: 200px;
+  overflow-y: auto;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -292,5 +294,39 @@
   .phone-number-input {
     padding: 0.75rem 0.75rem;
     font-size: 0.9rem;
+  }
+}
+
+/* Landscape e altura crítica */
+@media (max-height: 500px) and (orientation: landscape) {
+  .country-dropdown {
+    max-height: 120px;
+    font-size: 0.85em;
+  }
+  
+  .country-option {
+    padding: 8px 12px;
+  }
+  
+  .country-button {
+    padding: 8px 10px;
+    font-size: 0.9em;
+  }
+}
+
+@media (max-height: 400px) and (orientation: landscape) {
+  .country-dropdown {
+    max-height: 100px;
+    font-size: 0.8em;
+  }
+  
+  .country-option {
+    padding: 6px 10px;
+  }
+  
+  .country-button {
+    padding: 6px 8px;
+    font-size: 0.85em;
+    min-width: 80px;
   }
 }
