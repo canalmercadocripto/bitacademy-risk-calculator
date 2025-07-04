@@ -206,6 +206,18 @@ const RiskCalculator = () => {
   };
 
   const validateForm = () => {
+    // Validar seleção de exchange
+    if (!selectedExchange) {
+      toast.error('Por favor, selecione uma exchange antes de calcular');
+      return false;
+    }
+    
+    // Validar seleção de par/símbolo
+    if (!selectedSymbol) {
+      toast.error('Por favor, selecione um par de moedas antes de calcular');
+      return false;
+    }
+    
     const requiredFields = ['entryPrice', 'stopLoss', 'targetPrice', 'accountSize', 'riskPercent'];
     
     for (const field of requiredFields) {
