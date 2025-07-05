@@ -74,12 +74,20 @@ const ApiConfiguration = () => {
   // Função para testar exchanges habilitadas automaticamente
   const testEnabledExchanges = async () => {
     const enabledExchanges = getEnabledExchanges();
+    console.log(`🔍 Verificando ${enabledExchanges.length} exchanges habilitadas para teste automático...`);
     
     for (const exchange of enabledExchanges) {
-      // Só testar se cache inválido ou não conectado
-      if (!isConnectionValid(exchange.id) && !exchange.connected) {
+      const cacheValid = isConnectionValid(exchange.id);
+      console.log(`📊 ${exchange.id}: connected=${exchange.connected}, cacheValid=${cacheValid}`);
+      
+      // Testar se cache inválido ou não conectado
+      if (!cacheValid || !exchange.connected) {
         console.log(`🔄 Testando automaticamente ${exchange.id}...`);
         await testExchangeConnection(exchange.id, false); // false = automático
+        // Aguardar um pouco entre testes
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        console.log(`✅ ${exchange.id} já conectado com cache válido`);
       }
     }
   };
@@ -453,12 +461,30 @@ const ApiConfiguration = () => {
                 };
                 await saveKeysToDatabase(keysToSave);
                 toast.success('✅ Chaves salvas com segurança!');
+                
+                // Testar conexão automaticamente após salvar
+                setTimeout(() => {
+                  testExchangeConnection(apiConfig.selectedExchange, true);
+                }, 1000);
               }
             }}
             disabled={!apiConfig.apiKey || !apiConfig.secret}
           >
             💾 Salvar
           </button>
+
+          {hasValidKeys() && (
+            <button 
+              className="test-all-button"
+              onClick={async () => {
+                toast.info('🔄 Testando todas as exchanges...');
+                await testEnabledExchanges();
+              }}
+              disabled={Object.values(testingStatus).some(testing => testing)}
+            >
+              {Object.values(testingStatus).some(testing => testing) ? '🔄 Testando...' : '🧪 Testar Todas'}
+            </button>
+          )}
 
           {hasValidKeys() && (
             <button 
@@ -661,7 +687,7 @@ const ApiConfiguration = () => {
           gap: 15px;
         }
 
-        .test-button, .save-button {
+        .test-button, .save-button, .test-all-button, .clear-button {
           padding: 12px 24px;
           border: none;
           border-radius: 6px;
@@ -677,6 +703,11 @@ const ApiConfiguration = () => {
 
         .save-button {
           background: var(--success-color);
+          color: white;
+        }
+
+        .test-all-button {
+          background: #17a2b8;
           color: white;
         }
 
@@ -868,7 +899,7 @@ const ApiConfiguration = () => {
           transform: none;
         }
 
-        .test-button:disabled, .save-button:disabled {
+        .test-button:disabled, .save-button:disabled, .test-all-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
