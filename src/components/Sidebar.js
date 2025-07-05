@@ -32,16 +32,10 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
       description: 'Trades e Cálculos'
     },
     {
-      id: 'brokerage-settings',
-      label: 'Corretoras',
-      icon: '🏢',
-      description: 'Conexões API'
-    },
-    {
-      id: 'trading-history',
-      label: 'Histórico Real',
-      icon: '📈',
-      description: 'Trades das Corretoras'
+      id: 'api-manager',
+      label: 'Gerenciador API',
+      icon: '🔑',
+      description: 'APIs e Histórico Completo'
     },
     {
       id: 'profile',

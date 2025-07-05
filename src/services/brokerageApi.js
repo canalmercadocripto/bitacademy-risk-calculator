@@ -5,6 +5,50 @@ import api from './api';
  * Handles connection and data sync with multiple brokerage platforms
  */
 
+// Mock data for development/testing
+const mockSupportedBrokerages = [
+  {
+    id: 'binance',
+    name: 'Binance',
+    description: 'Maior exchange de criptomoedas do mundo',
+    logo: 'https://cryptoicons.org/api/icon/bnb/32',
+    features: ['Spot Trading', 'Futures', 'Margin', 'API v3'],
+    requiredFields: ['apiKey', 'secretKey']
+  },
+  {
+    id: 'bybit',
+    name: 'Bybit',
+    description: 'Exchange focada em derivativos',
+    logo: 'https://cryptoicons.org/api/icon/bybit/32',
+    features: ['Futures', 'Perpetual', 'Options', 'API v5'],
+    requiredFields: ['apiKey', 'secretKey']
+  },
+  {
+    id: 'bitget',
+    name: 'BitGet',
+    description: 'Exchange com copy trading',
+    logo: 'https://cryptoicons.org/api/icon/bgb/32',
+    features: ['Spot', 'Futures', 'Copy Trading', 'API v2'],
+    requiredFields: ['apiKey', 'secretKey', 'passphrase']
+  },
+  {
+    id: 'coinbase',
+    name: 'Coinbase Pro',
+    description: 'Exchange profissional da Coinbase',
+    logo: 'https://cryptoicons.org/api/icon/cb/32',
+    features: ['Spot Trading', 'Advanced Orders', 'API v2'],
+    requiredFields: ['apiKey', 'secretKey', 'passphrase']
+  },
+  {
+    id: 'kucoin',
+    name: 'KuCoin',
+    description: 'Exchange com muitas altcoins',
+    logo: 'https://cryptoicons.org/api/icon/kcs/32',
+    features: ['Spot', 'Futures', 'Margin', 'Trading Bot'],
+    requiredFields: ['apiKey', 'secretKey', 'passphrase']
+  }
+];
+
 export const brokerageApi = {
   // ========== CONNECTION MANAGEMENT ==========
 
@@ -12,18 +56,50 @@ export const brokerageApi = {
    * Get list of supported brokerages
    */
   getSupportedBrokerages: async () => {
-    const response = await api.get('/brokerage/supported');
-    return response.data;
+    // For development, return mock data
+    // const response = await api.get('/brokerage/supported');
+    // return response.data;
+    return mockSupportedBrokerages;
   },
 
   /**
    * Get user's connected brokerages
    */
   getConnectedBrokerages: async (token) => {
-    const response = await api.get('/brokerage/connections', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    // Mock data for development
+    const mockConnectedBrokerages = [
+      {
+        id: 'conn_1',
+        brokerage_id: 'binance',
+        brokerage_name: 'Binance',
+        brokerage_logo: 'https://cryptoicons.org/api/icon/bnb/32',
+        name: 'Binance Principal',
+        api_key_masked: 'bN***************Kx',
+        status: 'connected',
+        test_mode: false,
+        created_at: '2024-01-15T10:30:00Z',
+        last_sync: '2024-01-16T08:15:00Z'
+      },
+      {
+        id: 'conn_2',
+        brokerage_id: 'bybit',
+        brokerage_name: 'Bybit',
+        brokerage_logo: 'https://cryptoicons.org/api/icon/bybit/32',
+        name: 'Bybit Futures',
+        api_key_masked: 'by***************7s',
+        status: 'connected',
+        test_mode: true,
+        sub_account: 'futures_account',
+        created_at: '2024-01-14T14:20:00Z',
+        last_sync: '2024-01-16T07:45:00Z'
+      }
+    ];
+    
+    // const response = await api.get('/brokerage/connections', {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
+    // return response.data;
+    return mockConnectedBrokerages;
   },
 
   /**

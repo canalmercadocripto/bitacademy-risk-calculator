@@ -12,8 +12,7 @@ import Users from './pages/Users';
 import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
-import BrokerageSettings from './components/BrokerageSettings';
-import TradingHistory from './components/TradingHistory';
+import ApiManager from './components/ApiManager';
 import Sidebar from './components/Sidebar';
 import './styles/scroll-fix.css';
 import './styles/App.css';
@@ -85,10 +84,8 @@ const AppContent = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
-      case 'brokerage-settings':
-        return <BrokerageSettings />;
-      case 'trading-history':
-        return <TradingHistory />;
+      case 'api-manager':
+        return <ApiManager />;
       default:
         return <RiskCalculator />;
     }
