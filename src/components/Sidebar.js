@@ -81,6 +81,16 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
         description: 'Config. do Sistema'
       },
       {
+        type: 'divider',
+        label: 'APIs & Dados Reais'
+      },
+      {
+        id: 'trading-history-real',
+        label: 'Histórico Real',
+        icon: '📊',
+        description: 'Trades da API Binance'
+      },
+      {
         id: 'binance-test',
         label: 'Teste API Binance',
         icon: '🧪',

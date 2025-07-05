@@ -12,6 +12,7 @@ import Users from './pages/Users';
 import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import TradingHistoryReal from './components/TradingHistoryReal';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
@@ -82,6 +83,8 @@ const AppContent = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
+      case 'trading-history-real':
+        return <TradingHistoryReal />;
       default:
         return <RiskCalculator />;
     }

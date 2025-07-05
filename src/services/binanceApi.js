@@ -187,7 +187,7 @@ class BinanceAPI {
     return await response.json();
   }
 
-  // Get trading history
+  // Get trading history - OPTIMIZED for complete history
   async getTradingHistory(symbol = null, limit = 1000, startTime = null, endTime = null) {
     const params = { limit };
     
@@ -197,39 +197,84 @@ class BinanceAPI {
 
     try {
       if (symbol) {
-        // Get trades for specific symbol
-        return await this.makeRequest('/api/v3/myTrades', params);
+        // Get trades for specific symbol with pagination support
+        let allTrades = [];
+        let fromId = null;
+        const maxRequests = 10; // Limit to prevent infinite loops
+        let requestCount = 0;
+
+        while (requestCount < maxRequests) {
+          const requestParams = { ...params };
+          if (fromId) {
+            requestParams.fromId = fromId;
+            delete requestParams.startTime; // Can't use both fromId and startTime
+          }
+
+          const trades = await this.makeRequest('/api/v3/myTrades', requestParams);
+          
+          if (!trades || trades.length === 0) break;
+          
+          allTrades = allTrades.concat(trades.map(trade => ({
+            ...trade,
+            symbol
+          })));
+
+          // If we got less than requested, we've reached the end
+          if (trades.length < limit) break;
+
+          // Set fromId for next request (last trade ID + 1)
+          fromId = trades[trades.length - 1].id + 1;
+          requestCount++;
+
+          // Rate limit delay
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        console.log(`✅ Retrieved ${allTrades.length} trades for ${symbol}`);
+        return allTrades;
+
       } else {
-        // Get all symbols first, then get trades for each
-        const accountInfo = await this.getAccountInfo();
-        const symbols = await this.getAllSymbols();
+        // Get comprehensive trading history for all symbols
+        const popularSymbols = [
+          'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT',
+          'XRPUSDT', 'DOGEUSDT', 'MATICUSDT', 'DOTUSDT', 'AVAXUSDT',
+          'LTCUSDT', 'LINKUSDT', 'UNIUSDT', 'BCHUSDT', 'FILUSDT',
+          'ATOMUSDT', 'NEARUSDT', 'ICPUSDT', 'APTUSDT', 'ARBUSDT'
+        ];
         
         let allTrades = [];
         
-        // Get recent trades for active symbols (this is a simplified approach)
-        const popularSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'];
-        
-        for (const symbol of popularSymbols) {
+        for (const symbolName of popularSymbols) {
           try {
-            const trades = await this.makeRequest('/api/v3/myTrades', { 
-              symbol, 
-              limit: 100 
-            });
-            allTrades = allTrades.concat(trades.map(trade => ({
-              ...trade,
-              symbol
-            })));
+            console.log(`🔍 Fetching trades for ${symbolName}...`);
+            
+            const symbolTrades = await this.getTradingHistory(
+              symbolName, 
+              500, // Moderate limit per symbol
+              startTime,
+              endTime
+            );
+            
+            if (symbolTrades && symbolTrades.length > 0) {
+              allTrades = allTrades.concat(symbolTrades);
+              console.log(`✅ ${symbolTrades.length} trades found for ${symbolName}`);
+            }
+
+            // Rate limiting between symbols
+            await new Promise(resolve => setTimeout(resolve, 200));
+
           } catch (error) {
-            // Skip symbols that user hasn't traded
+            console.log(`⚠️ No trades for ${symbolName}: ${error.message}`);
             continue;
           }
         }
 
+        console.log(`🎉 Total trades retrieved: ${allTrades.length}`);
         return allTrades;
       }
     } catch (error) {
       console.error('Error getting trading history:', error);
-      return [];
+      throw error; // Re-throw to handle in UI
     }
   }
 
