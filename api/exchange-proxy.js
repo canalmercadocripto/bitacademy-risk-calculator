@@ -274,8 +274,10 @@ async function getBingXBalances(apiKey, secret, baseURL, res) {
 }
 
 // === IMPLEMENTAÇÕES BYBIT V5 ===
-function createBybitV5Signature(timestamp, apiKey, recvWindow, body, secret) {
-  const param_str = timestamp + apiKey + recvWindow + (body || '');
+function createBybitV5Signature(timestamp, apiKey, recvWindow, queryParams, body, secret) {
+  // Para GET requests, incluir query params na assinatura
+  // Formato: timestamp + apiKey + recvWindow + queryParams + body
+  const param_str = timestamp + apiKey + recvWindow + (queryParams || '') + (body || '');
   return crypto.createHmac('sha256', secret).update(param_str).digest('hex');
 }
 
@@ -283,10 +285,11 @@ async function testBybitConnection(apiKey, secret, baseURL, res) {
   try {
     const timestamp = Date.now().toString();
     const recvWindow = '5000';
+    const queryParams = 'accountType=UNIFIED';
     
-    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, queryParams, '', secret);
     
-    const url = `${baseURL}/v5/account/wallet-balance?accountType=SPOT`;
+    const url = `${baseURL}/v5/account/wallet-balance?${queryParams}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -330,8 +333,9 @@ async function getBybitAccountInfo(apiKey, secret, baseURL, res) {
   try {
     const timestamp = Date.now().toString();
     const recvWindow = '5000';
+    const queryParams = ''; // Sem query params para account/info
     
-    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, queryParams, '', secret);
     
     const url = `${baseURL}/v5/account/info`;
     
@@ -387,10 +391,11 @@ async function getBybitBalances(apiKey, secret, baseURL, res) {
   try {
     const timestamp = Date.now().toString();
     const recvWindow = '5000';
+    const queryParams = 'accountType=UNIFIED';
     
-    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, queryParams, '', secret);
     
-    const url = `${baseURL}/v5/account/wallet-balance?accountType=SPOT`;
+    const url = `${baseURL}/v5/account/wallet-balance?${queryParams}`;
     
     const response = await fetch(url, {
       method: 'GET',
