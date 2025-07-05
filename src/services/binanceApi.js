@@ -7,12 +7,24 @@
 
 const BINANCE_API_BASE = 'https://api.binance.com';
 const BINANCE_TESTNET_BASE = 'https://testnet.binance.vision';
+const PROXY_BASE_URL = 'http://localhost:3001/api/binance';
+
+// CORS Proxy URLs for development (não recomendado para produção)
+const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+const ALLORIGINS_PROXY = 'https://api.allorigins.win/raw?url=';
 
 class BinanceAPI {
-  constructor(apiKey, secretKey, testMode = false) {
+  constructor(apiKey, secretKey, testMode = false, useProxy = false) {
     this.apiKey = apiKey;
     this.secretKey = secretKey;
-    this.baseURL = testMode ? BINANCE_TESTNET_BASE : BINANCE_API_BASE;
+    this.testMode = testMode;
+    this.useProxy = useProxy;
+    
+    if (useProxy) {
+      this.baseURL = PROXY_BASE_URL;
+    } else {
+      this.baseURL = testMode ? BINANCE_TESTNET_BASE : BINANCE_API_BASE;
+    }
   }
 
   // Generate signature for authenticated requests using Web Crypto API
@@ -41,36 +53,58 @@ class BinanceAPI {
 
   // Make authenticated API request
   async makeRequest(endpoint, params = {}, method = 'GET') {
-    const timestamp = Date.now();
-    const queryParams = {
-      ...params,
-      timestamp
-    };
-
-    // Create query string
-    const queryString = new URLSearchParams(queryParams).toString();
-    
-    // Add signature (now async)
-    const signature = await this.generateSignature(queryString);
-    const finalQueryString = `${queryString}&signature=${signature}`;
-
-    const url = `${this.baseURL}${endpoint}?${finalQueryString}`;
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Binance API Error: ${errorData.msg || response.statusText}`);
+    if (this.useProxy) {
+      // When using proxy, just pass parameters - proxy handles signature
+      const url = `${this.baseURL}${endpoint}`;
+      const queryString = new URLSearchParams(params).toString();
+      const finalUrl = queryString ? `${url}?${queryString}` : url;
+      
+      try {
+        const response = await fetch(finalUrl, { method });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Binance API Error: ${errorData.error || response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Binance API Request Error:', error);
+        throw error;
       }
+    } else {
+      // Direct API call (for Node.js environments)
+      const timestamp = Date.now();
+      const queryParams = {
+        ...params,
+        timestamp
+      };
 
-      return await response.json();
-    } catch (error) {
-      console.error('Binance API Request Error:', error);
-      throw error;
+      // Create query string
+      const queryString = new URLSearchParams(queryParams).toString();
+      
+      // Add signature (now async)
+      const signature = await this.generateSignature(queryString);
+      const finalQueryString = `${queryString}&signature=${signature}`;
+
+      const url = `${this.baseURL}${endpoint}?${finalQueryString}`;
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: this.getHeaders()
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Binance API Error: ${errorData.msg || response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Binance API Request Error:', error);
+        throw error;
+      }
     }
   }
 

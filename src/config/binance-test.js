@@ -12,7 +12,10 @@ export const BINANCE_TEST_CONFIG = {
   testMode: process.env.REACT_APP_BINANCE_TEST_MODE === 'true',
   
   // Enable real API testing based on environment
-  enabled: process.env.REACT_APP_USE_REAL_API === 'true'
+  enabled: process.env.REACT_APP_USE_REAL_API === 'true',
+  
+  // Use proxy for browser environments to avoid CORS
+  useProxy: true
 };
 
 // Test function to verify API connection
@@ -32,7 +35,8 @@ export const testBinanceConnection = async () => {
     const api = new BinanceAPI(
       BINANCE_TEST_CONFIG.apiKey,
       BINANCE_TEST_CONFIG.secretKey,
-      BINANCE_TEST_CONFIG.testMode
+      BINANCE_TEST_CONFIG.testMode,
+      BINANCE_TEST_CONFIG.useProxy
     );
     
     console.log('Testing Binance API connection...');
@@ -65,7 +69,8 @@ export const testBinanceData = async () => {
     const api = new BinanceAPI(
       BINANCE_TEST_CONFIG.apiKey,
       BINANCE_TEST_CONFIG.secretKey,
-      BINANCE_TEST_CONFIG.testMode
+      BINANCE_TEST_CONFIG.testMode,
+      BINANCE_TEST_CONFIG.useProxy
     );
     
     console.log('Testing Binance API data retrieval...');

@@ -265,7 +265,7 @@
   border-radius: 12px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(20px) !important;
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
 }
 
 .react-select__option {
