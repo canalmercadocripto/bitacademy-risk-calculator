@@ -12,10 +12,7 @@ import Users from './pages/Users';
 import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
-import ApiManager from './components/ApiManager';
-import BinanceApiTest from './components/BinanceApiTest';
 import Sidebar from './components/Sidebar';
-import './styles/scroll-fix.css';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
 import './styles/TradeMonitor.css';
@@ -85,10 +82,6 @@ const AppContent = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
-      case 'api-manager':
-        return <ApiManager />;
-      case 'binance-test':
-        return <BinanceApiTest />;
       default:
         return <RiskCalculator />;
     }

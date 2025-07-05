@@ -14,7 +14,6 @@ import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
-import './RiskCalculator.css';
 
 const RiskCalculator = () => {
   const { theme, toggleTheme } = useTheme();
@@ -72,8 +71,6 @@ const RiskCalculator = () => {
   const [calculating, setCalculating] = useState(false);
   const [priceUpdateEnabled, setPriceUpdateEnabled] = useState(true);
   const [liveCurrentPrice, setLiveCurrentPrice] = useState(currentPrice);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [fieldTouched, setFieldTouched] = useState({});
   
   // States dos modais
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -131,15 +128,6 @@ const RiskCalculator = () => {
       ...prev,
       [field]: value
     }));
-    
-    // Marcar campo como "tocado" para mostrar validação
-    setFieldTouched(prev => ({
-      ...prev,
-      [field]: true
-    }));
-    
-    // Validação em tempo real
-    validateField(field, value);
   };
 
   const handleDirectionChange = (direction) => {
@@ -147,15 +135,6 @@ const RiskCalculator = () => {
       ...prev,
       direction
     }));
-    
-    // Revalidar preços quando direção muda
-    if (formData.entryPrice && formData.stopLoss && formData.targetPrice) {
-      setTimeout(() => {
-        validateField('entryPrice', formData.entryPrice);
-        validateField('stopLoss', formData.stopLoss);
-        validateField('targetPrice', formData.targetPrice);
-      }, 0);
-    }
   };
 
   const handleCalculate = async () => {
@@ -217,100 +196,6 @@ const RiskCalculator = () => {
       console.error('Erro no cálculo:', error);
     } finally {
       setCalculating(false);
-    }
-  };
-
-  // Validação em tempo real
-  const validateField = (field, value) => {
-    const errors = { ...validationErrors };
-    
-    switch (field) {
-      case 'entryPrice':
-        if (!value || value.trim() === '') {
-          errors.entryPrice = 'Preço de entrada é obrigatório';
-        } else if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-          errors.entryPrice = 'Preço deve ser um número positivo';
-        } else {
-          delete errors.entryPrice;
-          // Validar lógica com outros campos se disponíveis
-          validatePriceLogic(field, parseFloat(value), errors);
-        }
-        break;
-        
-      case 'stopLoss':
-        if (!value || value.trim() === '') {
-          errors.stopLoss = 'Stop Loss é obrigatório';
-        } else if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-          errors.stopLoss = 'Stop Loss deve ser um número positivo';
-        } else {
-          delete errors.stopLoss;
-          validatePriceLogic(field, parseFloat(value), errors);
-        }
-        break;
-        
-      case 'targetPrice':
-        if (!value || value.trim() === '') {
-          errors.targetPrice = 'Target é obrigatório';
-        } else if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-          errors.targetPrice = 'Target deve ser um número positivo';
-        } else {
-          delete errors.targetPrice;
-          validatePriceLogic(field, parseFloat(value), errors);
-        }
-        break;
-        
-      case 'accountSize':
-        if (!value || value.trim() === '') {
-          errors.accountSize = 'Tamanho da conta é obrigatório';
-        } else if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-          errors.accountSize = 'Tamanho da conta deve ser positivo';
-        } else if (parseFloat(value) < 100) {
-          errors.accountSize = 'Valor mínimo recomendado: $100';
-        } else {
-          delete errors.accountSize;
-        }
-        break;
-        
-      case 'riskPercent':
-        if (!value || value.trim() === '') {
-          errors.riskPercent = 'Porcentagem de risco é obrigatória';
-        } else if (isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-          errors.riskPercent = 'Risco deve ser um número positivo';
-        } else if (parseFloat(value) > 10) {
-          errors.riskPercent = 'Cuidado! Risco muito alto (máx. 10%)';
-        } else {
-          delete errors.riskPercent;
-        }
-        break;
-        
-      default:
-        break;
-    }
-    
-    setValidationErrors(errors);
-  };
-
-  const validatePriceLogic = (changedField, changedValue, errors) => {
-    const entryPrice = changedField === 'entryPrice' ? changedValue : parseFloat(formData.entryPrice);
-    const stopLoss = changedField === 'stopLoss' ? changedValue : parseFloat(formData.stopLoss);
-    const targetPrice = changedField === 'targetPrice' ? changedValue : parseFloat(formData.targetPrice);
-    
-    if (isNaN(entryPrice) || isNaN(stopLoss) || isNaN(targetPrice)) return;
-    
-    if (formData.direction === 'LONG') {
-      if (stopLoss >= entryPrice) {
-        errors.stopLoss = 'Para LONG: Stop Loss deve ser menor que entrada';
-      }
-      if (targetPrice <= entryPrice) {
-        errors.targetPrice = 'Para LONG: Target deve ser maior que entrada';
-      }
-    } else {
-      if (stopLoss <= entryPrice) {
-        errors.stopLoss = 'Para SHORT: Stop Loss deve ser maior que entrada';
-      }
-      if (targetPrice >= entryPrice) {
-        errors.targetPrice = 'Para SHORT: Target deve ser menor que entrada';
-      }
     }
   };
 
@@ -388,7 +273,6 @@ const RiskCalculator = () => {
     return labels[field] || field;
   };
 
-
   const handleLoadCalculation = (historyEntry) => {
     // Carregar dados do histórico no formulário
     const { formData: savedData } = historyEntry;
@@ -428,268 +312,84 @@ const RiskCalculator = () => {
     }));
   };
 
-  const getExchangeIcon = (exchangeId) => {
-    const icons = {
-      'binance': '🟡',
-      'bybit': '🟠', 
-      'bingx': '🔵',
-      'bitget': '🟢',
-      'manual': '⚙️'
-    };
-    return icons[exchangeId] || '🏢';
-  };
-
   return (
-    <div className="risk-calculator-container">
-      {/* Header */}
-      <header className="calculator-header">
-        <h1 className="calculator-title">⚡ Risk Calculator Pro</h1>
-        <p className="calculator-subtitle">
-          Calculadora profissional de gerenciamento de risco para traders. 
-          Maximize seus ganhos e minimize suas perdas com precisão matemática.
-        </p>
-      </header>
-
-      {/* Main Layout */}
-      <div className="calculator-layout">
-        {/* Left Column - Forms */}
-        <div className="calculator-forms">
-          {/* Exchange Selection Card */}
-          <div className="calculator-card">
-            <div className="exchange-selector">
-              <h2 className="exchange-title">🏢 Selecionar Exchange</h2>
-              
-              <div className="exchange-grid">
-                {exchanges.map(exchange => (
-                  <div
-                    key={exchange.id}
-                    className={`exchange-option ${selectedExchange?.id === exchange.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedExchange(exchange)}
-                  >
-                    <div className="exchange-icon">{getExchangeIcon(exchange.id)}</div>
-                    <div className="exchange-name">{exchange.name}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Symbol Selector */}
-              {selectedExchange && (
-                <div className="symbol-selector">
-                  <label className="symbol-label">Par de Moedas</label>
-                  <Select
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    placeholder="Selecione um par de moedas..."
-                    options={formatSymbolOptions()}
-                    value={selectedSymbol ? { 
-                      value: selectedSymbol, 
-                      label: `${selectedSymbol.symbol} (${selectedSymbol.baseAsset}/${selectedSymbol.quoteAsset})` 
-                    } : null}
-                    onChange={(option) => setSelectedSymbol(option?.value || null)}
-                    isLoading={loading.symbols}
-                    isClearable
-                    isSearchable
-                    noOptionsMessage={() => "Nenhum par encontrado"}
-                    loadingMessage={() => "Carregando pares..."}
-                  />
-                  
-                  {/* Price Info */}
-                  {selectedSymbol && (
-                    <div className="price-info">
-                      <span className="current-price-reference">
-                        📊 Cotação atual: {loading.price ? "Carregando..." : liveCurrentPrice ? `$${Number(liveCurrentPrice).toFixed(4)}` : "N/A"}
-                      </span>
-                      {!loading.price && liveCurrentPrice && (
-                        <div className="price-update-indicator">
-                          <div className="price-update-dot"></div>
-                          Atualiza a cada 5s
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Calculator Form Card */}
-          <div className="calculator-card">
-            <h2 className="section-title">⚙️ Parâmetros de Risco</h2>
-            
-            <form className="calculator-form" onSubmit={(e) => { e.preventDefault(); handleCalculate(); }}>
-              {/* Direction Toggle */}
-              <div className="direction-toggle">
-                <button
-                  type="button"
-                  className={`direction-option ${formData.direction === 'LONG' ? 'active' : ''}`}
-                  onClick={() => handleDirectionChange('LONG')}
-                >
-                  📈 LONG (Compra)
-                </button>
-                <button
-                  type="button"
-                  className={`direction-option ${formData.direction === 'SHORT' ? 'active' : ''}`}
-                  onClick={() => handleDirectionChange('SHORT')}
-                >
-                  📉 SHORT (Venda)
-                </button>
-              </div>
-
-              {/* Price Fields */}
-              <div className="form-section">
-                <h3 className="section-title">💰 Preços</h3>
-                
-                <div className="form-field half">
-                  <div className="field-group">
-                    <label className="field-label">Preço de Entrada</label>
-                    <div className="currency-input">
-                      <input
-                        type="number"
-                        step="any"
-                        className="field-input"
-                        placeholder="0.00"
-                        value={formData.entryPrice}
-                        onChange={(e) => handleInputChange('entryPrice', e.target.value)}
-                        disabled={calculating}
-                      />
-                    </div>
-                    {fieldTouched.entryPrice && validationErrors.entryPrice && (
-                      <div className="field-error">
-                        <span>⚠️</span> {validationErrors.entryPrice}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="field-group">
-                    <label className="field-label">Stop Loss</label>
-                    <div className="currency-input">
-                      <input
-                        type="number"
-                        step="any"
-                        className="field-input"
-                        placeholder="0.00"
-                        value={formData.stopLoss}
-                        onChange={(e) => handleInputChange('stopLoss', e.target.value)}
-                        disabled={calculating}
-                      />
-                    </div>
-                    {fieldTouched.stopLoss && validationErrors.stopLoss && (
-                      <div className="field-error">
-                        <span>⚠️</span> {validationErrors.stopLoss}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="form-field">
-                  <div className="field-group">
-                    <label className="field-label">Target Price</label>
-                    <div className="currency-input">
-                      <input
-                        type="number"
-                        step="any"
-                        className="field-input"
-                        placeholder="0.00"
-                        value={formData.targetPrice}
-                        onChange={(e) => handleInputChange('targetPrice', e.target.value)}
-                        disabled={calculating}
-                      />
-                    </div>
-                    {fieldTouched.targetPrice && validationErrors.targetPrice && (
-                      <div className="field-error">
-                        <span>⚠️</span> {validationErrors.targetPrice}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Account & Risk Fields */}
-              <div className="form-section">
-                <h3 className="section-title">💼 Conta & Risco</h3>
-                
-                <div className="form-field half">
-                  <div className="field-group">
-                    <label className="field-label">Tamanho da Conta</label>
-                    <div className="currency-input">
-                      <input
-                        type="number"
-                        step="any"
-                        className="field-input"
-                        placeholder="1000.00"
-                        value={formData.accountSize}
-                        onChange={(e) => handleInputChange('accountSize', e.target.value)}
-                        disabled={calculating}
-                      />
-                    </div>
-                    {fieldTouched.accountSize && validationErrors.accountSize && (
-                      <div className="field-error">
-                        <span>⚠️</span> {validationErrors.accountSize}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="field-group">
-                    <label className="field-label">Risco por Trade</label>
-                    <div className="percentage-input">
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        max="100"
-                        className="field-input"
-                        placeholder="2.0"
-                        value={formData.riskPercent}
-                        onChange={(e) => handleInputChange('riskPercent', e.target.value)}
-                        disabled={calculating}
-                      />
-                    </div>
-                    {fieldTouched.riskPercent && validationErrors.riskPercent && (
-                      <div className="field-error">
-                        <span>⚠️</span> {validationErrors.riskPercent}
-                      </div>
-                    )}
-                    {!validationErrors.riskPercent && formData.riskPercent && parseFloat(formData.riskPercent) <= 3 && (
-                      <div className="field-success">
-                        <span>✅</span> Risco conservador
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Calculate Button */}
-              <button
-                type="submit"
-                className="calculate-button"
-                disabled={calculating || Object.keys(validationErrors).length > 0 || !selectedExchange || !selectedSymbol}
-              >
-                {calculating && <span className="loading-spinner"></span>}
-                {calculating ? 'Calculando...' : '🚀 Calcular Risco'}
-              </button>
-            </form>
-          </div>
+    <div className="App">
+      <div style={{ padding: '20px' }}>
+        <Header 
+          theme={theme} 
+          onToggleTheme={toggleTheme}
+        />
+        
+        <div className="container">
+        <div className="instructions-section">
+          <Instructions />
         </div>
-
-        {/* Right Column - Results Only */}
-        <div className="calculator-results">
-          {/* Results */}
-          <EnhancedResults 
-            results={results} 
-            selectedSymbol={selectedSymbol}
+        
+        <div className="form-section">
+          <ExchangeSelector
+            exchanges={exchanges}
             selectedExchange={selectedExchange}
+            onExchangeSelect={setSelectedExchange}
+            loading={loading}
+          />
+
+          <div className="input-group">
+            <label>Par de Moedas:</label>
+            <Select
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder={selectedExchange ? "Selecione um par..." : "Selecione uma corretora primeiro"}
+              options={formatSymbolOptions()}
+              value={selectedSymbol ? { value: selectedSymbol, label: `${selectedSymbol.symbol} (${selectedSymbol.baseAsset}/${selectedSymbol.quoteAsset})` } : null}
+              onChange={(option) => setSelectedSymbol(option?.value || null)}
+              isLoading={loading.symbols}
+              isDisabled={!selectedExchange}
+              isClearable
+              isSearchable
+            />
+            {selectedSymbol && (
+              <div className="price-info">
+                <span className="current-price-reference">
+                  📊 Cotação atual: {loading.price ? "Carregando..." : liveCurrentPrice ? `$${Number(liveCurrentPrice).toFixed(4)}` : "N/A"}
+                </span>
+                {!loading.price && liveCurrentPrice && (
+                  <div className="price-update-indicator">
+                    <div className="price-update-dot"></div>
+                    Atualiza a cada 5s
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <CalculatorForm
             formData={formData}
+            onInputChange={handleInputChange}
+            onDirectionChange={handleDirectionChange}
+            onCalculate={handleCalculate}
+            calculating={calculating}
+            loading={loading}
             currentPrice={liveCurrentPrice}
           />
         </div>
+
+        <EnhancedResults 
+          results={results} 
+          selectedSymbol={selectedSymbol}
+          selectedExchange={selectedExchange}
+          formData={formData}
+          currentPrice={liveCurrentPrice}
+        />
       </div>
 
-      {/* Modals */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialMode={authModalMode}
-      />
+        {/* Modais */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode={authModalMode}
+        />
+
+      </div>
     </div>
   );
 };
