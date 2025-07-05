@@ -273,36 +273,45 @@ async function getBingXBalances(apiKey, secret, baseURL, res) {
   }
 }
 
-// === IMPLEMENTAÇÕES BYBIT ===
-function createBybitSignature(params, secret) {
-  const sortedParams = Object.keys(params).sort().map(key => `${key}=${params[key]}`).join('&');
-  return crypto.createHmac('sha256', secret).update(sortedParams).digest('hex');
+// === IMPLEMENTAÇÕES BYBIT V5 ===
+function createBybitV5Signature(timestamp, apiKey, recvWindow, body, secret) {
+  const param_str = timestamp + apiKey + recvWindow + (body || '');
+  return crypto.createHmac('sha256', secret).update(param_str).digest('hex');
 }
 
 async function testBybitConnection(apiKey, secret, baseURL, res) {
   try {
     const timestamp = Date.now().toString();
-    const params = {
-      api_key: apiKey,
-      timestamp: timestamp
-    };
+    const recvWindow = '5000';
     
-    const signature = createBybitSignature(params, secret);
-    params.sign = signature;
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
     
-    const queryString = Object.keys(params).map(key => `${key}=${params[key]}`).join('&');
-    const url = `${baseURL}/spot/v3/private/account?${queryString}`;
+    const url = `${baseURL}/v5/account/wallet-balance?accountType=SPOT`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-BAPI-API-KEY': apiKey,
+        'X-BAPI-SIGN': signature,
+        'X-BAPI-TIMESTAMP': timestamp,
+        'X-BAPI-RECV-WINDOW': recvWindow,
+        'Content-Type': 'application/json'
+      }
+    });
 
     if (response.ok) {
       const data = await response.json();
-      return res.json({
-        success: true,
-        exchangeId: 'bybit',
-        message: 'Conexão com Bybit estabelecida com sucesso',
-        hasBalance: data.result && data.result.balances && data.result.balances.length > 0
-      });
+      
+      if (data.retCode === 0) {
+        return res.json({
+          success: true,
+          exchangeId: 'bybit',
+          message: 'Conexão com Bybit estabelecida com sucesso',
+          hasBalance: data.result && data.result.list && data.result.list.length > 0
+        });
+      } else {
+        throw new Error(`Bybit API Error: ${data.retCode} - ${data.retMsg}`);
+      }
     } else {
       const errorText = await response.text();
       throw new Error(`Bybit API Error: ${response.status} - ${errorText}`);
@@ -319,23 +328,52 @@ async function testBybitConnection(apiKey, secret, baseURL, res) {
 
 async function getBybitAccountInfo(apiKey, secret, baseURL, res) {
   try {
-    const accountInfo = {
-      exchangeId: 'bybit',
-      accountType: 'SPOT',
-      canTrade: true,
-      canWithdraw: true,
-      canDeposit: true,
-      permissions: ['SPOT'],
-      balanceInfo: {
-        totalAssets: 0,
-        nonZeroBalances: 0
+    const timestamp = Date.now().toString();
+    const recvWindow = '5000';
+    
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
+    
+    const url = `${baseURL}/v5/account/info`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-BAPI-API-KEY': apiKey,
+        'X-BAPI-SIGN': signature,
+        'X-BAPI-TIMESTAMP': timestamp,
+        'X-BAPI-RECV-WINDOW': recvWindow,
+        'Content-Type': 'application/json'
       }
-    };
-
-    return res.json({
-      success: true,
-      data: accountInfo
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.retCode === 0) {
+        const accountInfo = {
+          exchangeId: 'bybit',
+          accountType: 'SPOT',
+          canTrade: true,
+          canWithdraw: true,
+          canDeposit: true,
+          permissions: ['SPOT'],
+          balanceInfo: {
+            totalAssets: 0,
+            nonZeroBalances: 0
+          }
+        };
+
+        return res.json({
+          success: true,
+          data: accountInfo
+        });
+      } else {
+        throw new Error(`Bybit API Error: ${data.retCode} - ${data.retMsg}`);
+      }
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Bybit API Error: ${response.status} - ${errorText}`);
+    }
   } catch (error) {
     console.error('Erro ao buscar informações da conta Bybit:', error);
     return res.json({
@@ -347,12 +385,52 @@ async function getBybitAccountInfo(apiKey, secret, baseURL, res) {
 
 async function getBybitBalances(apiKey, secret, baseURL, res) {
   try {
-    const balances = []; // Implementação simplificada
-
-    return res.json({
-      success: true,
-      data: balances
+    const timestamp = Date.now().toString();
+    const recvWindow = '5000';
+    
+    const signature = createBybitV5Signature(timestamp, apiKey, recvWindow, '', secret);
+    
+    const url = `${baseURL}/v5/account/wallet-balance?accountType=SPOT`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-BAPI-API-KEY': apiKey,
+        'X-BAPI-SIGN': signature,
+        'X-BAPI-TIMESTAMP': timestamp,
+        'X-BAPI-RECV-WINDOW': recvWindow,
+        'Content-Type': 'application/json'
+      }
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.retCode === 0 && data.result && data.result.list) {
+        const balances = data.result.list[0]?.coin || [];
+        
+        const formattedBalances = balances
+          .filter(coin => parseFloat(coin.walletBalance) > 0)
+          .map(coin => ({
+            asset: coin.coin,
+            total: parseFloat(coin.walletBalance),
+            available: parseFloat(coin.walletBalance),
+            locked: 0,
+            usdValue: 0
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        return res.json({
+          success: true,
+          data: formattedBalances
+        });
+      } else {
+        throw new Error(`Bybit API Error: ${data.retCode} - ${data.retMsg}`);
+      }
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Bybit API Error: ${response.status} - ${errorText}`);
+    }
   } catch (error) {
     console.error('Erro ao buscar saldos Bybit:', error);
     return res.json({
