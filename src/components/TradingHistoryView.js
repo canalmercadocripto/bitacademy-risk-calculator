@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import BinanceAPI from '../services/binanceApi';
+import MultiExchangeAPI from '../services/multiExchangeApi';
 import { useApiKeys } from '../hooks/useApiKeys';
 import toast from 'react-hot-toast';
 
@@ -38,108 +39,124 @@ const TradingHistoryView = () => {
 
       console.log('📊 Buscando histórico de trades...');
       
-      // Obter credenciais do contexto global - usar primeira exchange conectada
+      // Obter todas as exchanges conectadas
       const connectedExchanges = getConnectedExchanges();
       if (connectedExchanges.length === 0) {
         throw new Error('Nenhuma exchange conectada. Configure suas chaves API primeiro.');
       }
       
-      // Por enquanto, usar apenas a primeira exchange conectada (Binance)
-      const binanceExchange = connectedExchanges.find(ex => ex.id === 'binance');
-      if (!binanceExchange) {
-        throw new Error('Binance não conectada. Configure suas chaves da Binance primeiro.');
-      }
-      
-      const { apiKey, secretKey } = getApiCredentials('binance');
-      
-      // Inicializar API
-      const binanceApi = new BinanceAPI(apiKey, secretKey, false, true);
-
-      // Testar conexão
-      const connectionTest = await binanceApi.testConnection();
-      if (!connectionTest.success) {
-        throw new Error('Falha na conexão: ' + connectionTest.error);
-      }
+      console.log(`📊 Buscando histórico de ${connectedExchanges.length} exchange(s): ${connectedExchanges.map(ex => ex.id).join(', ')}`);
 
       let allTrades = [];
       let totalVolume = 0;
       let totalFees = 0;
       let symbolsWithTrades = new Set();
+      let exchangesWithData = new Set();
 
       // Configurar filtros de data
       const startTime = filters.startDate ? new Date(filters.startDate).getTime() : null;
       const endTime = filters.endDate ? new Date(filters.endDate).getTime() : null;
 
-      if (filters.symbol === 'ALL') {
-        console.log('🔍 Buscando todos os símbolos...');
-        
-        // Buscar progresso para cada símbolo
-        for (let i = 0; i < popularSymbols.length; i++) {
-          const symbol = popularSymbols[i];
-          const progress = Math.round(((i + 1) / popularSymbols.length) * 100);
+      // Buscar dados de cada exchange conectada
+      for (const exchangeInfo of connectedExchanges) {
+        try {
+          console.log(`🔄 Processando ${exchangeInfo.id}...`);
           
-          try {
-            console.log(`📈 [${progress}%] Buscando ${symbol}...`);
+          const { apiKey, secretKey } = getApiCredentials(exchangeInfo.id);
+          const exchangeApi = new MultiExchangeAPI(exchangeInfo.id, apiKey, secretKey, false);
+          
+          if (filters.symbol === 'ALL') {
+            console.log(`🔍 Buscando todos os símbolos em ${exchangeInfo.id}...`);
             
-            const symbolTrades = await binanceApi.getTradingHistory(
-              symbol, 
-              Math.min(filters.limit, 500), // Limite por símbolo
-              startTime,
-              endTime
-            );
+            // Para "ALL", buscar símbolos populares
+            for (let i = 0; i < popularSymbols.length; i++) {
+              const symbol = popularSymbols[i];
+              const progress = Math.round(((i + 1) / popularSymbols.length) * 100);
+              
+              try {
+                console.log(`📈 [${progress}%] ${exchangeInfo.id}: ${symbol}...`);
+                
+                const symbolTrades = await exchangeApi.getTradingHistory(
+                  symbol, 
+                  Math.min(filters.limit / connectedExchanges.length, 200), // Distribuir limite entre exchanges
+                  startTime,
+                  endTime
+                );
 
-            if (symbolTrades && symbolTrades.length > 0) {
-              const formattedTrades = symbolTrades.map(trade => ({
-                ...binanceApi.formatTradeData(trade),
-                symbol: symbol,
-                rawData: trade
-              }));
+                if (symbolTrades && symbolTrades.length > 0) {
+                  const formattedTrades = symbolTrades.map(trade => ({
+                    ...exchangeApi.formatTradeData(trade),
+                    symbol: symbol,
+                    exchangeId: exchangeInfo.id,
+                    exchangeName: exchangeApi.getExchangeName(),
+                    rawData: trade
+                  }));
 
-              allTrades = allTrades.concat(formattedTrades);
-              symbolsWithTrades.add(symbol);
+                  allTrades = allTrades.concat(formattedTrades);
+                  symbolsWithTrades.add(symbol);
+                  exchangesWithData.add(exchangeInfo.id);
 
-              // Calcular estatísticas
-              symbolTrades.forEach(trade => {
-                totalVolume += parseFloat(trade.quoteQty || 0);
-                totalFees += parseFloat(trade.commission || 0);
-              });
+                  // Calcular estatísticas
+                  symbolTrades.forEach(trade => {
+                    totalVolume += parseFloat(trade.cost || 0);
+                    totalFees += parseFloat(trade.fee?.cost || 0);
+                  });
 
-              console.log(`✅ ${symbolTrades.length} trades de ${symbol}`);
+                  console.log(`✅ ${symbolTrades.length} trades de ${symbol} em ${exchangeInfo.id}`);
+                }
+
+                // Rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+              } catch (error) {
+                console.log(`⚠️ ${exchangeInfo.id} ${symbol}: ${error.message}`);
+                continue;
+              }
             }
 
-            // Rate limiting
-            await new Promise(resolve => setTimeout(resolve, 150));
+          } else {
+            // Buscar símbolo específico
+            console.log(`🎯 Buscando ${filters.symbol} em ${exchangeInfo.id}...`);
+            
+            try {
+              const symbolTrades = await exchangeApi.getTradingHistory(
+                filters.symbol,
+                Math.min(filters.limit / connectedExchanges.length, 500),
+                startTime,
+                endTime
+              );
 
-          } catch (error) {
-            console.log(`⚠️ ${symbol}: ${error.message}`);
-            continue;
+              if (symbolTrades && symbolTrades.length > 0) {
+                const formattedTrades = symbolTrades.map(trade => ({
+                  ...exchangeApi.formatTradeData(trade),
+                  symbol: filters.symbol,
+                  exchangeId: exchangeInfo.id,
+                  exchangeName: exchangeApi.getExchangeName(),
+                  rawData: trade
+                }));
+
+                allTrades = allTrades.concat(formattedTrades);
+                symbolsWithTrades.add(filters.symbol);
+                exchangesWithData.add(exchangeInfo.id);
+
+                symbolTrades.forEach(trade => {
+                  totalVolume += parseFloat(trade.cost || 0);
+                  totalFees += parseFloat(trade.fee?.cost || 0);
+                });
+
+                console.log(`✅ ${symbolTrades.length} trades de ${filters.symbol} em ${exchangeInfo.id}`);
+              }
+            } catch (error) {
+              console.log(`⚠️ Erro ao buscar ${filters.symbol} em ${exchangeInfo.id}: ${error.message}`);
+            }
           }
-        }
-
-      } else {
-        // Buscar símbolo específico
-        console.log(`🎯 Buscando ${filters.symbol}...`);
-        
-        const symbolTrades = await binanceApi.getTradingHistory(
-          filters.symbol,
-          filters.limit,
-          startTime,
-          endTime
-        );
-
-        if (symbolTrades && symbolTrades.length > 0) {
-          allTrades = symbolTrades.map(trade => ({
-            ...binanceApi.formatTradeData(trade),
-            symbol: filters.symbol,
-            rawData: trade
-          }));
-
-          symbolTrades.forEach(trade => {
-            totalVolume += parseFloat(trade.quoteQty || 0);
-            totalFees += parseFloat(trade.commission || 0);
-          });
-
-          symbolsWithTrades.add(filters.symbol);
+          
+          // Aguardar entre exchanges
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+        } catch (error) {
+          console.error(`❌ Erro ao processar ${exchangeInfo.id}:`, error);
+          continue;
         }
       }
 
@@ -150,6 +167,17 @@ const TradingHistoryView = () => {
       const buyTrades = allTrades.filter(t => t.side === 'BUY');
       const sellTrades = allTrades.filter(t => t.side === 'SELL');
       
+      // Estatísticas por exchange
+      const exchangeStats = {};
+      for (const exchangeId of exchangesWithData) {
+        const exchangeTrades = allTrades.filter(t => t.exchangeId === exchangeId);
+        exchangeStats[exchangeId] = {
+          trades: exchangeTrades.length,
+          volume: exchangeTrades.reduce((sum, t) => sum + (t.total || 0), 0),
+          fees: exchangeTrades.reduce((sum, t) => sum + (t.fees || 0), 0)
+        };
+      }
+      
       const statsData = {
         totalTrades: allTrades.length,
         buyTrades: buyTrades.length,
@@ -157,21 +185,23 @@ const TradingHistoryView = () => {
         totalVolume,
         totalFees,
         symbolsTraded: symbolsWithTrades.size,
+        exchangesUsed: exchangesWithData.size,
         avgFeeRate: totalVolume > 0 ? (totalFees / totalVolume) * 100 : 0,
         dateRange: {
           oldest: allTrades.length > 0 ? new Date(Math.min(...allTrades.map(t => new Date(t.timestamp)))) : null,
           newest: allTrades.length > 0 ? new Date(Math.max(...allTrades.map(t => new Date(t.timestamp)))) : null
         },
-        topSymbols: Array.from(symbolsWithTrades).slice(0, 5)
+        topSymbols: Array.from(symbolsWithTrades).slice(0, 5),
+        exchangeStats
       };
 
       setTrades(allTrades);
       setStats(statsData);
 
       if (allTrades.length > 0) {
-        toast.success(`✅ ${allTrades.length} trades carregados de ${symbolsWithTrades.size} símbolos`);
+        toast.success(`✅ ${allTrades.length} trades carregados de ${exchangesWithData.size} exchange(s) e ${symbolsWithTrades.size} símbolos`);
       } else {
-        toast.info('ℹ️ Nenhum trade encontrado no período selecionado');
+        toast.info('ℹ️ Nenhum trade encontrado no período selecionado em nenhuma exchange');
       }
 
     } catch (error) {
@@ -371,7 +401,43 @@ const TradingHistoryView = () => {
                 <div className="stat-label">Símbolos Diferentes</div>
               </div>
             </div>
+            <div className="stat-card">
+              <div className="stat-icon">🏢</div>
+              <div className="stat-info">
+                <div className="stat-value">{stats.exchangesUsed}</div>
+                <div className="stat-label">Exchanges</div>
+              </div>
+            </div>
           </div>
+          
+          {/* Breakdown por exchange */}
+          {stats.exchangeStats && Object.keys(stats.exchangeStats).length > 1 && (
+            <div className="exchange-breakdown">
+              <h4>📊 Breakdown por Exchange</h4>
+              <div className="exchange-stats-grid">
+                {Object.entries(stats.exchangeStats).map(([exchangeId, stat]) => (
+                  <div key={exchangeId} className="exchange-stat-card">
+                    <div className="exchange-stat-header">
+                      <span className="exchange-stat-icon">
+                        {exchangeId === 'binance' && '🟡'}
+                        {exchangeId === 'bingx' && '🔥'}
+                        {exchangeId === 'bybit' && '🟠'}
+                        {exchangeId === 'bitget' && '🟢'}
+                      </span>
+                      <span className="exchange-stat-name">
+                        {exchangeId.charAt(0).toUpperCase() + exchangeId.slice(1)}
+                      </span>
+                    </div>
+                    <div className="exchange-stat-details">
+                      <small>{stat.trades} trades</small>
+                      <small>${stat.volume.toFixed(2)} volume</small>
+                      <small>${stat.fees.toFixed(4)} taxas</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {stats.topSymbols.length > 0 && (
             <div className="top-symbols">
@@ -388,6 +454,7 @@ const TradingHistoryView = () => {
           <div className="trades-table">
             <div className="table-header">
               <span>Data/Hora</span>
+              <span>Exchange</span>
               <span>Símbolo</span>
               <span>Lado</span>
               <span>Quantidade</span>
@@ -400,6 +467,15 @@ const TradingHistoryView = () => {
                 <div key={index} className="table-row">
                   <span className="trade-date">
                     {new Date(trade.timestamp).toLocaleString('pt-BR')}
+                  </span>
+                  <span className="trade-exchange">
+                    <span className="exchange-badge" data-exchange={trade.exchangeId}>
+                      {trade.exchangeId === 'binance' && '🟡'}
+                      {trade.exchangeId === 'bingx' && '🔥'}
+                      {trade.exchangeId === 'bybit' && '🟠'}
+                      {trade.exchangeId === 'bitget' && '🟢'}
+                      {trade.exchangeName || trade.exchangeId}
+                    </span>
                   </span>
                   <span className="trade-symbol">{trade.symbol}</span>
                   <span className={`trade-side ${trade.side.toLowerCase()}`}>
@@ -572,6 +648,62 @@ const TradingHistoryView = () => {
           font-size: 0.9em;
         }
 
+        .exchange-breakdown {
+          margin-top: 20px;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+        }
+
+        .exchange-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 10px;
+          margin-top: 10px;
+        }
+
+        .exchange-stat-card {
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          text-align: center;
+        }
+
+        .exchange-stat-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-weight: 600;
+        }
+
+        .exchange-stat-icon {
+          font-size: 1.2em;
+        }
+
+        .exchange-stat-details {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .exchange-stat-details small {
+          font-size: 0.8em;
+          color: var(--text-secondary);
+        }
+
+        .exchange-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 6px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          font-size: 0.8em;
+          font-weight: 500;
+        }
+
         .trades-section {
           background: var(--bg-section);
           border: 1px solid var(--border-color);
@@ -587,7 +719,7 @@ const TradingHistoryView = () => {
 
         .table-header {
           display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1.5fr 1.5fr 1.5fr 1fr;
+          grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1.5fr 1.5fr 1fr;
           gap: 10px;
           padding: 15px;
           background: var(--bg-gradient-light);
@@ -603,7 +735,7 @@ const TradingHistoryView = () => {
 
         .table-row {
           display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1.5fr 1.5fr 1.5fr 1fr;
+          grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr 1.5fr 1.5fr 1fr;
           gap: 10px;
           padding: 12px 15px;
           border-top: 1px solid var(--border-color);

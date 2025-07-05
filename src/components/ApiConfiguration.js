@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BinanceAPI from '../services/binanceApi';
+import MultiExchangeAPI from '../services/multiExchangeApi';
 import { useApiKeys } from '../hooks/useApiKeys';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -74,9 +75,11 @@ const ApiConfiguration = () => {
   // Função para testar exchanges habilitadas automaticamente
   const testEnabledExchanges = async () => {
     const enabledExchanges = getEnabledExchanges();
-    console.log(`🔍 Verificando ${enabledExchanges.length} exchanges habilitadas para teste automático...`);
+    const supportedExchanges = enabledExchanges.filter(ex => MultiExchangeAPI.isExchangeSupported(ex.id));
     
-    for (const exchange of enabledExchanges) {
+    console.log(`🔍 Verificando ${enabledExchanges.length} exchanges habilitadas (${supportedExchanges.length} com suporte implementado)...`);
+    
+    for (const exchange of supportedExchanges) {
       const cacheValid = isConnectionValid(exchange.id);
       console.log(`📊 ${exchange.id}: connected=${exchange.connected}, cacheValid=${cacheValid}`);
       
@@ -89,6 +92,12 @@ const ApiConfiguration = () => {
       } else {
         console.log(`✅ ${exchange.id} já conectado com cache válido`);
       }
+    }
+
+    // Avisar sobre exchanges não suportadas
+    const unsupportedExchanges = enabledExchanges.filter(ex => !MultiExchangeAPI.isExchangeSupported(ex.id));
+    if (unsupportedExchanges.length > 0) {
+      console.log(`⚠️ Exchanges com chaves mas sem implementação: ${unsupportedExchanges.map(ex => ex.id).join(', ')}`);
     }
   };
 
@@ -157,63 +166,54 @@ const ApiConfiguration = () => {
       
       console.log(`🔧 Testando conexão ${exchangeId}...`);
       
-      // Usar apenas Binance por enquanto (implementar outras depois)
-      if (exchangeId === 'binance') {
-        const binanceApi = new BinanceAPI(apiKey, secretKey, false, true);
+      // Verificar se a exchange é suportada
+      if (!MultiExchangeAPI.isExchangeSupported(exchangeId)) {
+        throw new Error(`A exchange ${exchangeList.find(e => e.id === exchangeId)?.name || exchangeId} não é suportada.`);
+      }
 
-        // Testar conexão
-        const result = await binanceApi.testConnection();
+      // Usar serviço unificado para todas as exchanges
+      const exchangeApi = new MultiExchangeAPI(exchangeId, apiKey, secretKey, false);
+
+      // Testar conexão
+      const result = await exchangeApi.testConnection();
+      
+      if (result.success) {
+        // Buscar informações da conta
+        const accountData = await exchangeApi.getAccountInfo();
+        const balances = await exchangeApi.getBalances();
         
-        if (result.success) {
-          // Buscar informações da conta
-          const accountData = await binanceApi.getAccountInfo();
-          const balances = await binanceApi.getBalances();
-          
-          const accountInfo = {
-            accountType: accountData.accountType,
-            canTrade: accountData.canTrade,
-            canWithdraw: accountData.canWithdraw,
-            canDeposit: accountData.canDeposit,
-            permissions: accountData.permissions,
-            totalAssets: balances.length,
-            totalBalanceUSD: balances.reduce((sum, balance) => sum + (balance.usdValue || 0), 0),
-            mainAssets: balances.slice(0, 5).map(b => ({
-              asset: b.asset,
-              total: parseFloat(b.total),
-              usdValue: b.usdValue
-            })),
-            lastUpdate: new Date().toISOString()
-          };
+        const accountInfo = {
+          accountType: accountData.accountType || 'SPOT',
+          canTrade: accountData.canTrade !== undefined ? accountData.canTrade : true,
+          canWithdraw: accountData.canWithdraw !== undefined ? accountData.canWithdraw : true,
+          canDeposit: accountData.canDeposit !== undefined ? accountData.canDeposit : true,
+          permissions: accountData.permissions || [],
+          totalAssets: balances.length,
+          totalBalanceUSD: balances.reduce((sum, balance) => sum + (balance.usdValue || 0), 0),
+          mainAssets: balances.slice(0, 5).map(b => ({
+            asset: b.asset,
+            total: parseFloat(b.total),
+            usdValue: b.usdValue
+          })),
+          lastUpdate: new Date().toISOString(),
+          exchangeId
+        };
 
-          const connectionResult = {
-            success: true,
-            accountInfo,
-            error: null
-          };
-
-          // Salvar status de conexão no contexto global
-          saveExchangeConnectionStatus(exchangeId, connectionResult, accountInfo);
-
-          if (isManual) {
-            toast.success(`✅ ${exchangeId} conectada com sucesso!`);
-          }
-
-        } else {
-          throw new Error(result.error || 'Falha na conexão');
-        }
-      } else {
-        // Para outras exchanges, simular conexão por enquanto
         const connectionResult = {
           success: true,
-          accountInfo: { accountType: 'SPOT', canTrade: true },
+          accountInfo,
           error: null
         };
-        
-        saveExchangeConnectionStatus(exchangeId, connectionResult, { accountType: 'SPOT' });
-        
+
+        // Salvar status de conexão no contexto global
+        saveExchangeConnectionStatus(exchangeId, connectionResult, accountInfo);
+
         if (isManual) {
-          toast.success(`✅ ${exchangeId} conectada com sucesso! (simulado)`);
+          toast.success(`✅ ${exchangeApi.getExchangeName()} conectada com sucesso!`);
         }
+
+      } else {
+        throw new Error(result.error || 'Falha na conexão');
       }
 
     } catch (error) {
@@ -316,12 +316,16 @@ const ApiConfiguration = () => {
             const isConnected = exchangeData?.connected || false;
             const isTesting = testingStatus[exchange.id] || false;
             const hasKeys = exchangeData?.enabled || false;
+            const isImplemented = MultiExchangeAPI.isExchangeSupported(exchange.id);
             
             return (
               <div key={exchange.id} className={`exchange-card ${isConnected ? 'connected' : hasKeys ? 'configured' : 'unconfigured'}`}>
                 <div className="exchange-header">
                   <span className="exchange-icon">{exchange.icon}</span>
-                  <span className="exchange-name">{exchange.name}</span>
+                  <span className="exchange-name">
+                    {exchange.name}
+                    {!isImplemented && <small className="not-implemented"> (Em breve)</small>}
+                  </span>
                   <div className="exchange-status">
                     {isTesting && <span className="status-testing">🔄</span>}
                     {!isTesting && isConnected && <span className="status-connected">✅</span>}
