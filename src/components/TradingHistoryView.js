@@ -4,7 +4,7 @@ import { useApiKeys } from '../hooks/useApiKeys';
 import toast from 'react-hot-toast';
 
 const TradingHistoryView = () => {
-  const { hasValidKeys, getApiCredentials } = useApiKeys();
+  const { hasValidKeys, getApiCredentials, getConnectedExchanges } = useApiKeys();
   
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,8 +38,19 @@ const TradingHistoryView = () => {
 
       console.log('📊 Buscando histórico de trades...');
       
-      // Obter credenciais do contexto global
-      const { apiKey, secretKey } = getApiCredentials();
+      // Obter credenciais do contexto global - usar primeira exchange conectada
+      const connectedExchanges = getConnectedExchanges();
+      if (connectedExchanges.length === 0) {
+        throw new Error('Nenhuma exchange conectada. Configure suas chaves API primeiro.');
+      }
+      
+      // Por enquanto, usar apenas a primeira exchange conectada (Binance)
+      const binanceExchange = connectedExchanges.find(ex => ex.id === 'binance');
+      if (!binanceExchange) {
+        throw new Error('Binance não conectada. Configure suas chaves da Binance primeiro.');
+      }
+      
+      const { apiKey, secretKey } = getApiCredentials('binance');
       
       // Inicializar API
       const binanceApi = new BinanceAPI(apiKey, secretKey, false, true);
@@ -215,7 +226,7 @@ const TradingHistoryView = () => {
     <div className="trading-history-view">
       <div className="history-header">
         <h2>📈 Histórico de Trades</h2>
-        <p>Visualize todo seu histórico de trading da Binance</p>
+        <p>Visualize todo seu histórico de trading das exchanges conectadas</p>
         
         {/* Status das Chaves API */}
         {hasValidKeys() ? (

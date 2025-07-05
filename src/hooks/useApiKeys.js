@@ -65,21 +65,103 @@ export const ApiKeysProvider = ({ children }) => {
         if (storedKeys) {
           const parsed = JSON.parse(storedKeys);
           console.log('📱 Chaves carregadas do localStorage');
-          setApiKeys({
-            ...parsed,
-            isConfigured: !!(parsed.binanceApiKey && parsed.binanceSecret)
-          });
+          
+          // Verificar se tem estrutura nova ou antiga
+          if (parsed.exchanges) {
+            // Estrutura nova
+            setApiKeys(parsed);
+          } else {
+            // Migrar estrutura antiga para nova
+            console.log('🔄 Migrando estrutura antiga...');
+            const migratedKeys = {
+              exchanges: {
+                binance: {
+                  apiKey: parsed.binanceApiKey || '',
+                  secret: parsed.binanceSecret || '',
+                  connected: false,
+                  connectionStatus: null,
+                  lastTested: null,
+                  accountInfo: null,
+                  enabled: !!(parsed.binanceApiKey && parsed.binanceSecret)
+                },
+                bingx: {
+                  apiKey: '',
+                  secret: '',
+                  connected: false,
+                  connectionStatus: null,
+                  lastTested: null,
+                  accountInfo: null,
+                  enabled: false
+                },
+                bybit: {
+                  apiKey: '',
+                  secret: '',
+                  connected: false,
+                  connectionStatus: null,
+                  lastTested: null,
+                  accountInfo: null,
+                  enabled: false
+                },
+                bitget: {
+                  apiKey: '',
+                  secret: '',
+                  connected: false,
+                  connectionStatus: null,
+                  lastTested: null,
+                  accountInfo: null,
+                  enabled: false
+                }
+              },
+              lastSaved: parsed.lastSaved || new Date().toISOString()
+            };
+            setApiKeys(migratedKeys);
+            // Salvar estrutura migrada
+            localStorage.setItem('bitacademy_api_keys', JSON.stringify(migratedKeys));
+          }
         } else if (envApiKey && envSecret) {
           // Usar variáveis de ambiente como fallback
           console.log('🔧 Usando chaves das variáveis de ambiente');
           const envKeys = {
-            binanceApiKey: envApiKey,
-            binanceSecret: envSecret,
-            isConfigured: true,
+            exchanges: {
+              binance: {
+                apiKey: envApiKey,
+                secret: envSecret,
+                connected: false,
+                connectionStatus: null,
+                lastTested: null,
+                accountInfo: null,
+                enabled: true
+              },
+              bingx: {
+                apiKey: '',
+                secret: '',
+                connected: false,
+                connectionStatus: null,
+                lastTested: null,
+                accountInfo: null,
+                enabled: false
+              },
+              bybit: {
+                apiKey: '',
+                secret: '',
+                connected: false,
+                connectionStatus: null,
+                lastTested: null,
+                accountInfo: null,
+                enabled: false
+              },
+              bitget: {
+                apiKey: '',
+                secret: '',
+                connected: false,
+                connectionStatus: null,
+                lastTested: null,
+                accountInfo: null,
+                enabled: false
+              }
+            },
             lastSaved: new Date().toISOString(),
-            source: 'environment',
-            connectionStatus: null,
-            lastTested: null
+            source: 'environment'
           };
           setApiKeys(envKeys);
           // Salvar no localStorage para persistência
@@ -96,6 +178,12 @@ export const ApiKeysProvider = ({ children }) => {
   // Salvar chaves para uma exchange específica
   const saveExchangeKeys = (exchangeId, apiKey, secret) => {
     try {
+      // Garantir que apiKeys.exchanges existe
+      if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+        console.error('Estado de apiKeys não inicializado corretamente');
+        return false;
+      }
+      
       const updatedKeys = {
         ...apiKeys,
         exchanges: {
@@ -123,6 +211,12 @@ export const ApiKeysProvider = ({ children }) => {
   // Salvar status de conexão para uma exchange
   const saveExchangeConnectionStatus = (exchangeId, status, accountInfo = null) => {
     try {
+      // Garantir que apiKeys.exchanges existe
+      if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+        console.error('Estado de apiKeys não inicializado corretamente');
+        return false;
+      }
+      
       const updatedKeys = {
         ...apiKeys,
         exchanges: {
@@ -150,12 +244,49 @@ export const ApiKeysProvider = ({ children }) => {
   // Limpar chaves
   const clearApiKeys = () => {
     try {
-      setApiKeys({
-        binanceApiKey: '',
-        binanceSecret: '',
-        isConfigured: false,
+      const clearedKeys = {
+        exchanges: {
+          binance: {
+            apiKey: '',
+            secret: '',
+            connected: false,
+            connectionStatus: null,
+            lastTested: null,
+            accountInfo: null,
+            enabled: false
+          },
+          bingx: {
+            apiKey: '',
+            secret: '',
+            connected: false,
+            connectionStatus: null,
+            lastTested: null,
+            accountInfo: null,
+            enabled: false
+          },
+          bybit: {
+            apiKey: '',
+            secret: '',
+            connected: false,
+            connectionStatus: null,
+            lastTested: null,
+            accountInfo: null,
+            enabled: false
+          },
+          bitget: {
+            apiKey: '',
+            secret: '',
+            connected: false,
+            connectionStatus: null,
+            lastTested: null,
+            accountInfo: null,
+            enabled: false
+          }
+        },
         lastSaved: null
-      });
+      };
+      
+      setApiKeys(clearedKeys);
       localStorage.removeItem('bitacademy_api_keys');
       console.log('🗑️ Chaves API removidas');
       return true;
@@ -167,6 +298,11 @@ export const ApiKeysProvider = ({ children }) => {
 
   // Verificar se uma exchange tem chaves válidas
   const hasValidKeys = (exchangeId = null) => {
+    // Verificar se apiKeys.exchanges existe
+    if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+      return false;
+    }
+
     if (exchangeId) {
       const exchange = apiKeys.exchanges[exchangeId];
       return !!(exchange && exchange.apiKey && exchange.secret && exchange.enabled);
@@ -174,7 +310,7 @@ export const ApiKeysProvider = ({ children }) => {
     
     // Se não especificar exchange, verificar se alguma tem chaves válidas
     return Object.values(apiKeys.exchanges).some(exchange => 
-      exchange.apiKey && exchange.secret && exchange.enabled
+      exchange && exchange.apiKey && exchange.secret && exchange.enabled
     );
   };
 
@@ -182,6 +318,10 @@ export const ApiKeysProvider = ({ children }) => {
   const getApiCredentials = (exchangeId) => {
     if (!exchangeId) {
       throw new Error('Exchange ID é obrigatório');
+    }
+    
+    if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+      throw new Error('Sistema de chaves não inicializado. Recarregue a página.');
     }
     
     const exchange = apiKeys.exchanges[exchangeId];
@@ -197,6 +337,10 @@ export const ApiKeysProvider = ({ children }) => {
 
   // Verificar se a conexão de uma exchange ainda é válida (cache de 30 minutos)
   const isConnectionValid = (exchangeId) => {
+    if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+      return false;
+    }
+    
     const exchange = apiKeys.exchanges[exchangeId];
     if (!exchange || !exchange.connectionStatus || !exchange.lastTested) return false;
     
@@ -209,15 +353,23 @@ export const ApiKeysProvider = ({ children }) => {
 
   // Obter exchanges conectadas
   const getConnectedExchanges = () => {
+    if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+      return [];
+    }
+    
     return Object.entries(apiKeys.exchanges)
-      .filter(([id, exchange]) => exchange.connected && exchange.enabled)
+      .filter(([id, exchange]) => exchange && exchange.connected && exchange.enabled)
       .map(([id, exchange]) => ({ id, ...exchange }));
   };
 
   // Obter exchanges habilitadas (com chaves configuradas)
   const getEnabledExchanges = () => {
+    if (!apiKeys || !apiKeys.exchanges || typeof apiKeys.exchanges !== 'object') {
+      return [];
+    }
+    
     return Object.entries(apiKeys.exchanges)
-      .filter(([id, exchange]) => exchange.enabled)
+      .filter(([id, exchange]) => exchange && exchange.enabled)
       .map(([id, exchange]) => ({ id, ...exchange }));
   };
 
@@ -266,7 +418,7 @@ export const ApiKeysProvider = ({ children }) => {
     isConnectionValid,
     getConnectedExchanges,
     getEnabledExchanges,
-    exchanges: apiKeys.exchanges
+    exchanges: apiKeys?.exchanges || {}
   };
 
   return (

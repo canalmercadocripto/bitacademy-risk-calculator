@@ -39,13 +39,15 @@ const ApiConfiguration = () => {
 
   useEffect(() => {
     // Carregar campos do formulário para a exchange selecionada
-    const selectedExchange = exchanges[apiConfig.selectedExchange];
-    if (selectedExchange) {
-      setApiConfig(prev => ({
-        ...prev,
-        apiKey: selectedExchange.apiKey || '',
-        secret: selectedExchange.secret || ''
-      }));
+    if (exchanges && typeof exchanges === 'object') {
+      const selectedExchange = exchanges[apiConfig.selectedExchange];
+      if (selectedExchange) {
+        setApiConfig(prev => ({
+          ...prev,
+          apiKey: selectedExchange.apiKey || '',
+          secret: selectedExchange.secret || ''
+        }));
+      }
     }
 
     // Carregar configurações salvas localmente
@@ -228,11 +230,11 @@ const ApiConfiguration = () => {
     const config = {
       id: Date.now(),
       name: name || `Config ${new Date().toLocaleDateString()}`,
-      apiKey: apiConfig.binanceApiKey,
-      secret: apiConfig.binanceSecret,
+      apiKey: apiConfig.apiKey,
+      secret: apiConfig.secret,
       useTestnet: apiConfig.useTestnet,
       useProxy: apiConfig.useProxy,
-      isConnected: localConnectionStatus.connected,
+      isConnected: false, // Removido localConnectionStatus
       savedAt: new Date().toISOString(),
       isAutoSaved: isAuto
     };
@@ -248,17 +250,15 @@ const ApiConfiguration = () => {
 
   const loadConfiguration = (config) => {
     setApiConfig({
-      binanceApiKey: config.apiKey,
-      binanceSecret: config.secret,
+      selectedExchange: 'binance',
+      apiKey: config.apiKey,
+      secret: config.secret,
       useTestnet: config.useTestnet,
       useProxy: config.useProxy
     });
     
     // Salvar no contexto global também
-    saveApiKeys({
-      binanceApiKey: config.apiKey,
-      binanceSecret: config.secret
-    });
+    saveExchangeKeys('binance', config.apiKey, config.secret);
     
     toast.info('Configuração carregada');
   };
@@ -285,7 +285,7 @@ const ApiConfiguration = () => {
               {isConnectionValid() && (
                 <small> • Conexão válida (cache ativo)</small>
               )}
-              {!isConnectionValid() && apiKeys.lastSaved && (
+              {!isConnectionValid() && apiKeys?.lastSaved && (
                 <small> • Salvo em {new Date(apiKeys.lastSaved).toLocaleString('pt-BR')}</small>
               )}
             </span>
@@ -293,71 +293,16 @@ const ApiConfiguration = () => {
         )}
       </div>
 
-      {/* Status da Conexão */}
-      <div className={`connection-status ${localConnectionStatus.connected ? 'connected' : 'disconnected'}`}>
-        <div className="status-indicator">
-          {localConnectionStatus.testing && <span className="loading">🔄</span>}
-          {!localConnectionStatus.testing && localConnectionStatus.connected && <span className="success">✅</span>}
-          {!localConnectionStatus.testing && !localConnectionStatus.connected && <span className="error">❌</span>}
-        </div>
-        <div className="status-info">
-          <h3>
-            {localConnectionStatus.testing && 'Testando conexão...'}
-            {!localConnectionStatus.testing && localConnectionStatus.connected && 'API Conectada'}
-            {!localConnectionStatus.testing && !localConnectionStatus.connected && 'API Desconectada'}
-          </h3>
-          {localConnectionStatus.error && (
-            <p className="error-message">{localConnectionStatus.error}</p>
-          )}
-        </div>
-      </div>
+      {/* Status da Conexão - Removido pois está usando localConnectionStatus que não existe */}
 
-      {/* Informações da Conta */}
-      {localConnectionStatus.accountInfo && (
-        <div className="account-summary">
-          <h3>📊 Informações da Conta</h3>
-          <div className="account-grid">
-            <div className="account-item">
-              <span className="label">Tipo:</span>
-              <span className="value">{localConnectionStatus.accountInfo.accountType}</span>
-            </div>
-            <div className="account-item">
-              <span className="label">Trading:</span>
-              <span className={`value ${localConnectionStatus.accountInfo.canTrade ? 'enabled' : 'disabled'}`}>
-                {localConnectionStatus.accountInfo.canTrade ? '✅ Habilitado' : '❌ Desabilitado'}
-              </span>
-            </div>
-            <div className="account-item">
-              <span className="label">Total Assets:</span>
-              <span className="value">{localConnectionStatus.accountInfo.totalAssets}</span>
-            </div>
-            <div className="account-item">
-              <span className="label">Valor Total:</span>
-              <span className="value">${localConnectionStatus.accountInfo.totalBalanceUSD.toFixed(2)}</span>
-            </div>
-          </div>
-          
-          <div className="main-assets">
-            <h4>💰 Principais Assets</h4>
-            <div className="assets-list">
-              {localConnectionStatus.accountInfo.mainAssets.map((asset, index) => (
-                <div key={index} className="asset-item">
-                  <span className="asset-name">{asset.asset}</span>
-                  <span className="asset-amount">{asset.total.toFixed(8)}</span>
-                  <span className="asset-value">${asset.usdValue?.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Informações da Conta - Movido para os cards individuais das exchanges */}
 
       {/* Status de Todas as Exchanges */}
       <div className="exchanges-overview">
         <h3>📊 Status das Exchanges</h3>
         <div className="exchanges-grid">
           {exchangeList.map(exchange => {
-            const exchangeData = exchanges[exchange.id];
+            const exchangeData = exchanges && typeof exchanges === 'object' ? exchanges[exchange.id] : null;
             const isConnected = exchangeData?.connected || false;
             const isTesting = testingStatus[exchange.id] || false;
             const hasKeys = exchangeData?.enabled || false;
