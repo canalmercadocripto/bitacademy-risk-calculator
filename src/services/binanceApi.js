@@ -7,11 +7,14 @@
 
 const BINANCE_API_BASE = 'https://api.binance.com';
 const BINANCE_TESTNET_BASE = 'https://testnet.binance.vision';
-const PROXY_BASE_URL = 'http://localhost:3001/api/binance';
+const PROXY_BASE_URL = 'https://cors-anywhere.herokuapp.com/https://api.binance.com';
 
-// CORS Proxy URLs for development (não recomendado para produção)
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
-const ALLORIGINS_PROXY = 'https://api.allorigins.win/raw?url=';
+// CORS Proxy URLs - múltiplas opções para melhor confiabilidade
+const CORS_PROXIES = [
+  'https://cors-anywhere.herokuapp.com/',
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?'
+];
 
 class BinanceAPI {
   constructor(apiKey, secretKey, testMode = false, useProxy = false) {
@@ -51,25 +54,56 @@ class BinanceAPI {
     };
   }
 
+  // Try multiple CORS proxies if one fails
+  async tryMultipleProxies(endpoint, queryString) {
+    const baseUrl = this.testMode ? BINANCE_TESTNET_BASE : BINANCE_API_BASE;
+    const fullUrl = `${baseUrl}${endpoint}?${queryString}`;
+    
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const proxyUrl = `${proxy}${encodeURIComponent(fullUrl)}`;
+        console.log(`🔄 Tentando proxy: ${proxy}`);
+        
+        const response = await fetch(proxyUrl, {
+          headers: {
+            'X-MBX-APIKEY': this.apiKey,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          timeout: 10000
+        });
+        
+        if (response.ok) {
+          console.log(`✅ Sucesso com proxy: ${proxy}`);
+          return await response.json();
+        }
+      } catch (error) {
+        console.log(`❌ Falhou proxy ${proxy}: ${error.message}`);
+        continue;
+      }
+    }
+    
+    throw new Error('Todos os proxies CORS falharam. Tente novamente ou use conexão direta.');
+  }
+
   // Make authenticated API request
   async makeRequest(endpoint, params = {}, method = 'GET') {
     if (this.useProxy) {
-      // When using proxy, just pass parameters - proxy handles signature
-      const url = `${this.baseURL}${endpoint}`;
-      const queryString = new URLSearchParams(params).toString();
-      const finalUrl = queryString ? `${url}?${queryString}` : url;
+      // Using CORS proxy with multiple fallbacks
+      const timestamp = Date.now();
+      const queryParams = {
+        ...params,
+        timestamp
+      };
+
+      // Create query string and signature
+      const queryString = new URLSearchParams(queryParams).toString();
+      const signature = await this.generateSignature(queryString);
+      const finalQueryString = `${queryString}&signature=${signature}`;
       
       try {
-        const response = await fetch(finalUrl, { method });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Binance API Error: ${errorData.error || response.statusText}`);
-        }
-        
-        return await response.json();
+        return await this.tryMultipleProxies(endpoint, finalQueryString);
       } catch (error) {
-        console.error('Binance API Request Error:', error);
+        console.error('Erro em todos os proxies:', error);
         throw error;
       }
     } else {
