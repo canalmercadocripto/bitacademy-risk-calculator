@@ -7,24 +7,26 @@
 
 const BINANCE_API_BASE = 'https://api.binance.com';
 const BINANCE_TESTNET_BASE = 'https://testnet.binance.vision';
-const PROXY_BASE_URL = 'https://cors-anywhere.herokuapp.com/https://api.binance.com';
 
-// CORS Proxy URLs - múltiplas opções para melhor confiabilidade
-const CORS_PROXIES = [
-  'https://cors-anywhere.herokuapp.com/',
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?'
-];
+// Use Vercel API Route as proxy (works on Vercel hosting)
+const getVercelApiUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Client side - use current domain
+    return `${window.location.origin}/api/binance`;
+  }
+  // Server side or fallback
+  return '/api/binance';
+};
 
 class BinanceAPI {
-  constructor(apiKey, secretKey, testMode = false, useProxy = false) {
+  constructor(apiKey, secretKey, testMode = false, useProxy = true) {
     this.apiKey = apiKey;
     this.secretKey = secretKey;
     this.testMode = testMode;
-    this.useProxy = useProxy;
+    this.useProxy = useProxy; // Default to true for Vercel
     
     if (useProxy) {
-      this.baseURL = PROXY_BASE_URL;
+      this.baseURL = getVercelApiUrl();
     } else {
       this.baseURL = testMode ? BINANCE_TESTNET_BASE : BINANCE_API_BASE;
     }
@@ -54,56 +56,40 @@ class BinanceAPI {
     };
   }
 
-  // Try multiple CORS proxies if one fails
-  async tryMultipleProxies(endpoint, queryString) {
-    const baseUrl = this.testMode ? BINANCE_TESTNET_BASE : BINANCE_API_BASE;
-    const fullUrl = `${baseUrl}${endpoint}?${queryString}`;
-    
-    for (const proxy of CORS_PROXIES) {
-      try {
-        const proxyUrl = `${proxy}${encodeURIComponent(fullUrl)}`;
-        console.log(`🔄 Tentando proxy: ${proxy}`);
-        
-        const response = await fetch(proxyUrl, {
-          headers: {
-            'X-MBX-APIKEY': this.apiKey,
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          timeout: 10000
-        });
-        
-        if (response.ok) {
-          console.log(`✅ Sucesso com proxy: ${proxy}`);
-          return await response.json();
-        }
-      } catch (error) {
-        console.log(`❌ Falhou proxy ${proxy}: ${error.message}`);
-        continue;
-      }
-    }
-    
-    throw new Error('Todos os proxies CORS falharam. Tente novamente ou use conexão direta.');
-  }
-
-  // Make authenticated API request
+  // Make authenticated API request using Vercel API Route
   async makeRequest(endpoint, params = {}, method = 'GET') {
     if (this.useProxy) {
-      // Using CORS proxy with multiple fallbacks
-      const timestamp = Date.now();
-      const queryParams = {
-        ...params,
-        timestamp
-      };
-
-      // Create query string and signature
-      const queryString = new URLSearchParams(queryParams).toString();
-      const signature = await this.generateSignature(queryString);
-      const finalQueryString = `${queryString}&signature=${signature}`;
+      // Using Vercel API Route - no CORS issues
+      const queryParams = new URLSearchParams({
+        endpoint,
+        ...params
+      }).toString();
+      
+      const url = `${this.baseURL}?${queryParams}`;
       
       try {
-        return await this.tryMultipleProxies(endpoint, finalQueryString);
+        console.log(`🔗 Making request via Vercel API Route: ${endpoint}`);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': this.apiKey,
+            'X-Secret-Key': this.secretKey
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`API Error: ${errorData.error || response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log(`✅ Success via Vercel API Route: ${endpoint}`);
+        return data;
+        
       } catch (error) {
-        console.error('Erro em todos os proxies:', error);
+        console.error('Vercel API Route Error:', error);
         throw error;
       }
     } else {
@@ -214,11 +200,27 @@ class BinanceAPI {
     }).filter(balance => balance.usdValue > 0.01); // Filter out very small amounts
   }
 
-  // Get ticker prices
+  // Get ticker prices (public endpoint, no auth needed)
   async getTickerPrices() {
-    const url = `${this.baseURL}/api/v3/ticker/price`;
-    const response = await fetch(url);
-    return await response.json();
+    if (this.useProxy) {
+      // Use Vercel API Route for consistency
+      const url = `${this.baseURL}?endpoint=/api/v3/ticker/price`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch ticker prices');
+        return await response.json();
+      } catch (error) {
+        // Fallback to direct call for public endpoint
+        console.log('Fallback to direct ticker prices call');
+        const directUrl = `${BINANCE_API_BASE}/api/v3/ticker/price`;
+        const response = await fetch(directUrl);
+        return await response.json();
+      }
+    } else {
+      const url = `${BINANCE_API_BASE}/api/v3/ticker/price`;
+      const response = await fetch(url);
+      return await response.json();
+    }
   }
 
   // Get trading history - OPTIMIZED for complete history
@@ -314,10 +316,28 @@ class BinanceAPI {
 
   // Get all trading symbols
   async getAllSymbols() {
-    const url = `${this.baseURL}/api/v3/exchangeInfo`;
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.symbols.map(s => s.symbol);
+    if (this.useProxy) {
+      // Use Vercel API Route for consistency
+      const url = `${this.baseURL}?endpoint=/api/v3/exchangeInfo`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch exchange info');
+        const data = await response.json();
+        return data.symbols.map(s => s.symbol);
+      } catch (error) {
+        // Fallback to direct call for public endpoint
+        console.log('Fallback to direct exchange info call');
+        const directUrl = `${BINANCE_API_BASE}/api/v3/exchangeInfo`;
+        const response = await fetch(directUrl);
+        const data = await response.json();
+        return data.symbols.map(s => s.symbol);
+      }
+    } else {
+      const url = `${BINANCE_API_BASE}/api/v3/exchangeInfo`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.symbols.map(s => s.symbol);
+    }
   }
 
   // Get order history
@@ -356,9 +376,14 @@ class BinanceAPI {
     const endpoint = '/api/v3/ticker/24hr';
     const params = symbol ? { symbol } : {};
     
-    const url = `${this.baseURL}${endpoint}${symbol ? `?symbol=${symbol}` : ''}`;
-    const response = await fetch(url);
-    return await response.json();
+    if (this.useProxy) {
+      // Use Vercel API Route
+      return await this.makeRequest(endpoint, params);
+    } else {
+      const url = `${this.baseURL}${endpoint}${symbol ? `?symbol=${symbol}` : ''}`;
+      const response = await fetch(url);
+      return await response.json();
+    }
   }
 
   // Calculate trading fees and costs
