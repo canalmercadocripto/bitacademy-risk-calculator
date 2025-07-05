@@ -33,27 +33,13 @@ const ApiConfiguration = () => {
   const [savedConfigs, setSavedConfigs] = useState([]);
 
   useEffect(() => {
-    // Carregar configurações do contexto global
+    // Carregar configurações do contexto global apenas uma vez
     if (apiKeys.binanceApiKey && apiKeys.binanceSecret) {
       setApiConfig(prevConfig => ({
         ...prevConfig,
         binanceApiKey: apiKeys.binanceApiKey,
         binanceSecret: apiKeys.binanceSecret
       }));
-      
-      // Usar cache de conexão se válido, caso contrário testar
-      if (isConnectionValid()) {
-        console.log('📱 Usando cache de conexão válido');
-        setLocalConnectionStatus({
-          connected: connectionStatus.success,
-          testing: false,
-          accountInfo: connectionStatus.accountInfo || null,
-          error: connectionStatus.error || null
-        });
-      } else if (isConfigured) {
-        console.log('🔄 Cache inválido ou inexistente, testando conexão...');
-        testConnection();
-      }
     }
 
     // Carregar configurações salvas localmente
@@ -61,9 +47,49 @@ const ApiConfiguration = () => {
     if (saved) {
       setSavedConfigs(JSON.parse(saved));
     }
-  }, [apiKeys, isConfigured, connectionStatus]);
+  }, []); // Executar apenas uma vez
 
-  const testConnection = async () => {
+  // Effect separado para gerenciar conexão
+  useEffect(() => {
+    if (!isConfigured || !apiKeys.binanceApiKey || !apiKeys.binanceSecret) {
+      return;
+    }
+
+    // Usar cache de conexão se válido
+    if (isConnectionValid()) {
+      console.log('📱 Usando cache de conexão válido');
+      setLocalConnectionStatus({
+        connected: connectionStatus.success,
+        testing: false,
+        accountInfo: connectionStatus.accountInfo || null,
+        error: connectionStatus.error || null
+      });
+    } else {
+      // Cache inválido ou inexistente - definir status como desconectado
+      // NÃO testar automaticamente para evitar loops
+      console.log('⏸️ Cache inválido - aguardando teste manual');
+      setLocalConnectionStatus({
+        connected: false,
+        testing: false,
+        accountInfo: null,
+        error: null
+      });
+    }
+  }, [isConfigured]); // Executar apenas quando isConfigured mudar
+
+  const testConnection = async (isManual = false) => {
+    // Se não é manual e já está testando, ignorar
+    if (!isManual && localConnectionStatus.testing) {
+      console.log('⏸️ Teste já em andamento, ignorando');
+      return;
+    }
+    
+    // Se não é manual e o cache ainda é válido, ignorar
+    if (!isManual && isConnectionValid()) {
+      console.log('⏸️ Cache ainda válido, ignorando teste automático');
+      return;
+    }
+    
     setLocalConnectionStatus(prev => ({ ...prev, testing: true, error: null }));
     
     try {
@@ -329,7 +355,7 @@ const ApiConfiguration = () => {
         <div className="form-actions">
           <button 
             className="test-button"
-            onClick={testConnection}
+            onClick={() => testConnection(true)}
             disabled={localConnectionStatus.testing || !apiConfig.binanceApiKey || !apiConfig.binanceSecret}
           >
             {localConnectionStatus.testing ? '🔄 Testando...' : '🧪 Testar Conexão'}

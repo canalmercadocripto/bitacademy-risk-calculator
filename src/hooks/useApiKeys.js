@@ -13,9 +13,14 @@ export const ApiKeysProvider = ({ children }) => {
     lastTested: null // Quando foi testado pela última vez
   });
 
-  // Carregar chaves do localStorage na inicialização
+  // Carregar chaves do localStorage na inicialização (apenas uma vez)
   useEffect(() => {
+    let hasLoaded = false;
+    
     const loadStoredKeys = () => {
+      if (hasLoaded) return; // Prevenir carregamentos múltiplos
+      hasLoaded = true;
+      
       try {
         // Tentar carregar das variáveis de ambiente primeiro
         const envApiKey = process.env.REACT_APP_BINANCE_API_KEY;
@@ -39,7 +44,9 @@ export const ApiKeysProvider = ({ children }) => {
             binanceSecret: envSecret,
             isConfigured: true,
             lastSaved: new Date().toISOString(),
-            source: 'environment'
+            source: 'environment',
+            connectionStatus: null,
+            lastTested: null
           };
           setApiKeys(envKeys);
           // Salvar no localStorage para persistência
@@ -51,7 +58,7 @@ export const ApiKeysProvider = ({ children }) => {
     };
 
     loadStoredKeys();
-  }, []);
+  }, []); // Executar apenas uma vez na inicialização
 
   // Salvar chaves
   const saveApiKeys = (newKeys, connectionStatus = null) => {
@@ -121,8 +128,17 @@ export const ApiKeysProvider = ({ children }) => {
     return (now - lastTestTime) < thirtyMinutes && apiKeys.connectionStatus.success;
   };
 
-  // Salvar status de conexão
+  // Salvar status de conexão (apenas se diferente do atual)
   const saveConnectionStatus = (status) => {
+    // Verificar se o status realmente mudou para evitar updates desnecessários
+    const currentStatus = apiKeys.connectionStatus;
+    if (currentStatus && 
+        currentStatus.success === status.success && 
+        currentStatus.error === status.error) {
+      console.log('🔗 Status de conexão inalterado, ignorando update');
+      return;
+    }
+    
     const updatedKeys = {
       ...apiKeys,
       connectionStatus: status,
