@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import BinanceAPI from '../services/binanceApi';
+import { useApiKeys } from '../hooks/useApiKeys';
 import toast from 'react-hot-toast';
 
 const ApiConfiguration = () => {
+  const { apiKeys, saveApiKeys, clearApiKeys, hasValidKeys, isConfigured } = useApiKeys();
+  
   const [apiConfig, setApiConfig] = useState({
-    binanceApiKey: process.env.REACT_APP_BINANCE_API_KEY || '',
-    binanceSecret: process.env.REACT_APP_BINANCE_SECRET_KEY || '',
+    binanceApiKey: '',
+    binanceSecret: '',
     useTestnet: false,
     useProxy: true
   });
@@ -20,17 +23,26 @@ const ApiConfiguration = () => {
   const [savedConfigs, setSavedConfigs] = useState([]);
 
   useEffect(() => {
-    // Carregar configurações salvas
+    // Carregar configurações do contexto global
+    if (apiKeys.binanceApiKey && apiKeys.binanceSecret) {
+      setApiConfig(prevConfig => ({
+        ...prevConfig,
+        binanceApiKey: apiKeys.binanceApiKey,
+        binanceSecret: apiKeys.binanceSecret
+      }));
+      
+      // Testar conexão automaticamente se estiver configurado
+      if (isConfigured) {
+        testConnection();
+      }
+    }
+
+    // Carregar configurações salvas localmente
     const saved = localStorage.getItem('api_configurations');
     if (saved) {
       setSavedConfigs(JSON.parse(saved));
     }
-
-    // Se já tem chaves, testar conexão automaticamente
-    if (apiConfig.binanceApiKey && apiConfig.binanceSecret) {
-      testConnection();
-    }
-  }, []);
+  }, [apiKeys, isConfigured]);
 
   const testConnection = async () => {
     setConnectionStatus(prev => ({ ...prev, testing: true, error: null }));
@@ -77,6 +89,12 @@ const ApiConfiguration = () => {
         });
 
         toast.success('✅ API Binance conectada com sucesso!');
+        
+        // Salvar chaves no contexto global
+        saveApiKeys({
+          binanceApiKey: apiConfig.binanceApiKey,
+          binanceSecret: apiConfig.binanceSecret
+        });
         
         // Salvar configuração automaticamente se funcionou
         saveConfiguration('Configuração Atual', true);
@@ -126,6 +144,13 @@ const ApiConfiguration = () => {
       useTestnet: config.useTestnet,
       useProxy: config.useProxy
     });
+    
+    // Salvar no contexto global também
+    saveApiKeys({
+      binanceApiKey: config.apiKey,
+      binanceSecret: config.secret
+    });
+    
     toast.info('Configuração carregada');
   };
 
@@ -141,6 +166,19 @@ const ApiConfiguration = () => {
       <div className="config-header">
         <h2>🔧 Configuração da API</h2>
         <p>Gerencie suas conexões com as APIs das exchanges</p>
+        
+        {/* Status das Chaves Permanentes */}
+        {hasValidKeys() && (
+          <div className="permanent-keys-status">
+            <span className="status-icon">🔐</span>
+            <span className="status-text">
+              Chaves API configuradas permanentemente
+              {apiKeys.lastSaved && (
+                <small> • Salvo em {new Date(apiKeys.lastSaved).toLocaleString('pt-BR')}</small>
+              )}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Status da Conexão */}
@@ -258,13 +296,48 @@ const ApiConfiguration = () => {
           <button 
             className="save-button"
             onClick={() => {
-              const name = prompt('Nome para esta configuração:');
-              if (name) saveConfiguration(name);
+              // Salvar no contexto global primeiro
+              const saved = saveApiKeys({
+                binanceApiKey: apiConfig.binanceApiKey,
+                binanceSecret: apiConfig.binanceSecret
+              });
+              
+              if (saved) {
+                const name = prompt('Nome para esta configuração (opcional):');
+                if (name) saveConfiguration(name);
+                toast.success('✅ Chaves salvas permanentemente!');
+              }
             }}
-            disabled={!connectionStatus.connected}
+            disabled={!apiConfig.binanceApiKey || !apiConfig.binanceSecret}
           >
-            💾 Salvar Config
+            💾 Salvar Permanente
           </button>
+
+          {hasValidKeys() && (
+            <button 
+              className="clear-button"
+              onClick={() => {
+                if (window.confirm('Tem certeza que deseja limpar as chaves API?')) {
+                  clearApiKeys();
+                  setApiConfig({
+                    binanceApiKey: '',
+                    binanceSecret: '',
+                    useTestnet: false,
+                    useProxy: true
+                  });
+                  setConnectionStatus({
+                    connected: false,
+                    testing: false,
+                    accountInfo: null,
+                    error: null
+                  });
+                  toast.success('🗑️ Chaves removidas');
+                }
+              }}
+            >
+              🗑️ Limpar Chaves
+            </button>
+          )}
         </div>
       </div>
 
@@ -462,6 +535,38 @@ const ApiConfiguration = () => {
         .save-button {
           background: var(--success-color);
           color: white;
+        }
+
+        .clear-button {
+          background: var(--error-color);
+          color: white;
+        }
+
+        .permanent-keys-status {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 15px;
+          padding: 12px 16px;
+          background: rgba(40, 167, 69, 0.1);
+          border: 1px solid rgba(40, 167, 69, 0.3);
+          border-radius: 8px;
+          color: var(--success-color);
+        }
+
+        .permanent-keys-status .status-icon {
+          font-size: 1.2em;
+        }
+
+        .permanent-keys-status .status-text {
+          font-weight: 500;
+        }
+
+        .permanent-keys-status small {
+          display: block;
+          font-size: 0.8em;
+          opacity: 0.8;
+          margin-top: 2px;
         }
 
         .test-button:disabled, .save-button:disabled {

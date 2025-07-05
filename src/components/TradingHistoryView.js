@@ -1,8 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import BinanceAPI from '../services/binanceApi';
+import { useApiKeys } from '../hooks/useApiKeys';
 import toast from 'react-hot-toast';
 
 const TradingHistoryView = () => {
+  const { hasValidKeys, getApiCredentials } = useApiKeys();
+  
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
@@ -26,17 +29,17 @@ const TradingHistoryView = () => {
     setStats(null);
 
     try {
-      // Verificar se há configuração de API
-      const apiKey = process.env.REACT_APP_BINANCE_API_KEY;
-      const secretKey = process.env.REACT_APP_BINANCE_SECRET_KEY;
-
-      if (!apiKey || !secretKey) {
+      // Verificar se há configuração de API usando o contexto
+      if (!hasValidKeys()) {
         toast.error('Configure suas chaves da API primeiro em "Configuração da API"');
         setLoading(false);
         return;
       }
 
       console.log('📊 Buscando histórico de trades...');
+      
+      // Obter credenciais do contexto global
+      const { apiKey, secretKey } = getApiCredentials();
       
       // Inicializar API
       const binanceApi = new BinanceAPI(apiKey, secretKey, false, true);
@@ -213,6 +216,19 @@ const TradingHistoryView = () => {
       <div className="history-header">
         <h2>📈 Histórico de Trades</h2>
         <p>Visualize todo seu histórico de trading da Binance</p>
+        
+        {/* Status das Chaves API */}
+        {hasValidKeys() ? (
+          <div className="api-status-indicator">
+            <span className="status-icon">✅</span>
+            <span>Chaves API configuradas - Pronto para buscar dados reais</span>
+          </div>
+        ) : (
+          <div className="api-status-indicator error">
+            <span className="status-icon">❌</span>
+            <span>Configure suas chaves API primeiro em "Configuração API"</span>
+          </div>
+        )}
       </div>
 
       {/* Filtros */}
@@ -274,7 +290,8 @@ const TradingHistoryView = () => {
           <button 
             className="search-button"
             onClick={fetchTradingHistory}
-            disabled={loading}
+            disabled={loading || !hasValidKeys()}
+            title={!hasValidKeys() ? 'Configure suas chaves API primeiro' : ''}
           >
             {loading ? '🔄 Carregando...' : '🔍 Buscar Histórico'}
           </button>
@@ -617,6 +634,29 @@ const TradingHistoryView = () => {
           font-size: 4em;
           margin-bottom: 20px;
           opacity: 0.5;
+        }
+
+        .api-status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 15px;
+          padding: 12px 16px;
+          background: rgba(40, 167, 69, 0.1);
+          border: 1px solid rgba(40, 167, 69, 0.3);
+          border-radius: 8px;
+          color: var(--success-color);
+          font-size: 0.9em;
+        }
+
+        .api-status-indicator.error {
+          background: rgba(220, 53, 69, 0.1);
+          border-color: rgba(220, 53, 69, 0.3);
+          color: var(--error-color);
+        }
+
+        .api-status-indicator .status-icon {
+          font-size: 1.1em;
         }
 
         @keyframes spin {
