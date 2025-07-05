@@ -94,9 +94,9 @@
   box-shadow: var(--shadow-heavy);
   gap: 20px;
   transition: all 0.3s ease;
-  min-height: 80vh;
+  min-height: auto;
   align-items: start;
-  overflow-x: hidden;
+  overflow: visible;
   width: 100%;
   box-sizing: border-box;
 }
