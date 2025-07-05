@@ -5,7 +5,7 @@ class MultiExchangeAPI {
     this.apiKey = apiKey;
     this.secret = secret;
     this.testnet = testnet;
-    this.baseUrl = '/api/multi-exchange';
+    this.baseUrl = '/api/exchange-proxy';
   }
 
   // Método genérico para fazer requests
