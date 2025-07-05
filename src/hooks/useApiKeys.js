@@ -54,8 +54,6 @@ export const ApiKeysProvider = ({ children }) => {
       if (hasLoaded) return; // Prevenir carregamentos múltiplos
       hasLoaded = true;
       
-      console.log('🔑 Inicializando useApiKeys...');
-      
       try {
         // Tentar carregar das variáveis de ambiente primeiro
         const envApiKey = process.env.REACT_APP_BINANCE_API_KEY;
@@ -175,7 +173,6 @@ export const ApiKeysProvider = ({ children }) => {
     };
 
     loadStoredKeys();
-    console.log('🔑 useApiKeys inicializado com:', apiKeys);
   }, []); // Executar apenas uma vez na inicialização
 
   // Salvar chaves para uma exchange específica
