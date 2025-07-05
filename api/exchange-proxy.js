@@ -291,6 +291,12 @@ async function testBybitConnection(apiKey, secret, baseURL, res) {
     
     const url = `${baseURL}/v5/account/wallet-balance?${queryParams}`;
     
+    console.log(`🔧 Fazendo requisição para Bybit: ${url}`);
+    console.log(`🔑 Timestamp: ${timestamp}, RecvWindow: ${recvWindow}`);
+    console.log(`📝 Query Params: ${queryParams}`);
+    console.log(`🔐 Signature: ${signature.substring(0, 10)}...`);
+    
+    // Enhanced headers to bypass IP restrictions
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -298,33 +304,65 @@ async function testBybitConnection(apiKey, secret, baseURL, res) {
         'X-BAPI-SIGN': signature,
         'X-BAPI-TIMESTAMP': timestamp,
         'X-BAPI-RECV-WINDOW': recvWindow,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoTrader/1.0)',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Origin': 'https://www.bybit.com',
+        'Referer': 'https://www.bybit.com/',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site'
       }
     });
+    
+    console.log(`📊 Bybit response status: ${response.status}`);
+    console.log(`📊 Bybit response headers:`, Object.fromEntries(response.headers.entries()));
 
     if (response.ok) {
       const data = await response.json();
+      console.log(`✅ Bybit data received:`, JSON.stringify(data).substring(0, 200) + '...');
       
       if (data.retCode === 0) {
         return res.json({
           success: true,
           exchangeId: 'bybit',
           message: 'Conexão com Bybit estabelecida com sucesso',
-          hasBalance: data.result && data.result.list && data.result.list.length > 0
+          hasBalance: data.result && data.result.list && data.result.list.length > 0,
+          accountData: data.result
         });
       } else {
         throw new Error(`Bybit API Error: ${data.retCode} - ${data.retMsg}`);
       }
     } else {
       const errorText = await response.text();
+      console.error(`❌ Bybit error response:`, errorText);
+      
+      // Specific handling for IP blocking
+      if (errorText.includes('IP') || errorText.includes('blocked') || errorText.includes('forbidden')) {
+        throw new Error(`IP blocking detected. Try using a VPN or contact Bybit support. Error: ${response.status} - ${errorText.substring(0, 100)}`);
+      }
+      
       throw new Error(`Bybit API Error: ${response.status} - ${errorText}`);
     }
   } catch (error) {
     console.error('Erro na conexão Bybit:', error);
+    
+    // Enhanced error handling for IP issues
+    let errorMessage = error.message;
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      errorMessage = 'Erro de rede ao conectar com Bybit. Pode ser bloqueio de IP do servidor Vercel.';
+    }
+    
     return res.json({
       success: false,
       exchangeId: 'bybit',
-      error: error.message
+      error: errorMessage,
+      suggestion: 'Se o erro persistir, pode ser necessário usar um proxy ou VPN'
     });
   }
 }
@@ -404,7 +442,19 @@ async function getBybitBalances(apiKey, secret, baseURL, res) {
         'X-BAPI-SIGN': signature,
         'X-BAPI-TIMESTAMP': timestamp,
         'X-BAPI-RECV-WINDOW': recvWindow,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; CryptoTrader/1.0)',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Origin': 'https://www.bybit.com',
+        'Referer': 'https://www.bybit.com/',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site'
       }
     });
 
@@ -434,13 +484,26 @@ async function getBybitBalances(apiKey, secret, baseURL, res) {
       }
     } else {
       const errorText = await response.text();
+      
+      // Specific handling for IP blocking
+      if (errorText.includes('IP') || errorText.includes('blocked') || errorText.includes('forbidden')) {
+        throw new Error(`IP blocking detected while fetching balances. Error: ${response.status}`);
+      }
+      
       throw new Error(`Bybit API Error: ${response.status} - ${errorText}`);
     }
   } catch (error) {
     console.error('Erro ao buscar saldos Bybit:', error);
+    
+    let errorMessage = error.message;
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      errorMessage = 'Erro de rede ao buscar saldos Bybit. Pode ser bloqueio de IP do servidor Vercel.';
+    }
+    
     return res.json({
       success: false,
-      error: error.message
+      error: errorMessage,
+      suggestion: 'Se o erro persistir, pode ser necessário usar um proxy ou VPN'
     });
   }
 }

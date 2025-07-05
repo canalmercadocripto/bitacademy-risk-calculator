@@ -175,7 +175,40 @@ const ApiConfiguration = () => {
       const exchangeApi = new MultiExchangeAPI(exchangeId, apiKey, secretKey, false);
 
       // Testar conexão
-      const result = await exchangeApi.testConnection();
+      let result = await exchangeApi.testConnection();
+      
+      // Se falhou e é Bybit, tentar proxy alternativo
+      if (!result.success && exchangeId === 'bybit' && (result.error?.includes('IP') || result.error?.includes('network') || result.error?.includes('fetch'))) {
+        console.log('🔄 Bybit falhou, tentando proxy alternativo...');
+        
+        try {
+          const proxyResponse = await fetch('/api/proxy-bybit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              apiKey,
+              secret: secretKey,
+              action: 'testConnection',
+              testnet: false
+            })
+          });
+
+          if (proxyResponse.ok) {
+            const proxyData = await proxyResponse.json();
+            if (proxyData.success) {
+              result = proxyData;
+              console.log(`✅ Bybit conectado via proxy: ${proxyData.proxyUsed}`);
+              if (isManual) {
+                toast.success(`✅ Bybit conectado via proxy ${proxyData.proxyUsed}!`);
+              }
+            }
+          }
+        } catch (proxyError) {
+          console.log('❌ Proxy alternativo também falhou:', proxyError.message);
+        }
+      }
       
       if (result.success) {
         // Buscar informações da conta
