@@ -33,11 +33,20 @@ export default async function handler(req, res) {
       },
       bybit: {
         class: ccxt.bybit,
-        testnet: testnet ? true : false
+        testnet: testnet ? true : false,
+        // Configurações específicas do Bybit
+        options: {
+          defaultType: 'spot', // Usar spot por padrão
+          adjustForTimeDifference: true
+        }
       },
       bitget: {
         class: ccxt.bitget,
-        testnet: testnet ? true : false
+        testnet: testnet ? true : false,
+        // Configurações específicas do Bitget
+        options: {
+          defaultType: 'spot'
+        }
       }
     };
 
@@ -55,6 +64,7 @@ export default async function handler(req, res) {
       secret,
       timeout: 30000,
       enableRateLimit: true,
+      ...config.options // Aplicar configurações específicas da exchange
     };
 
     if (config.testnet) {
@@ -64,6 +74,12 @@ export default async function handler(req, res) {
         exchangeOptions.sandbox = config.testnet;
       }
     }
+
+    console.log(`🏗️ Inicializando ${exchangeId} com opções:`, {
+      ...exchangeOptions,
+      apiKey: apiKey ? 'configurada' : 'não configurada',
+      secret: secret ? 'configurada' : 'não configurada'
+    });
 
     const exchange = new config.class(exchangeOptions);
 
@@ -90,9 +106,19 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Erro na API multi-exchange:', error);
+    
+    // Log detalhado do erro para debug
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      exchangeId: req.body?.exchangeId
+    });
+    
     return res.status(500).json({
       success: false,
-      error: error.message || 'Erro interno do servidor'
+      error: error.message || 'Erro interno do servidor',
+      errorType: error.name || 'UnknownError'
     });
   }
 }
@@ -102,11 +128,23 @@ async function testConnection(exchange, exchangeId, res) {
   try {
     console.log(`🔧 Testando conexão ${exchangeId}...`);
     
-    // Testar conexão básica
+    // Log da configuração da exchange
+    console.log(`📋 Configuração ${exchangeId}:`, {
+      id: exchange.id,
+      sandbox: exchange.sandbox,
+      apiKey: exchange.apiKey ? 'configurada' : 'não configurada',
+      secret: exchange.secret ? 'configurada' : 'não configurada'
+    });
+    
+    // Testar conexão básica primeiro
+    console.log(`📡 Carregando markets ${exchangeId}...`);
     await exchange.loadMarkets();
+    console.log(`✅ Markets carregados para ${exchangeId}`);
     
     // Verificar se as credenciais funcionam tentando buscar saldo
+    console.log(`💰 Buscando saldo ${exchangeId}...`);
     const balance = await exchange.fetchBalance();
+    console.log(`✅ Saldo obtido para ${exchangeId}:`, Object.keys(balance.total).length, 'ativos');
     
     return res.json({
       success: true,
@@ -117,10 +155,20 @@ async function testConnection(exchange, exchangeId, res) {
     
   } catch (error) {
     console.error(`❌ Erro na conexão ${exchangeId}:`, error);
+    
+    // Log detalhado do erro específico
+    console.error(`❌ Detalhes do erro ${exchangeId}:`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack?.split('\n')[0] // Primeira linha do stack
+    });
+    
     return res.json({
       success: false,
       exchangeId,
-      error: error.message
+      error: error.message || 'Erro desconhecido na conexão',
+      errorCode: error.code || 'UNKNOWN_ERROR'
     });
   }
 }

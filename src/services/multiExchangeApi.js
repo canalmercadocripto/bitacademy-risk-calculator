@@ -11,6 +11,8 @@ class MultiExchangeAPI {
   // Método genérico para fazer requests
   async makeRequest(action, additionalParams = {}) {
     try {
+      console.log(`📡 Fazendo requisição ${action} para ${this.exchangeId}...`);
+      
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -26,15 +28,24 @@ class MultiExchangeAPI {
         })
       });
 
+      // Verificar se a resposta é realmente JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error(`❌ Resposta não é JSON para ${this.exchangeId}:`, text.substring(0, 200));
+        throw new Error(`Servidor retornou ${contentType || 'tipo desconhecido'} em vez de JSON. Possível erro interno.`);
+      }
+
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
 
+      console.log(`✅ Resposta recebida para ${action} em ${this.exchangeId}`);
       return data;
     } catch (error) {
-      console.error(`Erro na requisição ${action} para ${this.exchangeId}:`, error);
+      console.error(`❌ Erro na requisição ${action} para ${this.exchangeId}:`, error);
       throw error;
     }
   }
