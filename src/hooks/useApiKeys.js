@@ -5,12 +5,45 @@ const ApiKeysContext = createContext();
 
 export const ApiKeysProvider = ({ children }) => {
   const [apiKeys, setApiKeys] = useState({
-    binanceApiKey: '',
-    binanceSecret: '',
-    isConfigured: false,
-    lastSaved: null,
-    connectionStatus: null, // Cache do status da conexão
-    lastTested: null // Quando foi testado pela última vez
+    exchanges: {
+      binance: {
+        apiKey: '',
+        secret: '',
+        connected: false,
+        connectionStatus: null,
+        lastTested: null,
+        accountInfo: null,
+        enabled: false
+      },
+      bingx: {
+        apiKey: '',
+        secret: '',
+        connected: false,
+        connectionStatus: null,
+        lastTested: null,
+        accountInfo: null,
+        enabled: false
+      },
+      bybit: {
+        apiKey: '',
+        secret: '',
+        connected: false,
+        connectionStatus: null,
+        lastTested: null,
+        accountInfo: null,
+        enabled: false
+      },
+      bitget: {
+        apiKey: '',
+        secret: '',
+        connected: false,
+        connectionStatus: null,
+        lastTested: null,
+        accountInfo: null,
+        enabled: false
+      }
+    },
+    lastSaved: null
   });
 
   // Carregar chaves do localStorage na inicialização (apenas uma vez)
@@ -60,24 +93,56 @@ export const ApiKeysProvider = ({ children }) => {
     loadStoredKeys();
   }, []); // Executar apenas uma vez na inicialização
 
-  // Salvar chaves
-  const saveApiKeys = (newKeys, connectionStatus = null) => {
+  // Salvar chaves para uma exchange específica
+  const saveExchangeKeys = (exchangeId, apiKey, secret) => {
     try {
-      const keysToSave = {
-        ...apiKeys, // Preservar dados existentes
-        ...newKeys,
-        isConfigured: !!(newKeys.binanceApiKey && newKeys.binanceSecret),
-        lastSaved: new Date().toISOString(),
-        connectionStatus, // Salvar status da conexão se fornecido
-        lastTested: connectionStatus ? new Date().toISOString() : apiKeys.lastTested
+      const updatedKeys = {
+        ...apiKeys,
+        exchanges: {
+          ...apiKeys.exchanges,
+          [exchangeId]: {
+            ...apiKeys.exchanges[exchangeId],
+            apiKey,
+            secret,
+            enabled: !!(apiKey && secret)
+          }
+        },
+        lastSaved: new Date().toISOString()
       };
       
-      setApiKeys(keysToSave);
-      localStorage.setItem('bitacademy_api_keys', JSON.stringify(keysToSave));
-      console.log('💾 Chaves API salvas com sucesso');
+      setApiKeys(updatedKeys);
+      localStorage.setItem('bitacademy_api_keys', JSON.stringify(updatedKeys));
+      console.log(`💾 Chaves ${exchangeId} salvas com sucesso`);
       return true;
     } catch (error) {
       console.error('Erro ao salvar chaves API:', error);
+      return false;
+    }
+  };
+
+  // Salvar status de conexão para uma exchange
+  const saveExchangeConnectionStatus = (exchangeId, status, accountInfo = null) => {
+    try {
+      const updatedKeys = {
+        ...apiKeys,
+        exchanges: {
+          ...apiKeys.exchanges,
+          [exchangeId]: {
+            ...apiKeys.exchanges[exchangeId],
+            connected: status.success,
+            connectionStatus: status,
+            lastTested: new Date().toISOString(),
+            accountInfo
+          }
+        }
+      };
+      
+      setApiKeys(updatedKeys);
+      localStorage.setItem('bitacademy_api_keys', JSON.stringify(updatedKeys));
+      console.log(`🔗 Status ${exchangeId}:`, status.success ? 'Conectado' : 'Falhou');
+      return true;
+    } catch (error) {
+      console.error('Erro ao salvar status:', error);
       return false;
     }
   };
@@ -100,32 +165,60 @@ export const ApiKeysProvider = ({ children }) => {
     }
   };
 
-  // Verificar se as chaves estão configuradas
-  const hasValidKeys = () => {
-    return !!(apiKeys.binanceApiKey && apiKeys.binanceSecret && apiKeys.isConfigured);
+  // Verificar se uma exchange tem chaves válidas
+  const hasValidKeys = (exchangeId = null) => {
+    if (exchangeId) {
+      const exchange = apiKeys.exchanges[exchangeId];
+      return !!(exchange && exchange.apiKey && exchange.secret && exchange.enabled);
+    }
+    
+    // Se não especificar exchange, verificar se alguma tem chaves válidas
+    return Object.values(apiKeys.exchanges).some(exchange => 
+      exchange.apiKey && exchange.secret && exchange.enabled
+    );
   };
 
-  // Obter chaves para uso na API
-  const getApiCredentials = () => {
-    if (!hasValidKeys()) {
-      throw new Error('Chaves API não configuradas. Configure primeiro em "Configuração API".');
+  // Obter chaves para uma exchange específica
+  const getApiCredentials = (exchangeId) => {
+    if (!exchangeId) {
+      throw new Error('Exchange ID é obrigatório');
+    }
+    
+    const exchange = apiKeys.exchanges[exchangeId];
+    if (!exchange || !exchange.apiKey || !exchange.secret) {
+      throw new Error(`Chaves ${exchangeId} não configuradas. Configure primeiro em "Configuração API".`);
     }
     
     return {
-      apiKey: apiKeys.binanceApiKey,
-      secretKey: apiKeys.binanceSecret
+      apiKey: exchange.apiKey,
+      secretKey: exchange.secret
     };
   };
 
-  // Verificar se a conexão ainda é válida (cache de 30 minutos)
-  const isConnectionValid = () => {
-    if (!apiKeys.connectionStatus || !apiKeys.lastTested) return false;
+  // Verificar se a conexão de uma exchange ainda é válida (cache de 30 minutos)
+  const isConnectionValid = (exchangeId) => {
+    const exchange = apiKeys.exchanges[exchangeId];
+    if (!exchange || !exchange.connectionStatus || !exchange.lastTested) return false;
     
-    const lastTestTime = new Date(apiKeys.lastTested).getTime();
+    const lastTestTime = new Date(exchange.lastTested).getTime();
     const now = Date.now();
     const thirtyMinutes = 30 * 60 * 1000;
     
-    return (now - lastTestTime) < thirtyMinutes && apiKeys.connectionStatus.success;
+    return (now - lastTestTime) < thirtyMinutes && exchange.connectionStatus.success;
+  };
+
+  // Obter exchanges conectadas
+  const getConnectedExchanges = () => {
+    return Object.entries(apiKeys.exchanges)
+      .filter(([id, exchange]) => exchange.connected && exchange.enabled)
+      .map(([id, exchange]) => ({ id, ...exchange }));
+  };
+
+  // Obter exchanges habilitadas (com chaves configuradas)
+  const getEnabledExchanges = () => {
+    return Object.entries(apiKeys.exchanges)
+      .filter(([id, exchange]) => exchange.enabled)
+      .map(([id, exchange]) => ({ id, ...exchange }));
   };
 
   // Salvar status de conexão (apenas se diferente do atual)
@@ -165,15 +258,15 @@ export const ApiKeysProvider = ({ children }) => {
 
   const value = {
     apiKeys,
-    saveApiKeys,
+    saveExchangeKeys,
+    saveExchangeConnectionStatus,
     clearApiKeys,
     hasValidKeys,
     getApiCredentials,
-    isConfigured: apiKeys.isConfigured,
-    connectionStatus: apiKeys.connectionStatus,
     isConnectionValid,
-    saveConnectionStatus,
-    invalidateConnection
+    getConnectedExchanges,
+    getEnabledExchanges,
+    exchanges: apiKeys.exchanges
   };
 
   return (

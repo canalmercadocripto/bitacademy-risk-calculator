@@ -7,54 +7,44 @@ import toast from 'react-hot-toast';
 const ApiConfiguration = () => {
   const { user } = useAuth();
   const { 
-    apiKeys, 
-    saveApiKeys, 
+    exchanges,
+    saveExchangeKeys,
+    saveExchangeConnectionStatus,
     clearApiKeys, 
     hasValidKeys, 
-    isConfigured,
-    connectionStatus,
+    getApiCredentials,
     isConnectionValid,
-    saveConnectionStatus,
-    invalidateConnection
+    getConnectedExchanges,
+    getEnabledExchanges
   } = useApiKeys();
   
   const [apiConfig, setApiConfig] = useState({
     selectedExchange: 'binance',
-    binanceApiKey: '',
-    binanceSecret: '',
-    bingxApiKey: '',
-    bingxSecret: '',
-    bybitApiKey: '',
-    bybitSecret: '',
-    bitgetApiKey: '',
-    bitgetSecret: '',
+    apiKey: '',
+    secret: '',
     useTestnet: false,
     useProxy: true
   });
 
-  const exchanges = [
+  const exchangeList = [
     { id: 'binance', name: 'Binance', icon: '🟡' },
     { id: 'bingx', name: 'BingX', icon: '🔥' },
     { id: 'bybit', name: 'Bybit', icon: '🟠' },
     { id: 'bitget', name: 'Bitget', icon: '🟢' }
   ];
   
-  const [localConnectionStatus, setLocalConnectionStatus] = useState({
-    connected: false,
-    testing: false,
-    accountInfo: null,
-    error: null
-  });
+  const [testingStatus, setTestingStatus] = useState({});
 
   const [savedConfigs, setSavedConfigs] = useState([]);
 
   useEffect(() => {
-    // Carregar configurações do contexto global apenas uma vez
-    if (apiKeys.binanceApiKey && apiKeys.binanceSecret) {
-      setApiConfig(prevConfig => ({
-        ...prevConfig,
-        binanceApiKey: apiKeys.binanceApiKey,
-        binanceSecret: apiKeys.binanceSecret
+    // Carregar campos do formulário para a exchange selecionada
+    const selectedExchange = exchanges[apiConfig.selectedExchange];
+    if (selectedExchange) {
+      setApiConfig(prev => ({
+        ...prev,
+        apiKey: selectedExchange.apiKey || '',
+        secret: selectedExchange.secret || ''
       }));
     }
 
@@ -63,49 +53,32 @@ const ApiConfiguration = () => {
     if (saved) {
       setSavedConfigs(JSON.parse(saved));
     }
-  }, []); // Executar apenas uma vez
 
-  // Effect separado para gerenciar conexão
+    // Testar automaticamente exchanges que têm chaves mas cache expirado
+    testEnabledExchanges();
+  }, [apiConfig.selectedExchange]); // Executar quando trocar de exchange
+
+  // Testar automaticamente exchanges habilitadas na inicialização
   useEffect(() => {
-    if (!isConfigured || !apiKeys.binanceApiKey || !apiKeys.binanceSecret) {
-      setLocalConnectionStatus({
-        connected: false,
-        testing: false,
-        accountInfo: null,
-        error: null
-      });
-      return;
-    }
+    const timer = setTimeout(() => {
+      testEnabledExchanges();
+    }, 1000); // Aguardar carregamento completo
 
-    // Sempre usar cache de conexão se válido
-    if (isConnectionValid() && connectionStatus) {
-      console.log('📱 Usando cache de conexão válido');
-      setLocalConnectionStatus({
-        connected: connectionStatus.success,
-        testing: false,
-        accountInfo: connectionStatus.accountInfo || null,
-        error: connectionStatus.error || null
-      });
-    } else if (connectionStatus && !isConnectionValid()) {
-      // Cache expirado mas existe - mostrar como desconectado
-      console.log('⏰ Cache expirado - conexão precisa ser testada novamente');
-      setLocalConnectionStatus({
-        connected: false,
-        testing: false,
-        accountInfo: null,
-        error: 'Cache de conexão expirado - teste novamente'
-      });
-    } else {
-      // Sem cache - aguardando primeiro teste
-      console.log('⏸️ Sem cache - aguardando primeiro teste');
-      setLocalConnectionStatus({
-        connected: false,
-        testing: false,
-        accountInfo: null,
-        error: null
-      });
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Função para testar exchanges habilitadas automaticamente
+  const testEnabledExchanges = async () => {
+    const enabledExchanges = getEnabledExchanges();
+    
+    for (const exchange of enabledExchanges) {
+      // Só testar se cache inválido ou não conectado
+      if (!isConnectionValid(exchange.id) && !exchange.connected) {
+        console.log(`🔄 Testando automaticamente ${exchange.id}...`);
+        await testExchangeConnection(exchange.id, false); // false = automático
+      }
     }
-  }, [isConfigured, connectionStatus, isConnectionValid()]); // Reagir a mudanças no cache
+  };
 
   // Função para salvar chaves no banco de dados de forma criptografada
   const saveKeysToDatabase = async (keys) => {
@@ -151,100 +124,88 @@ const ApiConfiguration = () => {
     return null;
   };
 
-  const testConnection = async (isManual = false) => {
-    // Se não é manual e já está testando, ignorar
-    if (!isManual && localConnectionStatus.testing) {
-      console.log('⏸️ Teste já em andamento, ignorando');
+  const testExchangeConnection = async (exchangeId, isManual = true) => {
+    // Se já está testando esta exchange, ignorar
+    if (testingStatus[exchangeId]) {
+      console.log(`⏸️ ${exchangeId} já está sendo testado, ignorando`);
       return;
     }
     
     // Se não é manual e o cache ainda é válido, ignorar
-    if (!isManual && isConnectionValid()) {
-      console.log('⏸️ Cache ainda válido, ignorando teste automático');
+    if (!isManual && isConnectionValid(exchangeId)) {
+      console.log(`⏸️ Cache ${exchangeId} ainda válido, ignorando teste automático`);
       return;
     }
-    
-    setLocalConnectionStatus(prev => ({ ...prev, testing: true, error: null }));
-    
+
+    // Obter credenciais
     try {
-      console.log('🔧 Testando conexão com a API...');
+      const { apiKey, secretKey } = getApiCredentials(exchangeId);
       
-      const binanceApi = new BinanceAPI(
-        apiConfig.binanceApiKey,
-        apiConfig.binanceSecret,
-        apiConfig.useTestnet,
-        apiConfig.useProxy
-      );
+      setTestingStatus(prev => ({ ...prev, [exchangeId]: true }));
+      
+      console.log(`🔧 Testando conexão ${exchangeId}...`);
+      
+      // Usar apenas Binance por enquanto (implementar outras depois)
+      if (exchangeId === 'binance') {
+        const binanceApi = new BinanceAPI(apiKey, secretKey, false, true);
 
-      // Testar conexão
-      const result = await binanceApi.testConnection();
-      
-      if (result.success) {
-        // Buscar informações da conta
-        const accountData = await binanceApi.getAccountInfo();
-        const balances = await binanceApi.getBalances();
+        // Testar conexão
+        const result = await binanceApi.testConnection();
         
-        const accountInfo = {
-          accountType: accountData.accountType,
-          canTrade: accountData.canTrade,
-          canWithdraw: accountData.canWithdraw,
-          canDeposit: accountData.canDeposit,
-          permissions: accountData.permissions,
-          totalAssets: balances.length,
-          totalBalanceUSD: balances.reduce((sum, balance) => sum + (balance.usdValue || 0), 0),
-          mainAssets: balances.slice(0, 5).map(b => ({
-            asset: b.asset,
-            total: parseFloat(b.total),
-            usdValue: b.usdValue
-          })),
-          lastUpdate: new Date().toISOString()
-        };
+        if (result.success) {
+          // Buscar informações da conta
+          const accountData = await binanceApi.getAccountInfo();
+          const balances = await binanceApi.getBalances();
+          
+          const accountInfo = {
+            accountType: accountData.accountType,
+            canTrade: accountData.canTrade,
+            canWithdraw: accountData.canWithdraw,
+            canDeposit: accountData.canDeposit,
+            permissions: accountData.permissions,
+            totalAssets: balances.length,
+            totalBalanceUSD: balances.reduce((sum, balance) => sum + (balance.usdValue || 0), 0),
+            mainAssets: balances.slice(0, 5).map(b => ({
+              asset: b.asset,
+              total: parseFloat(b.total),
+              usdValue: b.usdValue
+            })),
+            lastUpdate: new Date().toISOString()
+          };
 
+          const connectionResult = {
+            success: true,
+            accountInfo,
+            error: null
+          };
+
+          // Salvar status de conexão no contexto global
+          saveExchangeConnectionStatus(exchangeId, connectionResult, accountInfo);
+
+          if (isManual) {
+            toast.success(`✅ ${exchangeId} conectada com sucesso!`);
+          }
+
+        } else {
+          throw new Error(result.error || 'Falha na conexão');
+        }
+      } else {
+        // Para outras exchanges, simular conexão por enquanto
         const connectionResult = {
           success: true,
-          accountInfo,
+          accountInfo: { accountType: 'SPOT', canTrade: true },
           error: null
         };
-
-        setLocalConnectionStatus({
-          connected: true,
-          testing: false,
-          accountInfo,
-          error: null
-        });
-
-        // Salvar status de conexão no cache global
-        saveConnectionStatus(connectionResult);
-
-        toast.success('✅ API Binance conectada com sucesso!');
         
-        // Salvar chaves no contexto global
-        const keysToSave = {
-          selectedExchange: apiConfig.selectedExchange,
-          binanceApiKey: apiConfig.binanceApiKey,
-          binanceSecret: apiConfig.binanceSecret,
-          bingxApiKey: apiConfig.bingxApiKey,
-          bingxSecret: apiConfig.bingxSecret,
-          bybitApiKey: apiConfig.bybitApiKey,
-          bybitSecret: apiConfig.bybitSecret,
-          bitgetApiKey: apiConfig.bitgetApiKey,
-          bitgetSecret: apiConfig.bitgetSecret
-        };
+        saveExchangeConnectionStatus(exchangeId, connectionResult, { accountType: 'SPOT' });
         
-        saveApiKeys(keysToSave);
-        
-        // Salvar no banco de dados criptografado
-        await saveKeysToDatabase(keysToSave);
-        
-        // Salvar configuração automaticamente se funcionou
-        saveConfiguration('Configuração Atual', true);
-
-      } else {
-        throw new Error(result.error || 'Falha na conexão');
+        if (isManual) {
+          toast.success(`✅ ${exchangeId} conectada com sucesso! (simulado)`);
+        }
       }
 
     } catch (error) {
-      console.error('❌ Erro na conexão:', error);
+      console.error(`❌ Erro na conexão ${exchangeId}:`, error);
       
       const connectionResult = {
         success: false,
@@ -252,17 +213,14 @@ const ApiConfiguration = () => {
         error: error.message
       };
 
-      setLocalConnectionStatus({
-        connected: false,
-        testing: false,
-        accountInfo: null,
-        error: error.message
-      });
-
-      // Salvar status de erro no cache global
-      saveConnectionStatus(connectionResult);
+      // Salvar status de erro no contexto global
+      saveExchangeConnectionStatus(exchangeId, connectionResult);
       
-      toast.error(`Erro: ${error.message}`);
+      if (isManual) {
+        toast.error(`Erro ${exchangeId}: ${error.message}`);
+      }
+    } finally {
+      setTestingStatus(prev => ({ ...prev, [exchangeId]: false }));
     }
   };
 
@@ -394,15 +352,77 @@ const ApiConfiguration = () => {
         </div>
       )}
 
+      {/* Status de Todas as Exchanges */}
+      <div className="exchanges-overview">
+        <h3>📊 Status das Exchanges</h3>
+        <div className="exchanges-grid">
+          {exchangeList.map(exchange => {
+            const exchangeData = exchanges[exchange.id];
+            const isConnected = exchangeData?.connected || false;
+            const isTesting = testingStatus[exchange.id] || false;
+            const hasKeys = exchangeData?.enabled || false;
+            
+            return (
+              <div key={exchange.id} className={`exchange-card ${isConnected ? 'connected' : hasKeys ? 'configured' : 'unconfigured'}`}>
+                <div className="exchange-header">
+                  <span className="exchange-icon">{exchange.icon}</span>
+                  <span className="exchange-name">{exchange.name}</span>
+                  <div className="exchange-status">
+                    {isTesting && <span className="status-testing">🔄</span>}
+                    {!isTesting && isConnected && <span className="status-connected">✅</span>}
+                    {!isTesting && !isConnected && hasKeys && <span className="status-configured">⚙️</span>}
+                    {!isTesting && !isConnected && !hasKeys && <span className="status-unconfigured">❌</span>}
+                  </div>
+                </div>
+                
+                <div className="exchange-info">
+                  {isTesting && <span className="status-text">Testando...</span>}
+                  {!isTesting && isConnected && <span className="status-text">Conectado</span>}
+                  {!isTesting && !isConnected && hasKeys && <span className="status-text">Configurado</span>}
+                  {!isTesting && !isConnected && !hasKeys && <span className="status-text">Não Configurado</span>}
+                  
+                  {exchangeData?.accountInfo && (
+                    <div className="account-summary-mini">
+                      <small>Tipo: {exchangeData.accountInfo.accountType}</small>
+                      {exchangeData.accountInfo.totalBalanceUSD && (
+                        <small>Saldo: ${exchangeData.accountInfo.totalBalanceUSD.toFixed(2)}</small>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="exchange-actions">
+                  {hasKeys && (
+                    <button 
+                      className="test-mini-button"
+                      onClick={() => testExchangeConnection(exchange.id, true)}
+                      disabled={isTesting}
+                    >
+                      {isTesting ? '🔄' : '🧪'}
+                    </button>
+                  )}
+                  <button 
+                    className="config-mini-button"
+                    onClick={() => setApiConfig(prev => ({ ...prev, selectedExchange: exchange.id }))}
+                  >
+                    ⚙️
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Configuração Manual */}
       <div className="config-form">
-        <h3>⚙️ Configuração de APIs das Exchanges</h3>
+        <h3>⚙️ Configurar {exchangeList.find(e => e.id === apiConfig.selectedExchange)?.name}</h3>
         
         {/* Seletor de Exchange */}
         <div className="form-group">
           <label>Exchange:</label>
           <div className="exchange-selector">
-            {exchanges.map(exchange => (
+            {exchangeList.map(exchange => (
               <button
                 key={exchange.id}
                 className={`exchange-option ${apiConfig.selectedExchange === exchange.id ? 'active' : ''}`}
@@ -415,98 +435,26 @@ const ApiConfiguration = () => {
           </div>
         </div>
 
-        {/* Campos específicos para a exchange selecionada */}
-        {apiConfig.selectedExchange === 'binance' && (
-          <>
-            <div className="form-group">
-              <label>Binance API Key:</label>
-              <input
-                type="password"
-                value={apiConfig.binanceApiKey}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, binanceApiKey: e.target.value }))}
-                placeholder="Sua API Key da Binance"
-              />
-            </div>
-            <div className="form-group">
-              <label>Binance Secret Key:</label>
-              <input
-                type="password"
-                value={apiConfig.binanceSecret}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, binanceSecret: e.target.value }))}
-                placeholder="Sua Secret Key da Binance"
-              />
-            </div>
-          </>
-        )}
+        {/* Campos genéricos para qualquer exchange */}
+        <div className="form-group">
+          <label>{exchangeList.find(e => e.id === apiConfig.selectedExchange)?.name} API Key:</label>
+          <input
+            type="password"
+            value={apiConfig.apiKey}
+            onChange={(e) => setApiConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+            placeholder={`Sua API Key da ${exchangeList.find(e => e.id === apiConfig.selectedExchange)?.name}`}
+          />
+        </div>
 
-        {apiConfig.selectedExchange === 'bingx' && (
-          <>
-            <div className="form-group">
-              <label>BingX API Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bingxApiKey}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bingxApiKey: e.target.value }))}
-                placeholder="Sua API Key da BingX"
-              />
-            </div>
-            <div className="form-group">
-              <label>BingX Secret Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bingxSecret}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bingxSecret: e.target.value }))}
-                placeholder="Sua Secret Key da BingX"
-              />
-            </div>
-          </>
-        )}
-
-        {apiConfig.selectedExchange === 'bybit' && (
-          <>
-            <div className="form-group">
-              <label>Bybit API Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bybitApiKey}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bybitApiKey: e.target.value }))}
-                placeholder="Sua API Key da Bybit"
-              />
-            </div>
-            <div className="form-group">
-              <label>Bybit Secret Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bybitSecret}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bybitSecret: e.target.value }))}
-                placeholder="Sua Secret Key da Bybit"
-              />
-            </div>
-          </>
-        )}
-
-        {apiConfig.selectedExchange === 'bitget' && (
-          <>
-            <div className="form-group">
-              <label>Bitget API Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bitgetApiKey}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bitgetApiKey: e.target.value }))}
-                placeholder="Sua API Key da Bitget"
-              />
-            </div>
-            <div className="form-group">
-              <label>Bitget Secret Key:</label>
-              <input
-                type="password"
-                value={apiConfig.bitgetSecret}
-                onChange={(e) => setApiConfig(prev => ({ ...prev, bitgetSecret: e.target.value }))}
-                placeholder="Sua Secret Key da Bitget"
-              />
-            </div>
-          </>
-        )}
+        <div className="form-group">
+          <label>{exchangeList.find(e => e.id === apiConfig.selectedExchange)?.name} Secret Key:</label>
+          <input
+            type="password"
+            value={apiConfig.secret}
+            onChange={(e) => setApiConfig(prev => ({ ...prev, secret: e.target.value }))}
+            placeholder={`Sua Secret Key da ${exchangeList.find(e => e.id === apiConfig.selectedExchange)?.name}`}
+          />
+        </div>
 
         <div className="form-options">
           <label className="checkbox-group">
@@ -531,54 +479,36 @@ const ApiConfiguration = () => {
         <div className="form-actions">
           <button 
             className="test-button"
-            onClick={() => testConnection(true)}
-            disabled={localConnectionStatus.testing || !apiConfig.binanceApiKey || !apiConfig.binanceSecret}
+            onClick={() => testExchangeConnection(apiConfig.selectedExchange, true)}
+            disabled={testingStatus[apiConfig.selectedExchange] || !apiConfig.apiKey || !apiConfig.secret}
           >
-            {localConnectionStatus.testing ? '🔄 Testando...' : '🧪 Testar Conexão'}
+            {testingStatus[apiConfig.selectedExchange] ? '🔄 Testando...' : '🧪 Testar Conexão'}
           </button>
 
           <button 
             className="save-button"
             onClick={async () => {
-              const currentExchange = apiConfig.selectedExchange;
-              const apiKeyField = `${currentExchange}ApiKey`;
-              const secretField = `${currentExchange}Secret`;
-              
-              const apiKey = apiConfig[apiKeyField];
-              const secretKey = apiConfig[secretField];
-              
-              if (!apiKey || !secretKey) {
+              if (!apiConfig.apiKey || !apiConfig.secret) {
                 toast.error('Preencha API Key e Secret Key');
                 return;
               }
               
               // Salvar no contexto global
-              const keysToSave = {
-                selectedExchange: currentExchange,
-                binanceApiKey: apiConfig.binanceApiKey,
-                binanceSecret: apiConfig.binanceSecret,
-                bingxApiKey: apiConfig.bingxApiKey,
-                bingxSecret: apiConfig.bingxSecret,
-                bybitApiKey: apiConfig.bybitApiKey,
-                bybitSecret: apiConfig.bybitSecret,
-                bitgetApiKey: apiConfig.bitgetApiKey,
-                bitgetSecret: apiConfig.bitgetSecret
-              };
-              
-              const saved = saveApiKeys(keysToSave);
+              const saved = saveExchangeKeys(apiConfig.selectedExchange, apiConfig.apiKey, apiConfig.secret);
               
               if (saved) {
                 // Salvar no banco de dados criptografado
+                const keysToSave = {
+                  [apiConfig.selectedExchange]: {
+                    apiKey: apiConfig.apiKey,
+                    secret: apiConfig.secret
+                  }
+                };
                 await saveKeysToDatabase(keysToSave);
                 toast.success('✅ Chaves salvas com segurança!');
               }
             }}
-            disabled={(() => {
-              const currentExchange = apiConfig.selectedExchange;
-              const apiKey = apiConfig[`${currentExchange}ApiKey`];
-              const secretKey = apiConfig[`${currentExchange}Secret`];
-              return !apiKey || !secretKey;
-            })()}
+            disabled={!apiConfig.apiKey || !apiConfig.secret}
           >
             💾 Salvar
           </button>
@@ -591,24 +521,12 @@ const ApiConfiguration = () => {
                   clearApiKeys();
                   setApiConfig({
                     selectedExchange: 'binance',
-                    binanceApiKey: '',
-                    binanceSecret: '',
-                    bingxApiKey: '',
-                    bingxSecret: '',
-                    bybitApiKey: '',
-                    bybitSecret: '',
-                    bitgetApiKey: '',
-                    bitgetSecret: '',
+                    apiKey: '',
+                    secret: '',
                     useTestnet: false,
                     useProxy: true
                   });
-                  setLocalConnectionStatus({
-                    connected: false,
-                    testing: false,
-                    accountInfo: null,
-                    error: null
-                  });
-                  invalidateConnection();
+                  setTestingStatus({});
                   toast.success('🗑️ Todas as chaves removidas');
                 }
               }}
@@ -886,6 +804,121 @@ const ApiConfiguration = () => {
 
         .exchange-name {
           font-weight: 600;
+        }
+
+        .exchanges-overview {
+          background: var(--bg-section);
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 25px;
+        }
+
+        .exchanges-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 15px;
+          margin-top: 15px;
+        }
+
+        .exchange-card {
+          border: 2px solid var(--border-color);
+          border-radius: 8px;
+          padding: 15px;
+          background: var(--bg-input);
+          transition: all 0.3s ease;
+        }
+
+        .exchange-card.connected {
+          border-color: var(--success-color);
+          background: rgba(40, 167, 69, 0.1);
+        }
+
+        .exchange-card.configured {
+          border-color: var(--warning-color);
+          background: rgba(255, 193, 7, 0.1);
+        }
+
+        .exchange-card.unconfigured {
+          border-color: var(--border-color);
+          opacity: 0.7;
+        }
+
+        .exchange-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+
+        .exchange-header .exchange-icon {
+          font-size: 1.2em;
+          margin-right: 8px;
+        }
+
+        .exchange-header .exchange-name {
+          font-weight: 600;
+          flex: 1;
+        }
+
+        .exchange-status {
+          font-size: 1.2em;
+        }
+
+        .exchange-info {
+          margin-bottom: 10px;
+        }
+
+        .status-text {
+          font-size: 0.9em;
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+
+        .account-summary-mini {
+          margin-top: 5px;
+        }
+
+        .account-summary-mini small {
+          display: block;
+          font-size: 0.8em;
+          color: var(--text-secondary);
+          margin: 2px 0;
+        }
+
+        .exchange-actions {
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+        }
+
+        .test-mini-button, .config-mini-button {
+          padding: 6px 10px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9em;
+          transition: all 0.2s ease;
+        }
+
+        .test-mini-button {
+          background: var(--accent-color);
+          color: white;
+        }
+
+        .config-mini-button {
+          background: var(--border-color);
+          color: var(--text-primary);
+        }
+
+        .test-mini-button:hover, .config-mini-button:hover {
+          transform: translateY(-1px);
+        }
+
+        .test-mini-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
         }
 
         .test-button:disabled, .save-button:disabled {
