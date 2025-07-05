@@ -8,7 +8,9 @@ export const ApiKeysProvider = ({ children }) => {
     binanceApiKey: '',
     binanceSecret: '',
     isConfigured: false,
-    lastSaved: null
+    lastSaved: null,
+    connectionStatus: null, // Cache do status da conexão
+    lastTested: null // Quando foi testado pela última vez
   });
 
   // Carregar chaves do localStorage na inicialização
@@ -52,12 +54,15 @@ export const ApiKeysProvider = ({ children }) => {
   }, []);
 
   // Salvar chaves
-  const saveApiKeys = (newKeys) => {
+  const saveApiKeys = (newKeys, connectionStatus = null) => {
     try {
       const keysToSave = {
+        ...apiKeys, // Preservar dados existentes
         ...newKeys,
         isConfigured: !!(newKeys.binanceApiKey && newKeys.binanceSecret),
-        lastSaved: new Date().toISOString()
+        lastSaved: new Date().toISOString(),
+        connectionStatus, // Salvar status da conexão se fornecido
+        lastTested: connectionStatus ? new Date().toISOString() : apiKeys.lastTested
       };
       
       setApiKeys(keysToSave);
@@ -105,13 +110,54 @@ export const ApiKeysProvider = ({ children }) => {
     };
   };
 
+  // Verificar se a conexão ainda é válida (cache de 30 minutos)
+  const isConnectionValid = () => {
+    if (!apiKeys.connectionStatus || !apiKeys.lastTested) return false;
+    
+    const lastTestTime = new Date(apiKeys.lastTested).getTime();
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000;
+    
+    return (now - lastTestTime) < thirtyMinutes && apiKeys.connectionStatus.success;
+  };
+
+  // Salvar status de conexão
+  const saveConnectionStatus = (status) => {
+    const updatedKeys = {
+      ...apiKeys,
+      connectionStatus: status,
+      lastTested: new Date().toISOString()
+    };
+    
+    setApiKeys(updatedKeys);
+    localStorage.setItem('bitacademy_api_keys', JSON.stringify(updatedKeys));
+    console.log('🔗 Status de conexão salvo:', status.success ? 'Conectado' : 'Falhou');
+  };
+
+  // Invalidar cache de conexão (forçar novo teste)
+  const invalidateConnection = () => {
+    const updatedKeys = {
+      ...apiKeys,
+      connectionStatus: null,
+      lastTested: null
+    };
+    
+    setApiKeys(updatedKeys);
+    localStorage.setItem('bitacademy_api_keys', JSON.stringify(updatedKeys));
+    console.log('🔄 Cache de conexão invalidado');
+  };
+
   const value = {
     apiKeys,
     saveApiKeys,
     clearApiKeys,
     hasValidKeys,
     getApiCredentials,
-    isConfigured: apiKeys.isConfigured
+    isConfigured: apiKeys.isConfigured,
+    connectionStatus: apiKeys.connectionStatus,
+    isConnectionValid,
+    saveConnectionStatus,
+    invalidateConnection
   };
 
   return (

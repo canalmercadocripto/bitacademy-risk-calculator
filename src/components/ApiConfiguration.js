@@ -4,7 +4,17 @@ import { useApiKeys } from '../hooks/useApiKeys';
 import toast from 'react-hot-toast';
 
 const ApiConfiguration = () => {
-  const { apiKeys, saveApiKeys, clearApiKeys, hasValidKeys, isConfigured } = useApiKeys();
+  const { 
+    apiKeys, 
+    saveApiKeys, 
+    clearApiKeys, 
+    hasValidKeys, 
+    isConfigured,
+    connectionStatus,
+    isConnectionValid,
+    saveConnectionStatus,
+    invalidateConnection
+  } = useApiKeys();
   
   const [apiConfig, setApiConfig] = useState({
     binanceApiKey: '',
@@ -13,7 +23,7 @@ const ApiConfiguration = () => {
     useProxy: true
   });
   
-  const [connectionStatus, setConnectionStatus] = useState({
+  const [localConnectionStatus, setLocalConnectionStatus] = useState({
     connected: false,
     testing: false,
     accountInfo: null,
@@ -31,8 +41,17 @@ const ApiConfiguration = () => {
         binanceSecret: apiKeys.binanceSecret
       }));
       
-      // Testar conexão automaticamente se estiver configurado
-      if (isConfigured) {
+      // Usar cache de conexão se válido, caso contrário testar
+      if (isConnectionValid()) {
+        console.log('📱 Usando cache de conexão válido');
+        setLocalConnectionStatus({
+          connected: connectionStatus.success,
+          testing: false,
+          accountInfo: connectionStatus.accountInfo || null,
+          error: connectionStatus.error || null
+        });
+      } else if (isConfigured) {
+        console.log('🔄 Cache inválido ou inexistente, testando conexão...');
         testConnection();
       }
     }
@@ -42,10 +61,10 @@ const ApiConfiguration = () => {
     if (saved) {
       setSavedConfigs(JSON.parse(saved));
     }
-  }, [apiKeys, isConfigured]);
+  }, [apiKeys, isConfigured, connectionStatus]);
 
   const testConnection = async () => {
-    setConnectionStatus(prev => ({ ...prev, testing: true, error: null }));
+    setLocalConnectionStatus(prev => ({ ...prev, testing: true, error: null }));
     
     try {
       console.log('🔧 Testando conexão com a API...');
@@ -81,12 +100,21 @@ const ApiConfiguration = () => {
           lastUpdate: new Date().toISOString()
         };
 
-        setConnectionStatus({
+        const connectionResult = {
+          success: true,
+          accountInfo,
+          error: null
+        };
+
+        setLocalConnectionStatus({
           connected: true,
           testing: false,
           accountInfo,
           error: null
         });
+
+        // Salvar status de conexão no cache global
+        saveConnectionStatus(connectionResult);
 
         toast.success('✅ API Binance conectada com sucesso!');
         
@@ -105,12 +133,23 @@ const ApiConfiguration = () => {
 
     } catch (error) {
       console.error('❌ Erro na conexão:', error);
-      setConnectionStatus({
+      
+      const connectionResult = {
+        success: false,
+        accountInfo: null,
+        error: error.message
+      };
+
+      setLocalConnectionStatus({
         connected: false,
         testing: false,
         accountInfo: null,
         error: error.message
       });
+
+      // Salvar status de erro no cache global
+      saveConnectionStatus(connectionResult);
+      
       toast.error(`Erro: ${error.message}`);
     }
   };
@@ -123,7 +162,7 @@ const ApiConfiguration = () => {
       secret: apiConfig.binanceSecret,
       useTestnet: apiConfig.useTestnet,
       useProxy: apiConfig.useProxy,
-      isConnected: connectionStatus.connected,
+      isConnected: localConnectionStatus.connected,
       savedAt: new Date().toISOString(),
       isAutoSaved: isAuto
     };
@@ -173,7 +212,10 @@ const ApiConfiguration = () => {
             <span className="status-icon">🔐</span>
             <span className="status-text">
               Chaves API configuradas permanentemente
-              {apiKeys.lastSaved && (
+              {isConnectionValid() && (
+                <small> • Conexão válida (cache ativo)</small>
+              )}
+              {!isConnectionValid() && apiKeys.lastSaved && (
                 <small> • Salvo em {new Date(apiKeys.lastSaved).toLocaleString('pt-BR')}</small>
               )}
             </span>
@@ -182,53 +224,53 @@ const ApiConfiguration = () => {
       </div>
 
       {/* Status da Conexão */}
-      <div className={`connection-status ${connectionStatus.connected ? 'connected' : 'disconnected'}`}>
+      <div className={`connection-status ${localConnectionStatus.connected ? 'connected' : 'disconnected'}`}>
         <div className="status-indicator">
-          {connectionStatus.testing && <span className="loading">🔄</span>}
-          {!connectionStatus.testing && connectionStatus.connected && <span className="success">✅</span>}
-          {!connectionStatus.testing && !connectionStatus.connected && <span className="error">❌</span>}
+          {localConnectionStatus.testing && <span className="loading">🔄</span>}
+          {!localConnectionStatus.testing && localConnectionStatus.connected && <span className="success">✅</span>}
+          {!localConnectionStatus.testing && !localConnectionStatus.connected && <span className="error">❌</span>}
         </div>
         <div className="status-info">
           <h3>
-            {connectionStatus.testing && 'Testando conexão...'}
-            {!connectionStatus.testing && connectionStatus.connected && 'API Conectada'}
-            {!connectionStatus.testing && !connectionStatus.connected && 'API Desconectada'}
+            {localConnectionStatus.testing && 'Testando conexão...'}
+            {!localConnectionStatus.testing && localConnectionStatus.connected && 'API Conectada'}
+            {!localConnectionStatus.testing && !localConnectionStatus.connected && 'API Desconectada'}
           </h3>
-          {connectionStatus.error && (
-            <p className="error-message">{connectionStatus.error}</p>
+          {localConnectionStatus.error && (
+            <p className="error-message">{localConnectionStatus.error}</p>
           )}
         </div>
       </div>
 
       {/* Informações da Conta */}
-      {connectionStatus.accountInfo && (
+      {localConnectionStatus.accountInfo && (
         <div className="account-summary">
           <h3>📊 Informações da Conta</h3>
           <div className="account-grid">
             <div className="account-item">
               <span className="label">Tipo:</span>
-              <span className="value">{connectionStatus.accountInfo.accountType}</span>
+              <span className="value">{localConnectionStatus.accountInfo.accountType}</span>
             </div>
             <div className="account-item">
               <span className="label">Trading:</span>
-              <span className={`value ${connectionStatus.accountInfo.canTrade ? 'enabled' : 'disabled'}`}>
-                {connectionStatus.accountInfo.canTrade ? '✅ Habilitado' : '❌ Desabilitado'}
+              <span className={`value ${localConnectionStatus.accountInfo.canTrade ? 'enabled' : 'disabled'}`}>
+                {localConnectionStatus.accountInfo.canTrade ? '✅ Habilitado' : '❌ Desabilitado'}
               </span>
             </div>
             <div className="account-item">
               <span className="label">Total Assets:</span>
-              <span className="value">{connectionStatus.accountInfo.totalAssets}</span>
+              <span className="value">{localConnectionStatus.accountInfo.totalAssets}</span>
             </div>
             <div className="account-item">
               <span className="label">Valor Total:</span>
-              <span className="value">${connectionStatus.accountInfo.totalBalanceUSD.toFixed(2)}</span>
+              <span className="value">${localConnectionStatus.accountInfo.totalBalanceUSD.toFixed(2)}</span>
             </div>
           </div>
           
           <div className="main-assets">
             <h4>💰 Principais Assets</h4>
             <div className="assets-list">
-              {connectionStatus.accountInfo.mainAssets.map((asset, index) => (
+              {localConnectionStatus.accountInfo.mainAssets.map((asset, index) => (
                 <div key={index} className="asset-item">
                   <span className="asset-name">{asset.asset}</span>
                   <span className="asset-amount">{asset.total.toFixed(8)}</span>
@@ -288,9 +330,9 @@ const ApiConfiguration = () => {
           <button 
             className="test-button"
             onClick={testConnection}
-            disabled={connectionStatus.testing || !apiConfig.binanceApiKey || !apiConfig.binanceSecret}
+            disabled={localConnectionStatus.testing || !apiConfig.binanceApiKey || !apiConfig.binanceSecret}
           >
-            {connectionStatus.testing ? '🔄 Testando...' : '🧪 Testar Conexão'}
+            {localConnectionStatus.testing ? '🔄 Testando...' : '🧪 Testar Conexão'}
           </button>
 
           <button 
@@ -325,12 +367,14 @@ const ApiConfiguration = () => {
                     useTestnet: false,
                     useProxy: true
                   });
-                  setConnectionStatus({
+                  setLocalConnectionStatus({
                     connected: false,
                     testing: false,
                     accountInfo: null,
                     error: null
                   });
+                  // Invalidar cache de conexão
+                  invalidateConnection();
                   toast.success('🗑️ Chaves removidas');
                 }
               }}
