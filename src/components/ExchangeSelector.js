@@ -46,7 +46,13 @@ const ExchangeSelector = ({ exchanges, selectedExchange, onExchangeSelect, loadi
 
   return (
     <div className="exchange-selector">
-      <label>Escolha a Corretora:</label>
+      <div className="exchange-header-container">
+        <label>Escolha a Corretora:</label>
+        <div className="real-api-indicator">
+          <span className="indicator-dot"></span>
+          <span className="indicator-text">🔴 DADOS REAIS DA API - SEM MOCKS</span>
+        </div>
+      </div>
       <div className="exchange-buttons">
         {(exchanges || []).map((exchange) => {
           const isSelected = selectedExchange?.id === exchange.id;

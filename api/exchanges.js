@@ -23,11 +23,15 @@ module.exports = async function handler(req, res) {
       switch (exchangeName.toLowerCase()) {
         case 'binance':
           return new ccxt.binance({
-            apiKey: '',
-            secret: '',
+            apiKey: process.env.REACT_APP_BINANCE_API_KEY || '',
+            secret: process.env.REACT_APP_BINANCE_SECRET_KEY || '',
             sandbox: false,
             enableRateLimit: true,
-            timeout: 10000,
+            timeout: 15000,
+            options: {
+              defaultType: 'spot',
+              adjustForTimeDifference: true
+            }
           });
         case 'bybit':
           return new ccxt.bybit({
@@ -159,45 +163,13 @@ module.exports = async function handler(req, res) {
     } catch (error) {
       console.error(`❌ Erro ao buscar símbolos da ${exchange}:`, error);
       
-      // Usar dados mock quando API real falha (geobloqueio)
-      console.log(`🔄 Usando dados mock para ${exchange} devido a restrições geográficas`);
-      let fallbackSymbols = getMockSymbols(exchange);
-      
-      // Se não tiver mock específico, usar fallback genérico
-      if (fallbackSymbols.length === 0) {
-        fallbackSymbols = [
-          { symbol: 'BTC/USDT', baseAsset: 'BTC', quoteAsset: 'USDT', status: 'TRADING', price: '67500.00' },
-          { symbol: 'ETH/USDT', baseAsset: 'ETH', quoteAsset: 'USDT', status: 'TRADING', price: '3550.00' },
-          { symbol: 'BNB/USDT', baseAsset: 'BNB', quoteAsset: 'USDT', status: 'TRADING', price: '695.00' },
-          { symbol: 'ADA/USDT', baseAsset: 'ADA', quoteAsset: 'USDT', status: 'TRADING', price: '1.02' },
-          { symbol: 'SOL/USDT', baseAsset: 'SOL', quoteAsset: 'USDT', status: 'TRADING', price: '199.00' }
-        ];
-      }
-      
-      // Filtrar por busca se fornecida
-      if (search) {
-        const searchUpper = search.toUpperCase();
-        fallbackSymbols = fallbackSymbols.filter(s => 
-          s.symbol.includes(searchUpper) || 
-          s.baseAsset.includes(searchUpper)
-        );
-      }
-      
-      // Limitar resultados
-      const limitedSymbols = fallbackSymbols.slice(0, parseInt(limit));
-      
-      return res.status(200).json({
-        success: true,
-        data: limitedSymbols,
-        meta: { 
-          exchange, 
-          total: limitedSymbols.length, 
-          limit: parseInt(limit), 
-          search,
-          source: 'mock_fallback',
-          error: error.message,
-          timestamp: new Date().toISOString()
-        }
+      // FORÇAR uso da API real - sem fallback para mocks
+      console.log(`⚠️ ERRO NA API REAL: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: `Erro ao conectar com ${exchange}: ${error.message}`,
+        error: 'API_CONNECTION_FAILED',
+        source: 'real_api_only'
       });
     }
   }
@@ -252,21 +224,12 @@ module.exports = async function handler(req, res) {
     } catch (error) {
       console.error(`❌ Erro ao buscar preço de ${symbol}:`, error);
       
-      // Fallback com preço mock
-      return res.status(200).json({
-        success: true,
-        data: {
-          exchange,
-          symbol: symbol,
-          price: '1.00000000',
-          change24h: '0.00%',
-          volume: '0',
-          high24h: '1.00000000',
-          low24h: '1.00000000',
-          timestamp: new Date().toISOString(),
-          source: 'fallback',
-          error: error.message
-        }
+      // FORÇAR uso da API real - sem fallback
+      return res.status(500).json({
+        success: false,
+        message: `Erro ao buscar preço real de ${symbol}: ${error.message}`,
+        error: 'PRICE_API_FAILED',
+        source: 'real_api_only'
       });
     }
   }
