@@ -1,6 +1,6 @@
 /* Import Design System */
 @import url('./design-system.css');
-@import url('./mobile-touch.css');
+/* @import url('./mobile-touch.css'); */ /* Disabled - causing touch issues on tablets */
 
 :root {
   /* Tema Claro - Melhorado para Visibilidade */

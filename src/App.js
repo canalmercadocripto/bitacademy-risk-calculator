@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
-import { useMobileTouchOptimization } from './hooks/useMobileTouch';
 import RiskCalculator from './components/RiskCalculator';
-import MobileRiskCalculator from './components/MobileRiskCalculator';
 import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/AdminDashboard';
 import Profile from './pages/Profile';
@@ -31,7 +29,6 @@ import './styles/AdminDashboard.css';
 const AppContent = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { isMobile } = useMobileTouchOptimization();
   const [currentView, setCurrentView] = useState('calculator');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -72,7 +69,7 @@ const AppContent = () => {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'calculator':
-        return isMobile ? <MobileRiskCalculator /> : <RiskCalculator />;
+        return <RiskCalculator />;
       case 'history':
         return <History />;
       case 'profile':
@@ -92,26 +89,24 @@ const AppContent = () => {
       case 'trading-history':
         return <TradingHistory />;
       default:
-        return isMobile ? <MobileRiskCalculator /> : <RiskCalculator />;
+        return <RiskCalculator />;
     }
   };
 
   return (
     <div className="App">
       <div className="app-layout">
-        <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${isMobile ? 'mobile-main' : ''}`}>
+        <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
           {renderCurrentView()}
         </main>
         
-        {!isMobile && (
-          <Sidebar 
-            currentView={currentView}
-            onViewChange={setCurrentView}
-            onToggleTheme={toggleTheme}
-            theme={theme}
-            onSidebarToggle={handleSidebarToggle}
-          />
-        )}
+        <Sidebar 
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onToggleTheme={toggleTheme}
+          theme={theme}
+          onSidebarToggle={handleSidebarToggle}
+        />
       </div>
     </div>
   );

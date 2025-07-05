@@ -8,7 +8,7 @@ import { calculatorApi } from '../services/api';
 import { tradeApi } from '../services/authApi';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
-import '../styles/mobile-touch.css';
+/* import '../styles/mobile-touch.css'; */ // Disabled - causing touch issues on tablets
 
 const MobileRiskCalculator = () => {
   const { user, token, isAuthenticated } = useAuth();

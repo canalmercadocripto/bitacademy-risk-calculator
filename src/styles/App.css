@@ -1,6 +1,10 @@
 .App {
   min-height: 100vh;
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Ensure normal scrolling behavior on all devices */
+  -webkit-overflow-scrolling: auto;
+  overflow-y: auto;
+  touch-action: auto; /* Allow normal touch interactions */
 }
 
 .app-layout {
@@ -26,12 +30,24 @@
   }
 }
 
+/* Tablet optimizations */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .main-content {
+    margin-left: 80px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: auto; /* Remove touch scrolling override */
+    scroll-behavior: auto; /* Remove smooth scrolling that can interfere */
+  }
+}
+
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
     width: 100%;
     padding: 0;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: auto; /* Remove touch scrolling override */
   }
 }
 
