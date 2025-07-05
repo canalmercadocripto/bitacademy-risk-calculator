@@ -13,6 +13,8 @@ import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TradingHistoryReal from './components/TradingHistoryReal';
+import ApiConfiguration from './components/ApiConfiguration';
+import TradingHistoryView from './components/TradingHistoryView';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
@@ -85,6 +87,10 @@ const AppContent = () => {
         return <Settings />;
       case 'trading-history-real':
         return <TradingHistoryReal />;
+      case 'api-configuration':
+        return <ApiConfiguration />;
+      case 'trading-history-view':
+        return <TradingHistoryView />;
       default:
         return <RiskCalculator />;
     }

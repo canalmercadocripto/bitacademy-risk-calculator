@@ -32,10 +32,16 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
       description: 'Trades e Cálculos'
     },
     {
-      id: 'api-manager',
-      label: 'Gerenciador API',
-      icon: '🔑',
-      description: 'APIs e Histórico Completo'
+      id: 'api-configuration',
+      label: 'Configuração API',
+      icon: '🔧',
+      description: 'Conectar e Configurar APIs'
+    },
+    {
+      id: 'trading-history-view',
+      label: 'Histórico de Trades',
+      icon: '📈',
+      description: 'Ver Histórico Completo'
     },
     {
       id: 'profile',
@@ -86,15 +92,9 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
       },
       {
         id: 'trading-history-real',
-        label: 'Histórico Real',
-        icon: '📊',
-        description: 'Trades da API Binance'
-      },
-      {
-        id: 'binance-test',
-        label: 'Teste API Binance',
-        icon: '🧪',
-        description: 'Testar Integração'
+        label: 'Histórico Real Admin',
+        icon: '🔍',
+        description: 'Histórico Completo Admin'
       }
     ] : [])
   ];
