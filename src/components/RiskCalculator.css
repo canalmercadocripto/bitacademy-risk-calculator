@@ -7,10 +7,12 @@
   margin: 0 auto;
   padding: 1.5rem;
   background: var(--bg-primary);
-  min-height: 100vh;
+  /* REMOVIDO: min-height: 100vh - causa scroll duplo */
   position: relative;
   z-index: var(--z-content);
   box-sizing: border-box;
+  height: auto;
+  overflow: visible;
 }
 
 /* Background Animated Gradients */
@@ -106,7 +108,10 @@
     0 1px 0 rgba(255, 255, 255, 0.1) inset;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  /* CORRIGIDO: overflow visible para evitar corte de conteúdo */
+  overflow: visible;
+  height: auto;
+  box-sizing: border-box;
 }
 
 .calculator-card::before {

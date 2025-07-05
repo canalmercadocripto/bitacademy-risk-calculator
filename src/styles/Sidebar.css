@@ -15,9 +15,12 @@
   z-index: var(--z-sidebar);
   display: flex;
   flex-direction: column;
+  /* CORRIGIDO: sidebar deve ter seu próprio scroll, mas não interferir no principal */
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: var(--sidebar-shadow);
+  /* Isola o scroll do sidebar */
+  contain: layout style paint;
 }
 
 .sidebar.collapsed {

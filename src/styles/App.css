@@ -1,11 +1,15 @@
 .App {
-  min-height: 100vh;
+  /* REMOVIDO: min-height: 100vh - causa scroll duplo */
+  height: auto;
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: visible;
 }
 
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  /* REMOVIDO: min-height: 100vh - deixa crescer naturalmente */
+  height: auto;
+  overflow: visible;
 }
 
 .main-content {
@@ -1829,7 +1833,8 @@
   }
   
   .container {
-    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    /* REMOVIDO altura fixa que causava problemas de scroll */
+    height: auto;
   }
   
   /* iOS specific fixes */
@@ -1859,8 +1864,8 @@
   
   /* iOS Safari bottom bar fix */
   .main-content {
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
+    /* REMOVIDO min-height: 100vh que causava scroll duplo */
+    height: auto;
     padding-bottom: env(safe-area-inset-bottom);
   }
   
