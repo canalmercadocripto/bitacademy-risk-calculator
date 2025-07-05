@@ -18,6 +18,49 @@ const ApiConfiguration = () => {
     getEnabledExchanges
   } = useApiKeys();
   
+  // Debug: verificar se os dados estão chegando
+  console.log('🔧 ApiConfiguration Debug:', {
+    exchanges,
+    hasValidKeys: hasValidKeys(),
+    user: user?.id
+  });
+  
+  // Se exchanges ainda não foi inicializado, mostrar loading
+  if (!exchanges || typeof exchanges !== 'object') {
+    return (
+      <div className="api-configuration">
+        <div className="loading-section">
+          <div className="loading-spinner">🔄</div>
+          <p>Carregando configurações da API...</p>
+          <p>Debug: exchanges = {JSON.stringify(exchanges)}</p>
+        </div>
+        <style jsx>{`
+          .api-configuration {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+          }
+          .loading-section {
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-section);
+            border-radius: 12px;
+            margin-bottom: 25px;
+          }
+          .loading-spinner {
+            font-size: 3em;
+            margin-bottom: 15px;
+            animation: spin 2s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+  
   const [apiConfig, setApiConfig] = useState({
     selectedExchange: 'binance',
     apiKey: '',
