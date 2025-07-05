@@ -281,7 +281,6 @@
 .result {
   width: 100%;
   min-height: 400px;
-  max-height: 70vh;
   padding: 15px;
   background: var(--bg-result);
   border-radius: 12px;
@@ -289,7 +288,6 @@
   font-family: 'Roboto', sans-serif;
   font-size: 13px;
   line-height: 1.4;
-  overflow-y: auto;
   margin-bottom: 15px;
   color: var(--text-primary);
 }
