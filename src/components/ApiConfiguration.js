@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import BinanceAPI from '../services/binanceApi';
 import { useApiKeys } from '../hooks/useApiKeys';
+import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 const ApiConfiguration = () => {
+  const { user } = useAuth();
   const { 
     apiKeys, 
     saveApiKeys, 
@@ -17,11 +19,25 @@ const ApiConfiguration = () => {
   } = useApiKeys();
   
   const [apiConfig, setApiConfig] = useState({
+    selectedExchange: 'binance',
     binanceApiKey: '',
     binanceSecret: '',
+    bingxApiKey: '',
+    bingxSecret: '',
+    bybitApiKey: '',
+    bybitSecret: '',
+    bitgetApiKey: '',
+    bitgetSecret: '',
     useTestnet: false,
     useProxy: true
   });
+
+  const exchanges = [
+    { id: 'binance', name: 'Binance', icon: '🟡' },
+    { id: 'bingx', name: 'BingX', icon: '🔥' },
+    { id: 'bybit', name: 'Bybit', icon: '🟠' },
+    { id: 'bitget', name: 'Bitget', icon: '🟢' }
+  ];
   
   const [localConnectionStatus, setLocalConnectionStatus] = useState({
     connected: false,
@@ -52,11 +68,17 @@ const ApiConfiguration = () => {
   // Effect separado para gerenciar conexão
   useEffect(() => {
     if (!isConfigured || !apiKeys.binanceApiKey || !apiKeys.binanceSecret) {
+      setLocalConnectionStatus({
+        connected: false,
+        testing: false,
+        accountInfo: null,
+        error: null
+      });
       return;
     }
 
-    // Usar cache de conexão se válido
-    if (isConnectionValid()) {
+    // Sempre usar cache de conexão se válido
+    if (isConnectionValid() && connectionStatus) {
       console.log('📱 Usando cache de conexão válido');
       setLocalConnectionStatus({
         connected: connectionStatus.success,
@@ -64,10 +86,18 @@ const ApiConfiguration = () => {
         accountInfo: connectionStatus.accountInfo || null,
         error: connectionStatus.error || null
       });
+    } else if (connectionStatus && !isConnectionValid()) {
+      // Cache expirado mas existe - mostrar como desconectado
+      console.log('⏰ Cache expirado - conexão precisa ser testada novamente');
+      setLocalConnectionStatus({
+        connected: false,
+        testing: false,
+        accountInfo: null,
+        error: 'Cache de conexão expirado - teste novamente'
+      });
     } else {
-      // Cache inválido ou inexistente - definir status como desconectado
-      // NÃO testar automaticamente para evitar loops
-      console.log('⏸️ Cache inválido - aguardando teste manual');
+      // Sem cache - aguardando primeiro teste
+      console.log('⏸️ Sem cache - aguardando primeiro teste');
       setLocalConnectionStatus({
         connected: false,
         testing: false,
@@ -75,7 +105,51 @@ const ApiConfiguration = () => {
         error: null
       });
     }
-  }, [isConfigured]); // Executar apenas quando isConfigured mudar
+  }, [isConfigured, connectionStatus, isConnectionValid()]); // Reagir a mudanças no cache
+
+  // Função para salvar chaves no banco de dados de forma criptografada
+  const saveKeysToDatabase = async (keys) => {
+    try {
+      const response = await fetch('/api/user-api-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          keys: keys,
+          encrypt: true // Flag para criptografar no backend
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao salvar no banco de dados');
+      }
+
+      console.log('🔐 Chaves salvas no banco de dados de forma criptografada');
+    } catch (error) {
+      console.error('Erro ao salvar no banco:', error);
+      // Não mostrar erro para o usuário, pois o localStorage ainda funciona
+    }
+  };
+
+  // Função para carregar chaves do banco de dados
+  const loadKeysFromDatabase = async () => {
+    try {
+      const response = await fetch(`/api/user-api-keys?userId=${user.id}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.keys) {
+          console.log('🔐 Chaves carregadas do banco de dados');
+          return data.keys;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar do banco:', error);
+    }
+    return null;
+  };
 
   const testConnection = async (isManual = false) => {
     // Se não é manual e já está testando, ignorar
@@ -145,10 +219,22 @@ const ApiConfiguration = () => {
         toast.success('✅ API Binance conectada com sucesso!');
         
         // Salvar chaves no contexto global
-        saveApiKeys({
+        const keysToSave = {
+          selectedExchange: apiConfig.selectedExchange,
           binanceApiKey: apiConfig.binanceApiKey,
-          binanceSecret: apiConfig.binanceSecret
-        });
+          binanceSecret: apiConfig.binanceSecret,
+          bingxApiKey: apiConfig.bingxApiKey,
+          bingxSecret: apiConfig.bingxSecret,
+          bybitApiKey: apiConfig.bybitApiKey,
+          bybitSecret: apiConfig.bybitSecret,
+          bitgetApiKey: apiConfig.bitgetApiKey,
+          bitgetSecret: apiConfig.bitgetSecret
+        };
+        
+        saveApiKeys(keysToSave);
+        
+        // Salvar no banco de dados criptografado
+        await saveKeysToDatabase(keysToSave);
         
         // Salvar configuração automaticamente se funcionou
         saveConfiguration('Configuração Atual', true);
@@ -310,27 +396,117 @@ const ApiConfiguration = () => {
 
       {/* Configuração Manual */}
       <div className="config-form">
-        <h3>⚙️ Configuração Binance</h3>
+        <h3>⚙️ Configuração de APIs das Exchanges</h3>
         
+        {/* Seletor de Exchange */}
         <div className="form-group">
-          <label>API Key:</label>
-          <input
-            type="password"
-            value={apiConfig.binanceApiKey}
-            onChange={(e) => setApiConfig(prev => ({ ...prev, binanceApiKey: e.target.value }))}
-            placeholder="Sua API Key da Binance"
-          />
+          <label>Exchange:</label>
+          <div className="exchange-selector">
+            {exchanges.map(exchange => (
+              <button
+                key={exchange.id}
+                className={`exchange-option ${apiConfig.selectedExchange === exchange.id ? 'active' : ''}`}
+                onClick={() => setApiConfig(prev => ({ ...prev, selectedExchange: exchange.id }))}
+              >
+                <span className="exchange-icon">{exchange.icon}</span>
+                <span className="exchange-name">{exchange.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="form-group">
-          <label>Secret Key:</label>
-          <input
-            type="password"
-            value={apiConfig.binanceSecret}
-            onChange={(e) => setApiConfig(prev => ({ ...prev, binanceSecret: e.target.value }))}
-            placeholder="Sua Secret Key da Binance"
-          />
-        </div>
+        {/* Campos específicos para a exchange selecionada */}
+        {apiConfig.selectedExchange === 'binance' && (
+          <>
+            <div className="form-group">
+              <label>Binance API Key:</label>
+              <input
+                type="password"
+                value={apiConfig.binanceApiKey}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, binanceApiKey: e.target.value }))}
+                placeholder="Sua API Key da Binance"
+              />
+            </div>
+            <div className="form-group">
+              <label>Binance Secret Key:</label>
+              <input
+                type="password"
+                value={apiConfig.binanceSecret}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, binanceSecret: e.target.value }))}
+                placeholder="Sua Secret Key da Binance"
+              />
+            </div>
+          </>
+        )}
+
+        {apiConfig.selectedExchange === 'bingx' && (
+          <>
+            <div className="form-group">
+              <label>BingX API Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bingxApiKey}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bingxApiKey: e.target.value }))}
+                placeholder="Sua API Key da BingX"
+              />
+            </div>
+            <div className="form-group">
+              <label>BingX Secret Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bingxSecret}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bingxSecret: e.target.value }))}
+                placeholder="Sua Secret Key da BingX"
+              />
+            </div>
+          </>
+        )}
+
+        {apiConfig.selectedExchange === 'bybit' && (
+          <>
+            <div className="form-group">
+              <label>Bybit API Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bybitApiKey}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bybitApiKey: e.target.value }))}
+                placeholder="Sua API Key da Bybit"
+              />
+            </div>
+            <div className="form-group">
+              <label>Bybit Secret Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bybitSecret}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bybitSecret: e.target.value }))}
+                placeholder="Sua Secret Key da Bybit"
+              />
+            </div>
+          </>
+        )}
+
+        {apiConfig.selectedExchange === 'bitget' && (
+          <>
+            <div className="form-group">
+              <label>Bitget API Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bitgetApiKey}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bitgetApiKey: e.target.value }))}
+                placeholder="Sua API Key da Bitget"
+              />
+            </div>
+            <div className="form-group">
+              <label>Bitget Secret Key:</label>
+              <input
+                type="password"
+                value={apiConfig.bitgetSecret}
+                onChange={(e) => setApiConfig(prev => ({ ...prev, bitgetSecret: e.target.value }))}
+                placeholder="Sua Secret Key da Bitget"
+              />
+            </div>
+          </>
+        )}
 
         <div className="form-options">
           <label className="checkbox-group">
@@ -363,33 +539,66 @@ const ApiConfiguration = () => {
 
           <button 
             className="save-button"
-            onClick={() => {
-              // Salvar no contexto global primeiro
-              const saved = saveApiKeys({
+            onClick={async () => {
+              const currentExchange = apiConfig.selectedExchange;
+              const apiKeyField = `${currentExchange}ApiKey`;
+              const secretField = `${currentExchange}Secret`;
+              
+              const apiKey = apiConfig[apiKeyField];
+              const secretKey = apiConfig[secretField];
+              
+              if (!apiKey || !secretKey) {
+                toast.error('Preencha API Key e Secret Key');
+                return;
+              }
+              
+              // Salvar no contexto global
+              const keysToSave = {
+                selectedExchange: currentExchange,
                 binanceApiKey: apiConfig.binanceApiKey,
-                binanceSecret: apiConfig.binanceSecret
-              });
+                binanceSecret: apiConfig.binanceSecret,
+                bingxApiKey: apiConfig.bingxApiKey,
+                bingxSecret: apiConfig.bingxSecret,
+                bybitApiKey: apiConfig.bybitApiKey,
+                bybitSecret: apiConfig.bybitSecret,
+                bitgetApiKey: apiConfig.bitgetApiKey,
+                bitgetSecret: apiConfig.bitgetSecret
+              };
+              
+              const saved = saveApiKeys(keysToSave);
               
               if (saved) {
-                const name = prompt('Nome para esta configuração (opcional):');
-                if (name) saveConfiguration(name);
-                toast.success('✅ Chaves salvas permanentemente!');
+                // Salvar no banco de dados criptografado
+                await saveKeysToDatabase(keysToSave);
+                toast.success('✅ Chaves salvas com segurança!');
               }
             }}
-            disabled={!apiConfig.binanceApiKey || !apiConfig.binanceSecret}
+            disabled={(() => {
+              const currentExchange = apiConfig.selectedExchange;
+              const apiKey = apiConfig[`${currentExchange}ApiKey`];
+              const secretKey = apiConfig[`${currentExchange}Secret`];
+              return !apiKey || !secretKey;
+            })()}
           >
-            💾 Salvar Permanente
+            💾 Salvar
           </button>
 
           {hasValidKeys() && (
             <button 
               className="clear-button"
               onClick={() => {
-                if (window.confirm('Tem certeza que deseja limpar as chaves API?')) {
+                if (window.confirm('Tem certeza que deseja limpar todas as chaves API?')) {
                   clearApiKeys();
                   setApiConfig({
+                    selectedExchange: 'binance',
                     binanceApiKey: '',
                     binanceSecret: '',
+                    bingxApiKey: '',
+                    bingxSecret: '',
+                    bybitApiKey: '',
+                    bybitSecret: '',
+                    bitgetApiKey: '',
+                    bitgetSecret: '',
                     useTestnet: false,
                     useProxy: true
                   });
@@ -399,13 +608,12 @@ const ApiConfiguration = () => {
                     accountInfo: null,
                     error: null
                   });
-                  // Invalidar cache de conexão
                   invalidateConnection();
-                  toast.success('🗑️ Chaves removidas');
+                  toast.success('🗑️ Todas as chaves removidas');
                 }
               }}
             >
-              🗑️ Limpar Chaves
+              🗑️ Limpar Todas
             </button>
           )}
         </div>
@@ -637,6 +845,47 @@ const ApiConfiguration = () => {
           font-size: 0.8em;
           opacity: 0.8;
           margin-top: 2px;
+        }
+
+        .exchange-selector {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 10px;
+          margin-top: 8px;
+        }
+
+        .exchange-option {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 15px 10px;
+          border: 2px solid var(--border-color);
+          border-radius: 8px;
+          background: var(--bg-input);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.9em;
+        }
+
+        .exchange-option:hover {
+          border-color: var(--accent-color);
+          transform: translateY(-2px);
+        }
+
+        .exchange-option.active {
+          border-color: var(--accent-color);
+          background: rgba(var(--accent-color-rgb), 0.1);
+          color: var(--accent-color);
+        }
+
+        .exchange-icon {
+          font-size: 1.5em;
+        }
+
+        .exchange-name {
+          font-weight: 600;
         }
 
         .test-button:disabled, .save-button:disabled {
