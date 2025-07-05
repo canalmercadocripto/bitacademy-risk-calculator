@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import BrokerageSettings from './components/BrokerageSettings';
 import TradingHistory from './components/TradingHistory';
 import Sidebar from './components/Sidebar';
+import './styles/scroll-fix.css';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
 import './styles/TradeMonitor.css';

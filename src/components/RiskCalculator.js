@@ -671,35 +671,8 @@ const RiskCalculator = () => {
           </div>
         </div>
 
-        {/* Right Column - Instructions & Results */}
+        {/* Right Column - Results Only */}
         <div className="calculator-results">
-          {/* Instructions */}
-          <div className="calculator-card instructions-panel">
-            <h2 className="instructions-title">📋 Como usar</h2>
-            <ol className="instructions-list">
-              <li className="instruction-item">
-                <div className="instruction-number">1</div>
-                <div className="instruction-text">Selecione a exchange e o par de moedas</div>
-              </li>
-              <li className="instruction-item">
-                <div className="instruction-number">2</div>
-                <div className="instruction-text">Escolha a direção: LONG (compra) ou SHORT (venda)</div>
-              </li>
-              <li className="instruction-item">
-                <div className="instruction-number">3</div>
-                <div className="instruction-text">Defina os preços de entrada, stop loss e target</div>
-              </li>
-              <li className="instruction-item">
-                <div className="instruction-number">4</div>
-                <div className="instruction-text">Configure o tamanho da conta e % de risco</div>
-              </li>
-              <li className="instruction-item">
-                <div className="instruction-number">5</div>
-                <div className="instruction-text">Clique em "Calcular Risco" para ver os resultados</div>
-              </li>
-            </ol>
-          </div>
-
           {/* Results */}
           <EnhancedResults 
             results={results} 

@@ -1,0 +1,89 @@
+/* SOLUÇÃO DEFINITIVA PARA ROLAGEM - NÃO REMOVER */
+
+/* Remove todas as interferências de scroll customizado */
+*, *::before, *::after {
+  -webkit-overflow-scrolling: unset !important;
+  scroll-behavior: unset !important;
+  touch-action: unset !important;
+  overscroll-behavior: unset !important;
+}
+
+/* Força comportamento nativo de scroll */
+html, body {
+  -webkit-overflow-scrolling: auto !important;
+  scroll-behavior: auto !important;
+  touch-action: auto !important;
+  overscroll-behavior: auto !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Remove qualquer height fixo que impeça scroll */
+html, body, #root {
+  height: auto !important;
+  min-height: 100vh;
+}
+
+/* Garante que elementos principais não bloqueiem scroll */
+.App, .app-layout, .main-content {
+  height: auto !important;
+  min-height: auto !important;
+  overflow: visible !important;
+  -webkit-overflow-scrolling: auto !important;
+  touch-action: auto !important;
+}
+
+/* Remove transforms que podem interferir com scroll */
+.calculator-layout, .calculator-forms, .calculator-results {
+  transform: none !important;
+  will-change: auto !important;
+}
+
+/* Específico para tablets - força scroll nativo */
+@media (min-width: 768px) and (max-width: 1024px) {
+  * {
+    -webkit-overflow-scrolling: auto !important;
+    scroll-behavior: auto !important;
+    touch-action: auto !important;
+  }
+  
+  body {
+    overflow-y: scroll !important;
+  }
+}
+
+/* Remove any backdrop-filter que pode afetar performance */
+@media (max-width: 1024px) {
+  .calculator-card, .sidebar, .results-section {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* SOLUÇÃO PARA PROBLEMAS ESPECÍFICOS DE TABLET */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Remove qualquer evento touch customizado */
+  .App * {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+  }
+  
+  /* Força scroll do body no tablet */
+  body {
+    overflow: auto !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: auto !important;
+  }
+  
+  /* Remove position fixed/sticky que pode interferir */
+  .calculator-header, .sidebar {
+    position: relative !important;
+  }
+  
+  /* Garante que nenhum elemento bloqueia eventos de scroll */
+  .main-content, .calculator-layout {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+    overflow: visible !important;
+  }
+}
