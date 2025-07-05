@@ -79,6 +79,12 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
         label: 'Configurações',
         icon: '⚙️',
         description: 'Config. do Sistema'
+      },
+      {
+        id: 'binance-test',
+        label: 'Teste API Binance',
+        icon: '🧪',
+        description: 'Testar Integração'
       }
     ] : [])
   ];

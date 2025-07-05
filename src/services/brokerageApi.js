@@ -1,4 +1,5 @@
 import api from './api';
+import BinanceAPI from './binanceApi';
 
 /**
  * Brokerage API Integration Service
@@ -49,6 +50,33 @@ const mockSupportedBrokerages = [
   }
 ];
 
+// Configuration - Production Mode: Only Real API
+const USE_REAL_API = true; // Always use real API in production
+const connectedAPIs = new Map(); // Store API instances
+
+// Initialize with real Binance API for staging
+const initializeBinanceAPI = async () => {
+  try {
+    const { BINANCE_TEST_CONFIG } = await import('../config/binance-test');
+    if (BINANCE_TEST_CONFIG.enabled && BINANCE_TEST_CONFIG.secretKey) {
+      const BinanceAPIModule = await import('./binanceApi');
+      const BinanceAPI = BinanceAPIModule.default;
+      const binanceAPI = new BinanceAPI(
+        BINANCE_TEST_CONFIG.apiKey,
+        BINANCE_TEST_CONFIG.secretKey,
+        BINANCE_TEST_CONFIG.testMode
+      );
+      connectedAPIs.set('binance_main', binanceAPI);
+      console.log('🚀 Binance API initialized for staging');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize Binance API:', error.message);
+  }
+};
+
+// Initialize on module load (don't wait)
+initializeBinanceAPI();
+
 export const brokerageApi = {
   // ========== CONNECTION MANAGEMENT ==========
 
@@ -66,50 +94,86 @@ export const brokerageApi = {
    * Get user's connected brokerages
    */
   getConnectedBrokerages: async (token) => {
-    // Mock data for development
-    const mockConnectedBrokerages = [
-      {
-        id: 'conn_1',
-        brokerage_id: 'binance',
-        brokerage_name: 'Binance',
-        brokerage_logo: 'https://cryptoicons.org/api/icon/bnb/32',
-        name: 'Binance Principal',
-        api_key_masked: 'bN***************Kx',
-        status: 'connected',
-        test_mode: false,
-        created_at: '2024-01-15T10:30:00Z',
-        last_sync: '2024-01-16T08:15:00Z'
-      },
-      {
-        id: 'conn_2',
-        brokerage_id: 'bybit',
-        brokerage_name: 'Bybit',
-        brokerage_logo: 'https://cryptoicons.org/api/icon/bybit/32',
-        name: 'Bybit Futures',
-        api_key_masked: 'by***************7s',
-        status: 'connected',
-        test_mode: true,
-        sub_account: 'futures_account',
-        created_at: '2024-01-14T14:20:00Z',
-        last_sync: '2024-01-16T07:45:00Z'
-      }
-    ];
+    // Return real connected APIs
+    const connections = [];
     
-    // const response = await api.get('/brokerage/connections', {
-    //   headers: { Authorization: `Bearer ${token}` }
-    // });
-    // return response.data;
-    return mockConnectedBrokerages;
+    if (connectedAPIs.has('binance_main')) {
+      try {
+        const binanceAPI = connectedAPIs.get('binance_main');
+        const testResult = await binanceAPI.testConnection();
+        
+        connections.push({
+          id: 'binance_main',
+          brokerage_id: 'binance',
+          brokerage_name: 'Binance',
+          brokerage_logo: 'https://cryptoicons.org/api/icon/bnb/32',
+          name: 'Binance Principal',
+          api_key_masked: `${binanceAPI.apiKey.slice(0, 2)}***${binanceAPI.apiKey.slice(-2)}`,
+          status: testResult.success ? 'connected' : 'error',
+          test_mode: binanceAPI.baseURL.includes('testnet'),
+          created_at: new Date().toISOString(),
+          last_sync: new Date().toISOString(),
+          permissions: testResult.permissions,
+          accountType: testResult.accountType
+        });
+      } catch (error) {
+        connections.push({
+          id: 'binance_main',
+          brokerage_id: 'binance',
+          brokerage_name: 'Binance',
+          name: 'Binance Principal',
+          status: 'error',
+          error: error.message
+        });
+      }
+    }
+    
+    return connections;
   },
 
   /**
    * Connect a new brokerage account
    */
   connectBrokerage: async (brokerageData, token) => {
-    const response = await api.post('/brokerage/connect', brokerageData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    try {
+      // Test the API connection first
+      if (USE_REAL_API && brokerageData.brokerage === 'binance') {
+        const binanceAPI = new BinanceAPI(
+          brokerageData.credentials.apiKey,
+          brokerageData.credentials.secretKey,
+          brokerageData.testMode
+        );
+        
+        const testResult = await binanceAPI.testConnection();
+        if (!testResult.success) {
+          throw new Error(`Falha na conexão com Binance: ${testResult.error}`);
+        }
+        
+        // Store API instance for later use
+        const connectionId = `binance_${Date.now()}`;
+        connectedAPIs.set(connectionId, binanceAPI);
+        
+        // Return mock response for now (would be saved to backend in production)
+        return {
+          id: connectionId,
+          brokerage_id: 'binance',
+          brokerage_name: 'Binance',
+          name: brokerageData.name,
+          status: 'connected',
+          test_mode: brokerageData.testMode,
+          created_at: new Date().toISOString(),
+          api_key_masked: `${brokerageData.credentials.apiKey.slice(0, 2)}***${brokerageData.credentials.apiKey.slice(-2)}`
+        };
+      }
+      
+      // Fallback to backend API
+      const response = await api.post('/brokerage/connect', brokerageData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.message || 'Erro ao conectar corretora');
+    }
   },
 
   /**
@@ -190,11 +254,35 @@ export const brokerageApi = {
    * Get consolidated trading history from all brokerages
    */
   getConsolidatedHistory: async (filters = {}, token) => {
-    const params = new URLSearchParams(filters).toString();
-    const response = await api.get(`/brokerage/history?${params}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    let allTrades = [];
+    
+    // Get data from all connected APIs
+    for (const [connectionId, apiInstance] of connectedAPIs) {
+      if (apiInstance instanceof BinanceAPI) {
+        try {
+          const trades = await apiInstance.getTradingHistory(
+            filters.symbol,
+            filters.limit || 100,
+            filters.dateFrom ? new Date(filters.dateFrom).getTime() : null,
+            filters.dateTo ? new Date(filters.dateTo).getTime() : null
+          );
+          
+          const formattedTrades = trades.map(trade => apiInstance.formatTradeData(trade));
+          allTrades = allTrades.concat(formattedTrades);
+        } catch (error) {
+          console.error(`Error getting trades from ${connectionId}:`, error);
+        }
+      }
+    }
+    
+    // Sort by timestamp (newest first)
+    allTrades.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    return { 
+      trades: allTrades,
+      totalTrades: allTrades.length,
+      connectedBrokerages: connectedAPIs.size
+    };
   },
 
   /**
@@ -309,10 +397,36 @@ export const brokerageApi = {
    * Get account balances from all brokerages
    */
   getAccountBalances: async (token) => {
-    const response = await api.get('/brokerage/balances', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    const balances = [];
+    
+    for (const [connectionId, apiInstance] of connectedAPIs) {
+      if (apiInstance instanceof BinanceAPI) {
+        try {
+          const accountBalances = await apiInstance.getBalances();
+          const totalUSD = accountBalances.reduce((sum, balance) => sum + balance.usdValue, 0);
+          
+          balances.push({
+            brokerageName: 'Binance',
+            connectionId,
+            totalUSD,
+            assets: accountBalances,
+            lastUpdate: new Date().toISOString()
+          });
+        } catch (error) {
+          console.error(`Error getting balances from ${connectionId}:`, error);
+          balances.push({
+            brokerageName: 'Binance',
+            connectionId,
+            totalUSD: 0,
+            assets: [],
+            error: error.message,
+            lastUpdate: new Date().toISOString()
+          });
+        }
+      }
+    }
+    
+    return balances;
   },
 
   /**
@@ -329,10 +443,50 @@ export const brokerageApi = {
    * Get trading fees and costs
    */
   getTradingCosts: async (connectionId, timeframe = '30d', token) => {
-    const response = await api.get(`/brokerage/connections/${connectionId}/costs?timeframe=${timeframe}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    if (connectedAPIs.has(connectionId)) {
+      const apiInstance = connectedAPIs.get(connectionId);
+      
+      if (apiInstance instanceof BinanceAPI) {
+        try {
+          const days = parseInt(timeframe.replace('d', ''));
+          const costs = await apiInstance.getTradingCosts(days);
+          return {
+            ...costs,
+            timeframe,
+            connectionId,
+            brokerage: 'Binance',
+            lastUpdate: new Date().toISOString()
+          };
+        } catch (error) {
+          console.error(`Error getting costs from ${connectionId}:`, error);
+          return {
+            totalFees: 0,
+            totalVolume: 0,
+            averageFeeRate: 0,
+            totalTrades: 0,
+            feesByType: [],
+            error: error.message,
+            timeframe,
+            connectionId,
+            brokerage: 'Binance',
+            lastUpdate: new Date().toISOString()
+          };
+        }
+      }
+    }
+    
+    // Return empty data if no connection found
+    return {
+      totalFees: 0,
+      totalVolume: 0,
+      averageFeeRate: 0,
+      totalTrades: 0,
+      feesByType: [],
+      error: 'Connection not found',
+      timeframe,
+      connectionId,
+      lastUpdate: new Date().toISOString()
+    };
   },
 
   // ========== REAL-TIME DATA ==========
