@@ -34,39 +34,66 @@ module.exports = async function handler(req, res) {
     if (action === 'list') {
       console.log('🔍 Buscando todos os usuários...');
       
-      // Get all users
-      const { data: users, error } = await supabase
-        .from('users')
-        .select(`
-          id,
-          name,
-          email,
-          phone,
-          role,
-          is_active,
-          created_at,
-          updated_at
-        `)
-        .order('created_at', { ascending: false });
+      // Get all users with trade counts
+      const [usersResult, tradesResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select(`
+            id,
+            name,
+            email,
+            phone,
+            role,
+            is_active,
+            created_at,
+            updated_at
+          `)
+          .order('created_at', { ascending: false }),
+        
+        supabase
+          .from('trades')
+          .select('user_id, account_size')
+      ]);
       
-      if (error) {
-        console.error('Erro ao buscar usuários:', error);
-        throw error;
-      }
+      if (usersResult.error) throw usersResult.error;
+      if (tradesResult.error) throw tradesResult.error;
+      
+      const users = usersResult.data || [];
+      const trades = tradesResult.data || [];
       
       console.log('📊 Usuários encontrados:', users.length);
+      console.log('📊 Trades encontrados:', trades.length);
       
-      // Format users data
-      const formattedUsers = users?.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at
-      })) || [];
+      // Calculate trade statistics for each user
+      const userStats = {};
+      trades.forEach(trade => {
+        const userId = trade.user_id;
+        if (!userStats[userId]) {
+          userStats[userId] = {
+            totalTrades: 0,
+            totalVolume: 0
+          };
+        }
+        userStats[userId].totalTrades++;
+        userStats[userId].totalVolume += trade.account_size || 0;
+      });
+      
+      // Format users data with trade statistics
+      const formattedUsers = users?.map(user => {
+        const stats = userStats[user.id] || { totalTrades: 0, totalVolume: 0 };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isActive: user.is_active,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          totalTrades: stats.totalTrades,
+          totalVolume: stats.totalVolume
+        };
+      }) || [];
       
       // Calculate statistics
       const totalUsers = formattedUsers.length;
