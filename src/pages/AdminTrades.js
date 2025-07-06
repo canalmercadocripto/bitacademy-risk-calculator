@@ -39,7 +39,7 @@ const AdminTrades = () => {
       console.log('Token:', token ? 'PRESENTE' : 'AUSENTE');
       console.log('Headers:', headers);
       
-      const response = await fetch('/api/admin-trades?action=list&limit=100', { headers });
+      const response = await fetch('/api/admin-trades?action=list', { headers });
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
       

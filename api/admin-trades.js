@@ -33,14 +33,12 @@ module.exports = async function handler(req, res) {
     console.log('Supabase URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
     console.log('Supabase Key:', process.env.SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
     
-    const { action = 'list', page = 1, limit = 100, exchange = '', status = '' } = req.query;
+    const { action = 'list', exchange = '', status = '' } = req.query;
     
     if (action === 'list') {
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const offset = (pageNum - 1) * limitNum;
+      console.log('🔍 Buscando TODOS os trades do banco...');
       
-      // Build query to get all trades with user information
+      // Build query to get ALL trades with user information (no pagination)
       let query = supabase
         .from('trades')
         .select(`
@@ -65,8 +63,7 @@ module.exports = async function handler(req, res) {
           updated_at,
           users(name, email)
         `)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limitNum - 1);
+        .order('created_at', { ascending: false });
       
       // Apply filters if provided
       if (exchange && exchange !== 'all') {
@@ -108,11 +105,6 @@ module.exports = async function handler(req, res) {
         updatedAt: trade.updated_at
       })) || [];
       
-      // Get total count for pagination
-      const { count: totalCount } = await supabase
-        .from('trades')
-        .select('*', { count: 'exact', head: true });
-      
       // Calculate statistics
       const totalTrades = formattedTrades.length;
       const activeTrades = formattedTrades.filter(t => t.status === 'active').length;
@@ -120,16 +112,18 @@ module.exports = async function handler(req, res) {
       const avgRiskReward = totalTrades > 0 ? 
         formattedTrades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / totalTrades : 0;
       
+      console.log('📊 Estatísticas dos trades:', {
+        totalTrades,
+        activeTrades,
+        closedTrades,
+        avgRiskReward: parseFloat(avgRiskReward.toFixed(2))
+      });
+      
       return res.status(200).json({
         success: true,
         data: formattedTrades,
         meta: {
-          page: pageNum,
-          limit: limitNum,
-          total: totalCount || 0,
-          totalPages: Math.ceil((totalCount || 0) / limitNum),
-          hasNextPage: offset + limitNum < (totalCount || 0),
-          hasPrevPage: pageNum > 1
+          total: totalTrades
         },
         stats: {
           totalTrades,
