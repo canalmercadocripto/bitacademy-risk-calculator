@@ -1,233 +1,104 @@
 const { supabase } = require('../lib/supabase');
+const securityMiddleware = require('../middleware/security');
 
-// Users management API
+// Users API - manage users for admin
 module.exports = async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Apply security headers
+  securityMiddleware.corsHeaders(req, res);
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   
-  const { action } = req.query;
-  
-  try {
-    // Get all users
-    if (req.method === 'GET' && action === 'list') {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, name, email, phone, role, is_active, created_at, updated_at')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      return res.status(200).json({
-        success: true,
-        data: data
-      });
-    }
-    
-    // Create user
-    if (req.method === 'POST') {
-      const { name, email, phone, password, role = 'user' } = req.body;
-      
-      if (!name || !email || !phone || !password) {
-        return res.status(400).json({
-          success: false,
-          message: 'Todos os campos são obrigatórios'
-        });
-      }
-      
-      // Check if email already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email.toLowerCase())
-        .single();
-      
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Este email já está cadastrado'
-        });
-      }
-      
-      // Create user
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          name,
-          email: email.toLowerCase(),
-          phone,
-          password,
-          role,
-          is_active: true
-        })
-        .select('id, name, email, phone, role, is_active, created_at')
-        .single();
-      
-      if (error) throw error;
-      
-      return res.status(200).json({
-        success: true,
-        data: data,
-        message: 'Usuário criado com sucesso'
-      });
-    }
-    
-    // Update user
-    if (req.method === 'PUT') {
-      const { userId, name, email, phone, role, isActive } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'userId é obrigatório'
-        });
-      }
-      
-      // Check if email already exists for other users
-      if (email) {
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', email.toLowerCase())
-          .neq('id', userId)
-          .single();
-        
-        if (existingUser) {
-          return res.status(400).json({
-            success: false,
-            message: 'Este email já está cadastrado'
-          });
-        }
-      }
-      
-      // Build update object
-      const updateData = {};
-      if (name !== undefined) updateData.name = name;
-      if (email !== undefined) updateData.email = email.toLowerCase();
-      if (phone !== undefined) updateData.phone = phone;
-      if (role !== undefined) updateData.role = role;
-      if (isActive !== undefined) updateData.is_active = isActive;
-      updateData.updated_at = new Date().toISOString();
-      
-      // Update user
-      const { data, error } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', userId)
-        .select('id, name, email, phone, role, is_active, updated_at')
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({
-            success: false,
-            message: 'Usuário não encontrado'
-          });
-        }
-        throw error;
-      }
-      
-      return res.status(200).json({
-        success: true,
-        data: data,
-        message: 'Usuário atualizado com sucesso'
-      });
-    }
-    
-    // Change password
-    if (req.method === 'PUT' && action === 'password') {
-      const { userId, newPassword } = req.body;
-      
-      if (!userId || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: 'userId e newPassword são obrigatórios'
-        });
-      }
-      
-      if (newPassword.length < 8) {
-        return res.status(400).json({
-          success: false,
-          message: 'A senha deve ter pelo menos 8 caracteres'
-        });
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .update({
-          password: newPassword,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select('id, name, email')
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({
-            success: false,
-            message: 'Usuário não encontrado'
-          });
-        }
-        throw error;
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Senha alterada com sucesso'
-      });
-    }
-    
-    // Delete user
-    if (req.method === 'DELETE') {
-      const { userId } = req.query;
-      
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'userId é obrigatório'
-        });
-      }
-      
-      // Prevent deletion of admin user
-      if (userId === '1' || userId === 'admin-001') {
-        return res.status(403).json({
-          success: false,
-          message: 'Não é possível deletar o usuário administrativo principal'
-        });
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId)
-        .select('id')
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({
-            success: false,
-            message: 'Usuário não encontrado'
-          });
-        }
-        throw error;
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Usuário deletado com sucesso'
-      });
-    }
-    
+  if (req.method !== 'GET') {
     return res.status(405).json({
       success: false,
       message: 'Método não permitido'
+    });
+  }
+  
+  // Apply rate limiting
+  const rateLimitResult = securityMiddleware.apiRateLimit(req, res);
+  if (rateLimitResult) return rateLimitResult;
+  
+  // Validate token and require admin
+  const tokenResult = securityMiddleware.validateToken(req, res);
+  if (tokenResult) return tokenResult;
+  
+  const adminResult = securityMiddleware.requireAdmin(req, res);
+  if (adminResult) return adminResult;
+  
+  try {
+    const { action = 'list' } = req.query;
+    
+    if (action === 'list') {
+      console.log('🔍 Buscando todos os usuários...');
+      
+      // Get all users
+      const { data: users, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          name,
+          email,
+          phone,
+          role,
+          is_active,
+          created_at,
+          updated_at
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        throw error;
+      }
+      
+      console.log('📊 Usuários encontrados:', users.length);
+      
+      // Format users data
+      const formattedUsers = users?.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        isActive: user.is_active,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      })) || [];
+      
+      // Calculate statistics
+      const totalUsers = formattedUsers.length;
+      const activeUsers = formattedUsers.filter(u => u.isActive).length;
+      const adminUsers = formattedUsers.filter(u => u.role === 'admin').length;
+      const regularUsers = formattedUsers.filter(u => u.role === 'user').length;
+      
+      console.log('📈 Estatísticas dos usuários:', {
+        totalUsers,
+        activeUsers,
+        adminUsers,
+        regularUsers
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: formattedUsers,
+        meta: {
+          total: totalUsers
+        },
+        stats: {
+          totalUsers,
+          activeUsers,
+          adminUsers,
+          regularUsers
+        }
+      });
+    }
+    
+    return res.status(400).json({
+      success: false,
+      message: 'Ação não suportada'
     });
     
   } catch (error) {

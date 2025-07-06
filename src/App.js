@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import RiskCalculator from './components/RiskCalculator';
 import LoginPage from './components/LoginPage';
-import AdminDashboard from './components/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import History from './pages/History';
 import Dashboard from './pages/Dashboard';
@@ -27,12 +27,32 @@ import './styles/AdminDashboard.css';
 const AppContent = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [currentView, setCurrentView] = useState('calculator');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentView, setCurrentView] = useState(() => {
+    // Recuperar última view do localStorage ou usar 'calculator' como padrão
+    return localStorage.getItem('currentView') || 'calculator';
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Recuperar estado do sidebar do localStorage
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
 
   const handleSidebarToggle = (collapsed) => {
     setSidebarCollapsed(collapsed);
+    localStorage.setItem('sidebarCollapsed', collapsed.toString());
   };
+
+  const handleViewChange = (view) => {
+    setCurrentView(view);
+    localStorage.setItem('currentView', view);
+  };
+
+  // Limpar localStorage quando usuário faz logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.removeItem('currentView');
+      localStorage.removeItem('sidebarCollapsed');
+    }
+  }, [isAuthenticated]);
 
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
@@ -74,6 +94,8 @@ const AppContent = () => {
         return <Profile />;
       case 'dashboard':
         return <Dashboard />;
+      case 'admin-dashboard':
+        return <AdminDashboard />;
       case 'users':
         return <Users />;
       case 'trades':
@@ -96,7 +118,7 @@ const AppContent = () => {
         
         <Sidebar 
           currentView={currentView}
-          onViewChange={setCurrentView}
+          onViewChange={handleViewChange}
           onToggleTheme={toggleTheme}
           theme={theme}
           onSidebarToggle={handleSidebarToggle}

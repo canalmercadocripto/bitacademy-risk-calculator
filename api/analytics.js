@@ -1,11 +1,10 @@
 const { supabase } = require('../lib/supabase');
+const securityMiddleware = require('../middleware/security');
 
-// Analytics API for dashboard metrics
+// Analytics API - advanced analytics with real data
 module.exports = async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Apply security headers
+  securityMiddleware.corsHeaders(req, res);
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -18,205 +17,226 @@ module.exports = async function handler(req, res) {
     });
   }
   
+  // Apply rate limiting
+  const rateLimitResult = securityMiddleware.apiRateLimit(req, res);
+  if (rateLimitResult) return rateLimitResult;
+  
+  // Validate token and require admin
+  const tokenResult = securityMiddleware.validateToken(req, res);
+  if (tokenResult) return tokenResult;
+  
+  const adminResult = securityMiddleware.requireAdmin(req, res);
+  if (adminResult) return adminResult;
+  
   try {
-    // Get user ID from token (for user-specific analytics)
-    let userId = null;
-    const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
-    
-    if (token) {
-      try {
-        const decoded = Buffer.from(token, 'base64').toString('utf-8');
-        const parts = decoded.split(':');
-        userId = parseInt(parts[0]) || null;
-      } catch (error) {
-        console.log('⚠️ Could not decode token');
-      }
-    }
-    
     const { period = '30d', view = 'overview' } = req.query;
     
-    // Calculate date range
-    const periodDays = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 30;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - periodDays);
-    const startDateISO = startDate.toISOString();
+    console.log(`🔍 Gerando analytics para período: ${period}, view: ${view}`);
     
-    // Get overview metrics
-    if (view === 'overview') {
-      // Total users
-      const { count: totalUsers } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-      
-      // Active users (logged in within period)
-      const { count: activeUsers } = await supabase
-        .from('activity_logs')
-        .select('user_id', { count: 'exact', head: true })
-        .eq('action', 'login')
-        .gte('created_at', startDateISO);
-      
-      // Total trades
-      const { count: totalTrades } = await supabase
-        .from('trades')
-        .select('*', { count: 'exact', head: true });
-      
-      // Trades in period
-      const { count: tradesThisPeriod } = await supabase
-        .from('trades')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startDateISO);
-      
-      // Get trade statistics
-      const { data: tradeStats } = await supabase
-        .from('trades')
-        .select('account_size, risk_reward_ratio, position_size');
-      
-      const totalVolume = tradeStats?.reduce((sum, trade) => sum + parseFloat(trade.account_size || 0), 0) || 0;
-      const avgRiskReward = tradeStats?.length > 0 ? 
-        tradeStats.reduce((sum, trade) => sum + parseFloat(trade.risk_reward_ratio || 0), 0) / tradeStats.length : 0;
-      
-      return res.status(200).json({
-        success: true,
-        data: {
-          overview: {
-            totalUsers: totalUsers || 0,
-            activeUsers: activeUsers || 0,
-            totalTrades: totalTrades || 0,
-            tradesThisPeriod: tradesThisPeriod || 0,
-            totalVolume: totalVolume,
-            avgRiskReward: parseFloat(avgRiskReward.toFixed(2)),
-            successRate: 68.5, // TODO: Calculate real success rate
-            platformUsage: ((activeUsers || 0) / (totalUsers || 1) * 100).toFixed(1)
-          }
-        }
-      });
-    }
-    
-    // Get user metrics
-    if (view === 'users') {
-      // New users in period
-      const { count: newUsers } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startDateISO);
-      
-      // Most active users
-      const { data: mostActiveUsers } = await supabase
+    // Get all trades and users
+    const [tradesResult, usersResult] = await Promise.all([
+      supabase
         .from('trades')
         .select(`
-          user_id,
-          users(name),
-          account_size
+          id, user_id, exchange, symbol, account_size, risk_percentage,
+          entry_price, stop_loss, take_profit, position_size, risk_amount,
+          reward_amount, risk_reward_ratio, trade_type, status, created_at,
+          users(name, email)
         `)
-        .gte('created_at', startDateISO);
+        .order('created_at', { ascending: false }),
       
-      // Group by user and calculate stats
-      const userStats = {};
-      mostActiveUsers?.forEach(trade => {
-        const userId = trade.user_id;
-        if (!userStats[userId]) {
-          userStats[userId] = {
-            name: trade.users?.name || 'Usuário',
-            trades: 0,
-            volume: 0
-          };
-        }
-        userStats[userId].trades += 1;
-        userStats[userId].volume += parseFloat(trade.account_size || 0);
-      });
+      supabase
+        .from('users')
+        .select('id, name, email, role, is_active, created_at')
+        .order('created_at', { ascending: false })
+    ]);
+    
+    if (tradesResult.error) throw tradesResult.error;
+    if (usersResult.error) throw usersResult.error;
+    
+    const trades = tradesResult.data || [];
+    const users = usersResult.data || [];
+    
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch (period) {
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate.setDate(now.getDate() - 30);
+    }
+    
+    // Filter trades by period
+    const filteredTrades = trades.filter(trade => 
+      new Date(trade.created_at) >= startDate
+    );
+    
+    // Filter users by period
+    const filteredUsers = users.filter(user => 
+      new Date(user.created_at) >= startDate
+    );
+    
+    // Calculate overview metrics
+    const overview = {
+      totalTrades: filteredTrades.length,
+      totalUsers: filteredUsers.length,
+      totalVolume: filteredTrades.reduce((sum, trade) => sum + (trade.account_size || 0), 0),
+      avgRiskReward: filteredTrades.length > 0 ? 
+        filteredTrades.reduce((sum, trade) => sum + (trade.risk_reward_ratio || 0), 0) / filteredTrades.length : 0,
+      activeTrades: filteredTrades.filter(t => t.status === 'active').length,
+      closedTrades: filteredTrades.filter(t => t.status === 'closed').length,
+      avgAccountSize: filteredTrades.length > 0 ? 
+        filteredTrades.reduce((sum, trade) => sum + (trade.account_size || 0), 0) / filteredTrades.length : 0,
+      avgRiskPercentage: filteredTrades.length > 0 ? 
+        filteredTrades.reduce((sum, trade) => sum + (trade.risk_percentage || 0), 0) / filteredTrades.length : 0
+    };
+    
+    // User metrics
+    const userMetrics = {
+      newUsers: filteredUsers.length,
+      activeUsers: users.filter(u => u.is_active).length,
+      adminUsers: users.filter(u => u.role === 'admin').length,
+      userGrowthRate: users.length > 0 ? (filteredUsers.length / users.length * 100) : 0
+    };
+    
+    // Trade metrics by exchange
+    const exchangeMetrics = {};
+    filteredTrades.forEach(trade => {
+      const exchange = trade.exchange;
+      if (!exchangeMetrics[exchange]) {
+        exchangeMetrics[exchange] = {
+          count: 0,
+          volume: 0,
+          avgRiskReward: 0
+        };
+      }
+      exchangeMetrics[exchange].count++;
+      exchangeMetrics[exchange].volume += trade.account_size || 0;
+    });
+    
+    // Calculate average risk/reward for each exchange
+    Object.keys(exchangeMetrics).forEach(exchange => {
+      const exchangeTrades = filteredTrades.filter(t => t.exchange === exchange);
+      exchangeMetrics[exchange].avgRiskReward = exchangeTrades.length > 0 ? 
+        exchangeTrades.reduce((sum, t) => sum + (t.risk_reward_ratio || 0), 0) / exchangeTrades.length : 0;
+    });
+    
+    // Performance data (daily aggregation)
+    const performanceData = [];
+    const days = parseInt(period.replace('d', '')) || 30;
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
       
-      const topUsers = Object.values(userStats)
-        .sort((a, b) => b.trades - a.trades)
-        .slice(0, 5);
+      const dayTrades = filteredTrades.filter(trade => 
+        trade.created_at.startsWith(dateStr)
+      );
       
-      return res.status(200).json({
-        success: true,
-        data: {
-          userMetrics: {
-            newUsersThisPeriod: newUsers || 0,
-            userRetentionRate: 72.5, // TODO: Calculate real retention
-            avgTradesPerUser: totalTrades > 0 && totalUsers > 0 ? 
-              (totalTrades / totalUsers).toFixed(1) : 0,
-            mostActiveUsers: topUsers
-          }
-        }
+      const dayUsers = filteredUsers.filter(user => 
+        user.created_at.startsWith(dateStr)
+      );
+      
+      performanceData.push({
+        date: dateStr,
+        trades: dayTrades.length,
+        users: dayUsers.length,
+        volume: dayTrades.reduce((sum, trade) => sum + (trade.account_size || 0), 0),
+        avgRiskReward: dayTrades.length > 0 ? 
+          dayTrades.reduce((sum, trade) => sum + (trade.risk_reward_ratio || 0), 0) / dayTrades.length : 0
       });
     }
     
-    // Get trade metrics
-    if (view === 'trades') {
-      const { data: recentTrades } = await supabase
-        .from('trades')
-        .select('symbol, exchange, account_size, position_size, created_at')
-        .gte('created_at', startDateISO)
-        .order('created_at', { ascending: false });
-      
-      // Calculate metrics
-      const avgTradeSize = recentTrades?.length > 0 ?
-        recentTrades.reduce((sum, trade) => sum + parseFloat(trade.position_size || 0), 0) / recentTrades.length : 0;
-      
-      // Most traded pairs
-      const symbolCount = {};
-      recentTrades?.forEach(trade => {
-        symbolCount[trade.symbol] = (symbolCount[trade.symbol] || 0) + 1;
-      });
-      
-      const mostTradedPairs = Object.entries(symbolCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([symbol, count]) => ({ symbol, trades: count }));
-      
-      return res.status(200).json({
-        success: true,
-        data: {
-          tradeMetrics: {
-            tradesThisPeriod: recentTrades?.length || 0,
-            avgTradeSize: parseFloat(avgTradeSize.toFixed(2)),
-            mostTradedPairs: mostTradedPairs,
-            recentActivity: recentTrades?.slice(0, 10) || []
-          }
-        }
-      });
-    }
+    // Top performers
+    const userPerformance = {};
+    filteredTrades.forEach(trade => {
+      const userId = trade.user_id;
+      if (!userPerformance[userId]) {
+        userPerformance[userId] = {
+          userId,
+          userName: trade.users?.name || 'Usuário Desconhecido',
+          userEmail: trade.users?.email || 'N/A',
+          totalTrades: 0,
+          totalVolume: 0,
+          avgRiskReward: 0,
+          activeTrades: 0
+        };
+      }
+      userPerformance[userId].totalTrades++;
+      userPerformance[userId].totalVolume += trade.account_size || 0;
+      if (trade.status === 'active') {
+        userPerformance[userId].activeTrades++;
+      }
+    });
     
-    // Get performance data for charts
-    if (view === 'performance') {
-      const { data: dailyTrades } = await supabase
-        .from('trades')
-        .select('created_at, account_size, risk_amount, reward_amount')
-        .gte('created_at', startDateISO)
-        .order('created_at', { ascending: true });
-      
-      // Group by day
-      const dailyStats = {};
-      dailyTrades?.forEach(trade => {
-        const date = trade.created_at.split('T')[0];
-        if (!dailyStats[date]) {
-          dailyStats[date] = {
-            date,
-            trades: 0,
-            volume: 0,
-            pnl: 0
-          };
-        }
-        dailyStats[date].trades += 1;
-        dailyStats[date].volume += parseFloat(trade.account_size || 0);
-        dailyStats[date].pnl += parseFloat(trade.reward_amount || 0) - parseFloat(trade.risk_amount || 0);
-      });
-      
-      const performanceData = Object.values(dailyStats);
-      
-      return res.status(200).json({
-        success: true,
-        data: {
-          performanceData: performanceData
-        }
-      });
-    }
+    // Calculate average risk/reward for each user
+    Object.keys(userPerformance).forEach(userId => {
+      const userTrades = filteredTrades.filter(t => t.user_id == userId);
+      userPerformance[userId].avgRiskReward = userTrades.length > 0 ? 
+        userTrades.reduce((sum, t) => sum + (t.risk_reward_ratio || 0), 0) / userTrades.length : 0;
+    });
     
-    return res.status(400).json({
-      success: false,
-      message: 'View not supported'
+    const topPerformers = Object.values(userPerformance)
+      .sort((a, b) => b.totalVolume - a.totalVolume)
+      .slice(0, 10);
+    
+    // Risk analysis
+    const riskAnalysis = {
+      lowRisk: filteredTrades.filter(t => (t.risk_percentage || 0) <= 1).length,
+      mediumRisk: filteredTrades.filter(t => (t.risk_percentage || 0) > 1 && (t.risk_percentage || 0) <= 3).length,
+      highRisk: filteredTrades.filter(t => (t.risk_percentage || 0) > 3).length,
+      avgRisk: overview.avgRiskPercentage,
+      riskDistribution: {}
+    };
+    
+    // Risk distribution by ranges
+    const riskRanges = [
+      { min: 0, max: 0.5, label: '0-0.5%' },
+      { min: 0.5, max: 1, label: '0.5-1%' },
+      { min: 1, max: 2, label: '1-2%' },
+      { min: 2, max: 3, label: '2-3%' },
+      { min: 3, max: 5, label: '3-5%' },
+      { min: 5, max: 100, label: '5%+' }
+    ];
+    
+    riskRanges.forEach(range => {
+      riskAnalysis.riskDistribution[range.label] = filteredTrades.filter(t => 
+        (t.risk_percentage || 0) > range.min && (t.risk_percentage || 0) <= range.max
+      ).length;
+    });
+    
+    console.log('📊 Analytics calculado:', {
+      totalTrades: overview.totalTrades,
+      totalUsers: overview.totalUsers,
+      totalVolume: overview.totalVolume.toFixed(2),
+      period
+    });
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        overview,
+        userMetrics,
+        exchangeMetrics,
+        performanceData,
+        topPerformers,
+        riskAnalysis,
+        period,
+        generatedAt: new Date().toISOString()
+      }
     });
     
   } catch (error) {
