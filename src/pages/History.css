@@ -241,11 +241,14 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .trade-card:hover {
@@ -254,7 +257,7 @@
   border-color: var(--accent-color);
 }
 
-/* Header do trade melhorado */
+/* Header do trade sem sobreposições */
 .trade-header {
   display: flex;
   justify-content: space-between;
@@ -262,57 +265,66 @@
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
-  min-height: 60px;
+  min-height: 50px;
+  gap: 10px;
 }
 
 .trade-info {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .exchange {
   background: var(--accent-color);
   color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 40px;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .symbol {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 15px;
-  padding: 4px 6px;
+  font-size: 13px;
+  padding: 3px 5px;
   background: var(--bg-primary);
-  border-radius: 6px;
+  border-radius: 5px;
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 0;
+  flex-shrink: 1;
+  min-width: 50px;
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .direction {
-  padding: 4px 8px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 45px;
+  max-width: 70px;
 }
 
 .direction.long {
@@ -327,13 +339,17 @@
 
 .trade-date {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   background: var(--bg-primary);
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 5px;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 70px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Detalhes do trade organizados */
@@ -344,42 +360,48 @@
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .detail-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px;
+  gap: 3px;
+  padding: 8px;
   background: var(--bg-primary);
-  border-radius: 6px;
+  border-radius: 5px;
   border: 1px solid var(--border-color);
-  min-height: 50px;
+  min-height: 45px;
   justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .detail-item label {
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 2px;
 }
 
 .detail-item span {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1.1;
+  word-break: break-all;
 }
 
 /* Ratio display melhorado */
@@ -489,18 +511,30 @@
   white-space: nowrap;
 }
 
-/* Responsive Design Melhorado */
+/* Responsive Design Estratégico */
+@media (max-width: 1200px) {
+  .detail-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+}
+
 @media (max-width: 1024px) {
   .history-container {
     padding: 15px;
   }
   
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
   
   .detail-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .trade-card {
+    padding: 16px;
   }
 }
 
@@ -555,16 +589,20 @@
   
   .detail-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
   
   .detail-item {
-    padding: 8px;
-    min-height: 45px;
+    padding: 6px;
+    min-height: 40px;
   }
   
   .detail-item span {
-    font-size: 12px;
+    font-size: 11px;
+  }
+  
+  .detail-item label {
+    font-size: 8px;
   }
   
   .trade-card {
@@ -609,20 +647,20 @@
   
   .detail-grid {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 4px;
   }
   
   .detail-item {
-    padding: 6px;
-    min-height: 40px;
+    padding: 5px;
+    min-height: 35px;
   }
   
   .detail-item span {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .detail-item label {
-    font-size: 9px;
+    font-size: 8px;
   }
   
   .trade-info {
