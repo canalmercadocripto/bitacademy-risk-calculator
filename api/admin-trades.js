@@ -29,6 +29,10 @@ module.exports = async function handler(req, res) {
   if (adminResult) return adminResult;
   
   try {
+    console.log('Admin trades API called with query:', req.query);
+    console.log('Supabase URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
+    console.log('Supabase Key:', process.env.SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
+    
     const { action = 'list', page = 1, limit = 100, exchange = '', status = '' } = req.query;
     
     if (action === 'list') {
@@ -74,6 +78,8 @@ module.exports = async function handler(req, res) {
       }
       
       const { data: trades, error, count } = await query;
+      
+      console.log('Supabase query result:', { trades: trades?.length, error: error?.message });
       
       if (error) throw error;
       
