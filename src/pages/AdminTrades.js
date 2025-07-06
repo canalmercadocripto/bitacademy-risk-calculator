@@ -10,6 +10,8 @@ const AdminTrades = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewCredentials, setRenewCredentials] = useState({ email: '', password: '' });
 
   // Função para formatar valores em USD
   const formatCurrency = (value) => {
@@ -49,6 +51,13 @@ const AdminTrades = () => {
         setTrades(data.data || []);
       } else {
         console.error('❌ Erro ao buscar trades:', data.message);
+        
+        // Se o token expirou, mostrar modal de renovação
+        if (data.message === 'Token expirado') {
+          setShowRenewModal(true);
+          return;
+        }
+        
         alert(`Erro: ${data.message}`);
         setTrades([]);
       }
@@ -57,6 +66,45 @@ const AdminTrades = () => {
       alert(`Erro de conexão: ${error.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRenewToken = async () => {
+    try {
+      if (!renewCredentials.email || !renewCredentials.password) {
+        alert('Por favor, preencha email e senha');
+        return;
+      }
+      
+      const response = await fetch('/api/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(renewCredentials)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Salvar novo token
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+        // Fechar modal
+        setShowRenewModal(false);
+        setRenewCredentials({ email: '', password: '' });
+        
+        // Tentar carregar trades novamente
+        fetchAllTrades();
+        
+        alert('Token renovado com sucesso!');
+      } else {
+        alert(`Erro ao renovar token: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Erro ao renovar token:', error);
+      alert('Erro de conexão ao renovar token');
     }
   };
 
@@ -375,6 +423,97 @@ const AdminTrades = () => {
               <div className="details-section">
                 <h3>📅 Data de Criação</h3>
                 <p>{new Date(selectedTrade.createdAt).toLocaleString('pt-BR')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Renovação de Token */}
+      {showRenewModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>🔄 Renovar Sessão</h2>
+              <p>Sua sessão expirou. Por favor, faça login novamente.</p>
+            </div>
+            
+            <div className="modal-body">
+              <div style={{ marginBottom: '15px' }}>
+                <label>Email:</label>
+                <input
+                  type="email"
+                  value={renewCredentials.email}
+                  onChange={(e) => setRenewCredentials({
+                    ...renewCredentials,
+                    email: e.target.value
+                  })}
+                  placeholder="Digite seu email"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    marginTop: '5px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px'
+                  }}
+                />
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label>Senha:</label>
+                <input
+                  type="password"
+                  value={renewCredentials.password}
+                  onChange={(e) => setRenewCredentials({
+                    ...renewCredentials,
+                    password: e.target.value
+                  })}
+                  placeholder="Digite sua senha"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    marginTop: '5px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRenewToken();
+                    }
+                  }}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setShowRenewModal(false);
+                    window.location.href = '/';
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#ccc',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Voltar ao Login
+                </button>
+                <button
+                  onClick={handleRenewToken}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Renovar Sessão
+                </button>
               </div>
             </div>
           </div>
