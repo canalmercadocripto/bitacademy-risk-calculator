@@ -30,18 +30,46 @@ const History = () => {
   const loadHistory = async () => {
     setLoading(true);
     try {
-      const response = await tradeApi.getHistory(token, pagination.page, pagination.limit);
-      if (response.success) {
-        setTrades(response.data);
+      console.log('🔍 Carregando histórico de trades...');
+      
+      // Usar API direta para trades do usuário
+      const response = await fetch(`/api/trades?action=user-history&page=${pagination.page}&limit=${pagination.limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (data.success) {
+        setTrades(data.data || []);
         setPagination(prev => ({
           ...prev,
-          total: response.meta?.total || 0,
-          totalPages: response.meta?.totalPages || 0
+          total: data.meta?.total || 0,
+          totalPages: data.meta?.totalPages || 0
         }));
+        console.log('✅ Trades carregados:', data.data?.length || 0);
+      } else {
+        console.error('❌ Erro API:', data.message);
+        
+        // Se token expirou, oferecer renovação
+        if (data.message === 'Token expirado') {
+          const shouldRenew = window.confirm('Sua sessão expirou. Deseja renovar o login?');
+          if (shouldRenew) {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+            return;
+          }
+        }
+        
+        toast.error('Erro ao carregar histórico: ' + data.message);
       }
     } catch (error) {
-      toast.error('Erro ao carregar histórico');
-      console.error('Erro:', error);
+      console.error('❌ Erro de conexão:', error);
+      toast.error('Erro de conexão ao carregar histórico');
     } finally {
       setLoading(false);
     }
