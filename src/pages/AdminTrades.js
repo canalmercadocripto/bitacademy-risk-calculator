@@ -33,17 +33,28 @@ const AdminTrades = () => {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
+      console.log('🔍 Buscando trades admin...');
+      console.log('Token:', token ? 'PRESENTE' : 'AUSENTE');
+      console.log('Headers:', headers);
+      
       const response = await fetch('/api/admin-trades?action=list&limit=100', { headers });
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (data.success) {
+        console.log('✅ Dados recebidos:', data.data.length, 'trades');
         setTrades(data.data || []);
       } else {
-        console.error('Erro ao buscar trades:', data.message);
+        console.error('❌ Erro ao buscar trades:', data.message);
+        alert(`Erro: ${data.message}`);
         setTrades([]);
       }
     } catch (error) {
-      console.error('Erro ao carregar trades:', error);
+      console.error('❌ Erro ao carregar trades:', error);
+      alert(`Erro de conexão: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -233,6 +244,25 @@ const AdminTrades = () => {
           <div className="col-date">Data</div>
           <div className="col-actions">Ações</div>
         </div>
+        
+        {filteredTrades.length === 0 ? (
+          <div className="no-trades-message" style={{
+            padding: '40px',
+            textAlign: 'center',
+            color: '#666',
+            fontSize: '18px'
+          }}>
+            <div>📊 Nenhum trade encontrado</div>
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              Total de trades carregados: {trades.length}
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              Filtros aplicados: {searchTerm ? `Busca: "${searchTerm}"` : ''} 
+              {filterExchange !== 'all' ? ` Exchange: ${filterExchange}` : ''}
+              {filterStatus !== 'all' ? ` Status: ${filterStatus}` : ''}
+            </div>
+          </div>
+        ) : null}
         
         {filteredTrades.map(trade => (
           <div key={trade.id} className="trade-row">
