@@ -258,51 +258,61 @@
 .trade-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-  gap: 10px;
+  min-height: 60px;
 }
 
 .trade-info {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .exchange {
   background: var(--accent-color);
   color: white;
-  padding: 6px 12px;
-  border-radius: 15px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .symbol {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 16px;
-  padding: 4px 8px;
+  font-size: 15px;
+  padding: 4px 6px;
   background: var(--bg-primary);
   border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .direction {
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .direction.long {
@@ -317,11 +327,13 @@
 
 .trade-date {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   background: var(--bg-primary);
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Detalhes do trade organizados */
@@ -332,34 +344,42 @@
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
   align-items: start;
 }
 
 .detail-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
+  gap: 4px;
+  padding: 10px;
   background: var(--bg-primary);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border-color);
+  min-height: 50px;
+  justify-content: center;
 }
 
 .detail-item label {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-item span {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 14px;
-  word-break: break-all;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 /* Ratio display melhorado */
@@ -493,6 +513,7 @@
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    min-height: auto;
   }
   
   .history-header h1 {
@@ -520,22 +541,34 @@
   
   .trade-header {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     text-align: center;
+    align-items: center;
+    min-height: auto;
   }
   
   .trade-info {
     justify-content: center;
     flex-wrap: wrap;
+    gap: 6px;
   }
   
   .detail-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .detail-item {
+    padding: 8px;
+    min-height: 45px;
+  }
+  
+  .detail-item span {
+    font-size: 12px;
   }
   
   .trade-card {
-    padding: 20px;
+    padding: 15px;
   }
   
   .pagination {
@@ -559,18 +592,52 @@
   }
   
   .trade-card {
-    padding: 15px;
+    padding: 12px;
   }
   
   .filters-section {
-    padding: 15px;
+    padding: 12px;
   }
   
   .stat-card {
-    padding: 20px;
+    padding: 15px;
   }
   
   .ratio-value {
     font-size: 1.5rem;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .detail-item {
+    padding: 6px;
+    min-height: 40px;
+  }
+  
+  .detail-item span {
+    font-size: 11px;
+  }
+  
+  .detail-item label {
+    font-size: 9px;
+  }
+  
+  .trade-info {
+    gap: 4px;
+  }
+  
+  .exchange,
+  .symbol,
+  .direction {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .trade-date {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }
