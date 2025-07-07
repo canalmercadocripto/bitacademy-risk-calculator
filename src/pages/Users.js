@@ -25,11 +25,28 @@ const Users = () => {
     try {
       setLoading(true);
       
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado');
+      }
+      
+      console.log('🔍 Buscando usuários com token...');
+      
       // Fetch real users from database
-      const response = await fetch('/api/users?action=list');
+      const response = await fetch('/api/users?action=list', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (data.success) {
+        console.log('✅ Usuários carregados:', data.data.length);
         // Transform database format to UI format
         const transformedUsers = data.data.map(user => ({
           id: user.id,
@@ -37,14 +54,29 @@ const Users = () => {
           email: user.email,
           phone: user.phone,
           role: user.role,
-          isActive: user.is_active,
-          createdAt: user.created_at.split('T')[0], // Format date
-          lastLogin: user.updated_at || user.created_at,
-          totalTrades: 0 // TODO: Get from trades table
+          isActive: user.isActive,
+          createdAt: user.createdAt.split('T')[0], // Format date
+          lastLogin: user.updatedAt || user.createdAt,
+          totalTrades: user.totalTrades || 0,
+          totalVolume: user.totalVolume || 0
         }));
         setUsers(transformedUsers);
+        console.log('✅ Usuários formatados:', transformedUsers.length);
       } else {
         console.error('Erro ao buscar usuários:', data.message);
+        
+        // Se o token expirou, redirecionar para renovação
+        if (data.message === 'Token expirado') {
+          const shouldRenew = window.confirm('Sua sessão expirou. Deseja renovar o login?');
+          if (shouldRenew) {
+            // Limpar token expirado
+            localStorage.removeItem('token');
+            // Redirecionar para login
+            window.location.href = '/';
+            return;
+          }
+        }
+        
         alert('Erro ao carregar usuários: ' + data.message);
       }
     } catch (error) {
@@ -297,6 +329,20 @@ const Users = () => {
           <span className="stat-number">{users.filter(u => u.role === 'admin').length}</span>
           <span className="stat-label">Administradores</span>
         </div>
+        <div className="stat-item">
+          <span className="stat-number">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'USD',
+              maximumFractionDigits: 0
+            }).format(users.reduce((sum, u) => sum + (u.totalVolume || 0), 0))}
+          </span>
+          <span className="stat-label">Volume Total</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-number">{users.reduce((sum, u) => sum + (u.totalTrades || 0), 0)}</span>
+          <span className="stat-label">Total de Trades</span>
+        </div>
       </div>
 
       {/* Lista de Usuários */}
@@ -326,6 +372,16 @@ const Users = () => {
               <div className="stat">
                 <span className="stat-label">Trades:</span>
                 <span className="stat-value">{user.totalTrades}</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Volume Total:</span>
+                <span className="stat-value">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0
+                  }).format(user.totalVolume)}
+                </span>
               </div>
               <div className="stat">
                 <span className="stat-label">Membro desde:</span>

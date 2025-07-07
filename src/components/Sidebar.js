@@ -45,34 +45,28 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
         label: 'Administração'
       },
       {
-        id: 'dashboard',
+        id: 'admin-dashboard',
         label: 'Dashboard Admin',
-        icon: '📈',
+        icon: '📊',
         description: 'Visão Geral do Sistema'
       },
       {
         id: 'users',
-        label: 'Gestão de Usuários',
+        label: '👥 Gestão de Usuários',
         icon: '👥',
         description: 'Gerenciar Usuários'
       },
       {
         id: 'trades',
-        label: 'Todos os Trades',
+        label: '💰 Histórico de Trades',
         icon: '💰',
-        description: 'Histórico Global'
+        description: 'Todos os Trades'
       },
       {
         id: 'analytics',
-        label: 'Analytics',
-        icon: '📊',
-        description: 'Relatórios Detalhados'
-      },
-      {
-        id: 'settings',
-        label: 'Configurações',
-        icon: '⚙️',
-        description: 'Config. do Sistema'
+        label: '📈 Analytics Avançado',
+        icon: '📈',
+        description: 'Relatórios e Métricas'
       }
     ] : [])
   ];

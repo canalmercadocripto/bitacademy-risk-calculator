@@ -112,6 +112,12 @@ const securityMiddleware = {
         });
       }
       
+      // If token is close to expiring (within 2 hours), send refresh hint
+      const isNearExpiry = tokenAge > 22 * 60 * 60 * 1000;
+      if (isNearExpiry) {
+        res.setHeader('X-Token-Refresh-Needed', 'true');
+      }
+      
       req.user = {
         id: parseInt(userId),
         role: role

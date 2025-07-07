@@ -165,7 +165,85 @@ module.exports = async function handler(req, res) {
       });
     }
     
-    // Get history
+    // Get user history with authentication
+    if (req.method === 'GET' && action === 'user-history') {
+      // Validate token first
+      const tokenResult = securityMiddleware.validateToken(req, res);
+      if (tokenResult) return tokenResult;
+      
+      const userId = req.user.id;
+      const { page = 1, limit = 20, status = '', exchange = '' } = req.query;
+      
+      console.log(`🔍 Buscando histórico para usuário ${userId}...`);
+      
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Build query for user trades
+      let query = supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limitNum - 1);
+      
+      // Apply filters
+      if (status && status !== 'all') {
+        query = query.eq('status', status);
+      }
+      
+      if (exchange && exchange !== 'all') {
+        query = query.eq('exchange', exchange);
+      }
+      
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      
+      console.log(`📊 Encontrados ${data?.length || 0} trades para usuário ${userId}`);
+      
+      // Map database fields to frontend expected fields
+      const mappedTrades = data?.map(trade => ({
+        id: trade.id,
+        exchange: trade.exchange,
+        symbol: trade.symbol,
+        direction: trade.trade_type?.toUpperCase() || 'LONG',
+        entryPrice: parseFloat(trade.entry_price),
+        stopLoss: trade.stop_loss ? parseFloat(trade.stop_loss) : null,
+        targetPrice: trade.take_profit ? parseFloat(trade.take_profit) : null,
+        positionSize: parseFloat(trade.position_size),
+        riskAmount: parseFloat(trade.risk_amount || 0),
+        rewardAmount: parseFloat(trade.reward_amount || 0),
+        riskRewardRatio: parseFloat(trade.risk_reward_ratio || 0),
+        accountSize: parseFloat(trade.account_size || 0),
+        riskPercentage: parseFloat(trade.risk_percentage || 0),
+        currentPrice: trade.current_price ? parseFloat(trade.current_price) : null,
+        status: trade.status || 'calculated',
+        notes: trade.notes || '',
+        createdAt: trade.created_at,
+        updatedAt: trade.updated_at
+      })) || [];
+      
+      // Get total count for pagination
+      const { count: totalCount } = await supabase
+        .from('trades')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      return res.status(200).json({
+        success: true,
+        data: mappedTrades,
+        meta: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalPages: Math.ceil((totalCount || 0) / limitNum)
+        }
+      });
+    }
+    
+    // Get history (legacy)
     if (req.method === 'GET' && action === 'history') {
       const { page = 1, limit = 20, status = '', exchange = '' } = req.query;
       
