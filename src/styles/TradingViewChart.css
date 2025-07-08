@@ -133,6 +133,31 @@
   font-size: 14px;
 }
 
+.chart-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.chart-error > div:first-child {
+  color: #dc3545;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.chart-error > div:last-child {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdvancedRealTimeChart } from 'react-ts-tradingview-widgets';
 
 const TradingViewChart = ({ 
@@ -6,35 +6,51 @@ const TradingViewChart = ({
   theme = "dark"
 }) => {
   const [chartReady, setChartReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
-  // Configurações do widget TradingView
+  // Configurações mínimas do widget TradingView
   const widgetConfig = {
     symbol: symbol,
-    width: "100%",
-    height: "100%",
     autosize: true,
     interval: "5",
     timezone: "America/Sao_Paulo",
-    theme: theme,
-    style: "1",
-    locale: "pt_BR",
-    toolbar_bg: "#f1f3f6",
-    enable_publishing: false,
-    allow_symbol_change: true,
-    save_image: false,
-    calendar: false,
-    hide_legend: true,
-    hide_side_toolbar: false,
-    details: true,
-    hotlist: true,
-    calendar: true,
-    studies: [
-      "Volume@tv-basicstudies"
-    ],
-    show_popup_button: true,
-    popup_width: "1000",
-    popup_height: "650",
-    container_id: "tradingview_chart"
+    theme: theme === "dark" ? "dark" : "light",
+    locale: "pt_BR"
+  };
+
+  // Error boundary effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setChartReady(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const renderChart = () => {
+    try {
+      return (
+        <AdvancedRealTimeChart
+          symbol={widgetConfig.symbol}
+          autosize={widgetConfig.autosize}
+          interval={widgetConfig.interval}
+          timezone={widgetConfig.timezone}
+          theme={widgetConfig.theme}
+          locale={widgetConfig.locale}
+        />
+      );
+    } catch (error) {
+      console.error('TradingView widget error:', error);
+      setHasError(true);
+      return (
+        <div className="chart-error">
+          <div>❌ Erro ao carregar gráfico</div>
+          <div style={{ fontSize: '14px', marginTop: '10px', color: '#666' }}>
+            Verifique a conexão e tente novamente
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -48,13 +64,20 @@ const TradingViewChart = ({
 
       {/* Widget TradingView */}
       <div className="chart-widget">
-        <AdvancedRealTimeChart
-          {...widgetConfig}
-        />
+        {hasError ? (
+          <div className="chart-error">
+            <div>❌ Erro ao carregar gráfico</div>
+            <div style={{ fontSize: '14px', marginTop: '10px', color: '#666' }}>
+              Verifique a conexão e tente novamente
+            </div>
+          </div>
+        ) : (
+          renderChart()
+        )}
       </div>
 
       {/* Overlay para loading */}
-      {!chartReady && (
+      {!chartReady && !hasError && (
         <div className="chart-loading">
           <div className="loading-spinner"></div>
           <p>Carregando gráfico...</p>
