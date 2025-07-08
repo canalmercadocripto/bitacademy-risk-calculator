@@ -14,8 +14,18 @@ const TradingViewChartAdvanced = ({
   const widgetRef = useRef(null);
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const priceLineIds = useRef([]);
-  const lastPrices = useRef({ entryPrice: null, stopLoss: null, targetPrice: null, currentPrice: null });
+  const priceLineIds = useRef({
+    entry: null,
+    stop: null,
+    target: null,
+    current: null
+  });
+  const createdPrices = useRef({
+    entryPrice: null,
+    stopLoss: null,
+    targetPrice: null,
+    currentPrice: null
+  });
 
   useEffect(() => {
 
@@ -103,15 +113,15 @@ const TradingViewChartAdvanced = ({
           
           // Criar linhas horizontais iniciais
           setTimeout(() => {
-            createHorizontalLines();
-          }, 500);
+            createOrUpdateLines();
+          }, 1000);
           
-          // Listener para atualizar linhas quando o range mudar (com debounce)
+          // Listener para atualizar linhas quando o range mudar (apenas recriar se necessário)
           const chart = widget.activeChart();
           let rangeChangeTimeout;
           
           chart.onVisibleRangeChanged().subscribe(null, () => {
-            console.log('📊 Visible range changed - debouncing line update');
+            console.log('📊 Visible range changed - checking existing lines');
             
             // Limpar timeout anterior
             if (rangeChangeTimeout) {
@@ -120,9 +130,8 @@ const TradingViewChartAdvanced = ({
             
             // Debounce para evitar recriação excessiva
             rangeChangeTimeout = setTimeout(() => {
-              console.log('📊 Updating lines after range change');
-              clearAllLines();
-              createHorizontalLines();
+              console.log('📊 Range changed - lines remain persistent');
+              // Não fazer nada - as linhas são persistentes
             }, 500);
           });
         });
@@ -163,30 +172,49 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
+  // Função para remover uma linha específica
+  const removeLine = (lineType) => {
+    if (!chartReady || !widgetRef.current) return;
+    
+    try {
+      const chart = widgetRef.current.activeChart();
+      const lineId = priceLineIds.current[lineType];
+      
+      if (lineId) {
+        chart.removeEntity(lineId);
+        priceLineIds.current[lineType] = null;
+        console.log(`🗑️ ${lineType} line removed`);
+      }
+    } catch (error) {
+      console.error(`❌ Error removing ${lineType} line:`, error);
+    }
+  };
+
   // Função para remover todas as linhas
   const clearAllLines = () => {
     if (!chartReady || !widgetRef.current) return;
     
     try {
-      const chart = widgetRef.current.activeChart();
-      
-      // Remover todas as linhas existentes
-      priceLineIds.current.forEach(lineId => {
-        try {
-          chart.removeEntity(lineId);
-        } catch (e) {
-          console.warn('Error removing line:', e);
-        }
+      ['entry', 'stop', 'target', 'current'].forEach(lineType => {
+        removeLine(lineType);
       });
-      priceLineIds.current = [];
+      
+      // Resetar cache de preços criados
+      createdPrices.current = {
+        entryPrice: null,
+        stopLoss: null,
+        targetPrice: null,
+        currentPrice: null
+      };
+      
       console.log('🗑️ All lines cleared');
     } catch (error) {
       console.error('❌ Error clearing lines:', error);
     }
   };
 
-  // Função para criar linhas horizontais - com debounce para evitar duplicação
-  const createHorizontalLines = () => {
+  // Função para criar/atualizar linhas horizontais - cria apenas uma vez
+  const createOrUpdateLines = () => {
     if (!chartReady || !widgetRef.current) return;
 
     try {
@@ -198,8 +226,8 @@ const TradingViewChartAdvanced = ({
       const startTime = visibleRange.from || (currentTime - 86400 * 30); // 30 dias atrás
       const endTime = visibleRange.to || currentTime;
 
-      // Criar linha de entrada (verde) - apenas se não existir
-      if (entryPrice) {
+      // Criar linha de entrada (verde) - apenas se não existir e preço for válido
+      if (entryPrice && !priceLineIds.current.entry && createdPrices.current.entryPrice !== entryPrice) {
         const entryLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(entryPrice) },
@@ -222,12 +250,13 @@ const TradingViewChartAdvanced = ({
             }
           }
         );
-        priceLineIds.current.push(entryLineId);
+        priceLineIds.current.entry = entryLineId;
+        createdPrices.current.entryPrice = entryPrice;
         console.log('✅ Entry line created:', entryPrice);
       }
 
-      // Criar linha de stop loss (vermelho)
-      if (stopLoss) {
+      // Criar linha de stop loss (vermelho) - apenas se não existir e preço for válido
+      if (stopLoss && !priceLineIds.current.stop && createdPrices.current.stopLoss !== stopLoss) {
         const stopLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(stopLoss) },
@@ -250,12 +279,13 @@ const TradingViewChartAdvanced = ({
             }
           }
         );
-        priceLineIds.current.push(stopLineId);
+        priceLineIds.current.stop = stopLineId;
+        createdPrices.current.stopLoss = stopLoss;
         console.log('✅ Stop loss line created:', stopLoss);
       }
 
-      // Criar linha de target (azul)
-      if (targetPrice) {
+      // Criar linha de target (azul) - apenas se não existir e preço for válido
+      if (targetPrice && !priceLineIds.current.target && createdPrices.current.targetPrice !== targetPrice) {
         const targetLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(targetPrice) },
@@ -278,12 +308,13 @@ const TradingViewChartAdvanced = ({
             }
           }
         );
-        priceLineIds.current.push(targetLineId);
+        priceLineIds.current.target = targetLineId;
+        createdPrices.current.targetPrice = targetPrice;
         console.log('✅ Target line created:', targetPrice);
       }
 
-      // Criar linha de preço atual (amarelo) - apenas se diferente da entrada
-      if (currentPrice && currentPrice !== entryPrice) {
+      // Criar linha de preço atual (amarelo) - apenas se diferente da entrada e não existir
+      if (currentPrice && currentPrice !== entryPrice && !priceLineIds.current.current && createdPrices.current.currentPrice !== currentPrice) {
         const currentLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(currentPrice) },
@@ -306,42 +337,29 @@ const TradingViewChartAdvanced = ({
             }
           }
         );
-        priceLineIds.current.push(currentLineId);
+        priceLineIds.current.current = currentLineId;
+        createdPrices.current.currentPrice = currentPrice;
         console.log('✅ Current price line created:', currentPrice);
       }
 
-      console.log('✅ All horizontal lines created:', priceLineIds.current.length);
+      const totalLines = Object.values(priceLineIds.current).filter(Boolean).length;
+      console.log(`✅ Lines status: ${totalLines} active lines`);
 
     } catch (error) {
-      console.error('❌ Error creating horizontal lines:', error);
+      console.error('❌ Error creating/updating horizontal lines:', error);
     }
   };
 
-  // useEffect para atualizar linhas quando preços mudarem - apenas se realmente mudaram
+  // useEffect para criar/atualizar linhas quando preços mudarem - cria apenas uma vez
   useEffect(() => {
     if (!chartReady || !widgetRef.current) return;
 
-    // Verificar se os preços realmente mudaram
-    const pricesChanged = 
-      lastPrices.current.entryPrice !== entryPrice ||
-      lastPrices.current.stopLoss !== stopLoss ||
-      lastPrices.current.targetPrice !== targetPrice ||
-      lastPrices.current.currentPrice !== currentPrice;
+    console.log('💡 Checking for new lines to create...');
 
-    if (!pricesChanged) return;
-
-    console.log('💡 Prices changed, updating lines...');
-
-    // Atualizar referência dos últimos preços
-    lastPrices.current = { entryPrice, stopLoss, targetPrice, currentPrice };
-
-    // Limpar linhas existentes
-    clearAllLines();
-
-    // Debounce para evitar recriação excessiva
+    // Pequeno delay para garantir que o chart esteja completamente pronto
     const timeoutId = setTimeout(() => {
-      createHorizontalLines();
-    }, 200);
+      createOrUpdateLines();
+    }, 100);
 
     return () => clearTimeout(timeoutId);
   }, [chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
