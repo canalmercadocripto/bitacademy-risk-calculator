@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import MockDatafeed from '../utils/mockDatafeed';
 
 const TradingViewChartAdvanced = ({ 
   symbol = "BINANCE:BTCUSDT", 
@@ -20,15 +21,9 @@ const TradingViewChartAdvanced = ({
     // Inicializar TradingView Advanced Charts
     const initTradingViewChart = async () => {
       try {
-        // Verificar se as bibliotecas estão carregadas
+        // Verificar se a biblioteca TradingView está carregada
         if (typeof window.TradingView === 'undefined') {
           console.error('❌ TradingView library not loaded');
-          setHasError(true);
-          return;
-        }
-
-        if (typeof window.Datafeeds === 'undefined') {
-          console.error('❌ Datafeeds library not loaded');
           setHasError(true);
           return;
         }
@@ -39,17 +34,10 @@ const TradingViewChartAdvanced = ({
           return;
         }
 
-        console.log('✅ Initializing TradingView Advanced Charts');
+        console.log('✅ Initializing TradingView Advanced Charts with Mock Datafeed');
 
-        // Configurar datafeed
-        const datafeed = new window.Datafeeds.UDFCompatibleDatafeed(
-          'https://demo-feed-data.tradingview.com',
-          undefined,
-          {
-            maxResponseLength: 1000,
-            expectedOrder: 'latestFirst',
-          }
-        );
+        // Configurar datafeed mock (sem dependência externa)
+        const datafeed = new MockDatafeed();
 
         // Limpar widget anterior
         if (widgetRef.current) {
@@ -135,14 +123,14 @@ const TradingViewChartAdvanced = ({
     const checkScripts = (retryCount = 0) => {
       const maxRetries = 50;
       
-      if (typeof window.TradingView !== 'undefined' && typeof window.Datafeeds !== 'undefined') {
-        console.log('✅ Scripts loaded, initializing chart');
+      if (typeof window.TradingView !== 'undefined') {
+        console.log('✅ TradingView script loaded, initializing chart');
         initTradingViewChart();
       } else if (retryCount < maxRetries) {
-        console.log(`⏳ Waiting for scripts... (${retryCount + 1}/${maxRetries})`);
+        console.log(`⏳ Waiting for TradingView script... (${retryCount + 1}/${maxRetries})`);
         setTimeout(() => checkScripts(retryCount + 1), 100);
       } else {
-        console.error('❌ Failed to load TradingView scripts');
+        console.error('❌ Failed to load TradingView script');
         setHasError(true);
       }
     };
@@ -331,14 +319,16 @@ const TradingViewChartAdvanced = ({
         <div className="chart-error">
           <div>❌ Erro ao carregar TradingView Advanced Charts</div>
           <div style={{ fontSize: '14px', marginTop: '10px', color: '#666' }}>
-            Possíveis causas:
+            Usando datafeed mock com dados simulados do Bitcoin.
+            <br />
+            <strong>Possíveis causas:</strong>
             <ul style={{ textAlign: 'left', marginTop: '8px' }}>
-              <li>Biblioteca TradingView Advanced Charts não carregada</li>
-              <li>Datafeed UDF não disponível</li>
-              <li>Problema de conexão com demo feed</li>
+              <li>Biblioteca TradingView não carregada</li>
+              <li>Container do gráfico não encontrado</li>
+              <li>Erro na inicialização do widget</li>
             </ul>
             <div style={{ marginTop: '10px', fontSize: '12px', color: '#999' }}>
-              Verifique o console do navegador para mais detalhes
+              ✅ Sem dependência de conexão externa - usando dados simulados
             </div>
           </div>
         </div>
