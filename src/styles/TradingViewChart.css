@@ -278,104 +278,98 @@
    PROFESSIONAL UX LAYOUT SYSTEM
    ======================================== */
 
-/* Main Container - Flexible & Responsive */
-.calculator-with-chart {
+/* ========================================
+   NEW LAYOUT: 3-CONTAINER SYSTEM
+   ======================================== */
+
+/* Container 1: Trading + Calculator (Top) */
+.trading-calculator-container {
   display: grid;
   gap: 24px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0;
-  margin: 0;
-  min-height: calc(100vh - 140px);
+  margin: 0 0 24px 0;
+  min-height: calc(60vh - 80px);
   max-width: 100%;
   overflow: hidden;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
-/* Desktop Layout - Side by Side Optimized */
-.calculator-with-chart.chart-visible {
+/* Desktop Layout - Side by Side */
+.trading-calculator-container.chart-visible {
   grid-template-columns: 1.4fr 1fr;
   grid-template-areas: "chart calculator";
-  height: calc(100vh - 140px);
-  max-height: calc(100vh - 140px);
+  height: calc(60vh - 80px);
   align-items: stretch;
 }
 
 /* Chart Hidden - Full Width Calculator */
-.calculator-with-chart.chart-hidden {
+.trading-calculator-container.chart-hidden {
   grid-template-columns: 1fr;
   grid-template-areas: "calculator";
   height: auto;
-  max-height: none;
+  min-height: auto;
 }
 
-/* ========================================
-   TRADING & ANALYSIS SECTION - INTEGRATED
-   ======================================== */
+/* Container 2: Risk Management Analysis (Bottom) */
+.risk-management-container {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(40vh - 60px);
+  max-height: calc(40vh - 60px);
+  background: var(--bg-primary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
 
-/* New Trading Analysis Section - Replaces chart-section */
-.trading-analysis-section {
+/* Chart Section - Back to Original */
+.chart-section {
   grid-area: chart;
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: 100%;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border-color);
-  gap: 0;
-}
-
-/* Chart Container - Upper Section */
-.chart-container {
-  flex: 1;
-  min-height: 60%;
-  max-height: 60%;
-  display: flex;
-  flex-direction: column;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* Risk Analysis Container - Lower Section */
-.risk-analysis-container {
-  flex: 1;
-  min-height: 40%;
-  max-height: 40%;
-  display: flex;
-  flex-direction: column;
   background: var(--bg-primary);
-  border-radius: 0 0 16px 16px;
+  border-radius: 16px 0 0 16px;
   overflow: hidden;
 }
 
-/* Analysis Header */
+/* Analysis Header for Risk Management Container */
 .analysis-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 20px 24px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  min-height: 56px;
+  min-height: 64px;
   flex-shrink: 0;
+  border-radius: 16px 16px 0 0;
 }
 
 .analysis-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .analysis-status {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .status-indicator {
@@ -386,35 +380,36 @@
   animation: pulse 2s infinite;
 }
 
-/* Analysis Content - Scrollable */
+/* Analysis Content - Full Height Scrollable */
 .analysis-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
   background: var(--bg-primary);
+  border-radius: 0 0 16px 16px;
 }
 
-/* Enhanced Results within Analysis */
+/* Enhanced Results within Risk Management */
 .analysis-content .enhanced-results-container {
-  padding: 16px;
+  padding: 20px;
   height: 100%;
   box-sizing: border-box;
 }
 
-/* Smooth Scrollbar for Analysis */
+/* Smooth Scrollbar for Risk Management */
 .analysis-content::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .analysis-content::-webkit-scrollbar-track {
   background: var(--bg-secondary);
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .analysis-content::-webkit-scrollbar-thumb {
   background: var(--accent-color);
-  border-radius: 2px;
+  border-radius: 3px;
   opacity: 0.6;
 }
 
@@ -436,7 +431,7 @@
   border: 1px solid var(--border-color);
 }
 
-/* Calculator Section - Optimized for New Layout */
+/* Calculator Section - Integrated with Chart */
 .calculator-section {
   grid-area: calculator;
   overflow-y: auto;
@@ -444,9 +439,8 @@
   min-height: 0;
   height: 100%;
   background: var(--bg-primary);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  border: 1px solid var(--border-color);
+  border-radius: 0 16px 16px 0;
+  border-left: 1px solid var(--border-color);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -647,6 +641,167 @@
   50% { 
     opacity: 0.7; 
     transform: scale(1.1); 
+  }
+}
+
+/* ========================================\n   RESPONSIVE BREAKPOINTS - NEW LAYOUT\n   ======================================== */
+
+/* Tablet Landscape - Stack Vertically */
+@media (max-width: 1023px) {
+  .trading-calculator-container {
+    min-height: auto;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .trading-calculator-container.chart-visible {
+    grid-template-columns: 1fr;
+    grid-template-rows: 400px auto;
+    grid-template-areas: "chart" "calculator";
+    height: auto;
+    min-height: auto;
+  }
+  
+  .chart-section {
+    min-height: 400px;
+    height: 400px;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .calculator-section {
+    height: auto;
+    max-height: none;
+    border-radius: 0 0 16px 16px;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .calculator-inner {
+    padding: 20px;
+  }
+  
+  .risk-management-container {
+    min-height: 300px;
+    max-height: 400px;
+  }
+}
+
+/* Tablet Portrait - Compact Layout */
+@media (max-width: 767px) {
+  .trading-calculator-container {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .trading-calculator-container.chart-visible {
+    grid-template-rows: 350px auto;
+    grid-template-areas: "chart" "calculator";
+  }
+  
+  .chart-section {
+    min-height: 350px;
+    height: 350px;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .calculator-section {
+    border-radius: 0 0 12px 12px;
+    max-height: none;
+  }
+  
+  .calculator-inner {
+    padding: 16px;
+  }
+  
+  .risk-management-container {
+    min-height: 250px;
+    max-height: 300px;
+    border-radius: 12px;
+  }
+  
+  .analysis-header {
+    padding: 16px 20px;
+    min-height: 56px;
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .analysis-title {
+    font-size: 16px;
+  }
+  
+  .analysis-content {
+    border-radius: 0 0 12px 12px;
+  }
+  
+  .chart-toggle-container {
+    margin-bottom: 12px;
+  }
+  
+  .chart-toggle-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile - Compact Experience */
+@media (max-width: 479px) {
+  .trading-calculator-container {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .trading-calculator-container.chart-visible {
+    grid-template-rows: 300px auto;
+    grid-template-areas: "chart" "calculator";
+  }
+  
+  .chart-section {
+    min-height: 300px;
+    height: 300px;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .calculator-section {
+    border-radius: 0 0 8px 8px;
+    max-height: none;
+  }
+  
+  .calculator-inner {
+    padding: 12px;
+  }
+  
+  .risk-management-container {
+    min-height: 200px;
+    max-height: 250px;
+    border-radius: 8px;
+  }
+  
+  .analysis-header {
+    padding: 12px 16px;
+    min-height: 48px;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .analysis-title {
+    font-size: 14px;
+  }
+  
+  .analysis-content {
+    border-radius: 0 0 8px 8px;
+  }
+  
+  .analysis-content .enhanced-results-container {
+    padding: 12px;
+  }
+  
+  .chart-toggle-container {
+    margin-bottom: 8px;
+    justify-content: center;
+  }
+  
+  .chart-toggle-btn {
+    padding: 6px 12px;
+    font-size: 13px;
   }
 }
 

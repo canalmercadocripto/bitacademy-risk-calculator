@@ -373,25 +373,8 @@ ${generateProfessionalRecommendations().join('\n')}
   return (
     <div className="results-section enhanced">
       <div className="enhanced-results-container">
-        {/* Header Simples */}
-        <div className="results-header-clean">
-          <h3>📊 Análise Completa</h3>
-        {selectedSymbol && selectedExchange && (
-          <div className="trade-info">
-            <span className="trade-pair">{selectedExchange.name} • {selectedSymbol.symbol}</span>
-            <span className="current-price">
-              ${(() => {
-                // Usar currentPrice primeiro, depois results.currentPrice, depois entryPrice
-                const price = currentPrice || results?.currentPrice || results?.entryPrice;
-                return price && typeof price === 'number' ? `$${price.toFixed(4)}` : 'N/A';
-              })()}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Layout Principal - Sequência Vertical */}
-      <div className="results-main-layout">
+        {/* Layout Principal - Sequência Vertical */}
+        <div className="results-main-layout">
         
         {/* 1. POSIÇÃO */}
         <div className="section-card">

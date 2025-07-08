@@ -374,38 +374,15 @@ const RiskCalculator = () => {
           </button>
         </div>
 
-        <div className={`calculator-with-chart ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
-          {/* Trading & Analysis Section - ESQUERDA */}
+        {/* Container 1: Gráfico + Calculadora */}
+        <div className={`trading-calculator-container ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
+          {/* Chart Section - ESQUERDA */}
           {showChart && (
-            <div className="trading-analysis-section">
-              {/* TradingView Chart */}
-              <div className="chart-container">
-                <TradingViewChart
-                  symbol={chartSymbol}
-                  theme={theme}
-                />
-              </div>
-              
-              {/* Risk Management Analysis - Abaixo do Gráfico */}
-              <div className="risk-analysis-container">
-                <div className="analysis-header">
-                  <h4 className="analysis-title">📊 Análise de Risk Management</h4>
-                  <div className="analysis-status">
-                    <div className="status-indicator"></div>
-                    <span>Análise em Tempo Real</span>
-                  </div>
-                </div>
-                
-                <div className="analysis-content">
-                  <EnhancedResults 
-                    results={results} 
-                    selectedSymbol={selectedSymbol}
-                    selectedExchange={selectedExchange}
-                    formData={formData}
-                    currentPrice={liveCurrentPrice}
-                  />
-                </div>
-              </div>
+            <div className="chart-section">
+              <TradingViewChart
+                symbol={chartSymbol}
+                theme={theme}
+              />
             </div>
           )}
 
@@ -462,6 +439,29 @@ const RiskCalculator = () => {
             </div>
           </div>
         </div>
+
+        {/* Container 2: Risk Management Analysis - ABAIXO */}
+        {results && (
+          <div className="risk-management-container">
+            <div className="analysis-header">
+              <h4 className="analysis-title">📊 Análise de Risk Management</h4>
+              <div className="analysis-status">
+                <div className="status-indicator"></div>
+                <span>Análise em Tempo Real</span>
+              </div>
+            </div>
+            
+            <div className="analysis-content">
+              <EnhancedResults 
+                results={results} 
+                selectedSymbol={selectedSymbol}
+                selectedExchange={selectedExchange}
+                formData={formData}
+                currentPrice={liveCurrentPrice}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Modais */}
         <AuthModal
