@@ -15,6 +15,7 @@ import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
 import TradingViewChart from './TradingViewChart';
 import TradingViewChartNative from './TradingViewChartNative';
+import TradingViewChartAdvanced from './TradingViewChartAdvanced';
 import '../styles/TradingViewChart.css';
 
 const RiskCalculator = () => {
@@ -82,6 +83,7 @@ const RiskCalculator = () => {
   const [showChart, setShowChart] = useState(true);
   const [chartSymbol, setChartSymbol] = useState("BINANCE:BTCUSDT");
   const [useNativeChart, setUseNativeChart] = useState(false);
+  const [useAdvancedChart, setUseAdvancedChart] = useState(true);
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -365,17 +367,36 @@ const RiskCalculator = () => {
         }}>
           <div className="chart-toggle-status">
             <div className="status-dot"></div>
-            <span>TradingView {showChart ? (useNativeChart ? 'Nativo' : 'Widget') : 'Inativo'}</span>
+            <span>TradingView {showChart ? (useAdvancedChart ? 'Advanced Charts' : useNativeChart ? 'Nativo' : 'Widget') : 'Inativo'}</span>
           </div>
           
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              className={`chart-toggle-btn ${useNativeChart ? 'active' : ''}`}
-              onClick={() => setUseNativeChart(!useNativeChart)}
+              className={`chart-toggle-btn ${useAdvancedChart ? 'active' : ''}`}
+              onClick={() => {
+                setUseAdvancedChart(!useAdvancedChart);
+                if (!useAdvancedChart) {
+                  setUseNativeChart(false);
+                }
+              }}
               style={{ fontSize: '12px', padding: '8px 12px' }}
-              title={useNativeChart ? "Usando TradingView Advanced Charts (Nativo)" : "Usando TradingView Widget"}
+              title="TradingView Advanced Charts com linhas nativas"
             >
-              {useNativeChart ? '📊 Nativo ✅' : '🔄 Widget ✅'}
+              🚀 Advanced Charts
+            </button>
+            
+            <button
+              className={`chart-toggle-btn ${useNativeChart ? 'active' : ''}`}
+              onClick={() => {
+                setUseNativeChart(!useNativeChart);
+                if (!useNativeChart) {
+                  setUseAdvancedChart(false);
+                }
+              }}
+              style={{ fontSize: '12px', padding: '8px 12px' }}
+              title="TradingView Native API"
+            >
+              📊 Nativo
             </button>
             
             <button
@@ -392,7 +413,17 @@ const RiskCalculator = () => {
           {/* Chart Section - ESQUERDA */}
           {showChart && (
             <div className="chart-section">
-              {useNativeChart ? (
+              {useAdvancedChart ? (
+                <TradingViewChartAdvanced
+                  symbol={chartSymbol}
+                  theme={theme}
+                  entryPrice={formData.entryPrice}
+                  stopLoss={formData.stopLoss}
+                  targetPrice={formData.targetPrice}
+                  tradeDirection={formData.direction}
+                  currentPrice={liveCurrentPrice}
+                />
+              ) : useNativeChart ? (
                 <TradingViewChartNative
                   symbol={chartSymbol}
                   theme={theme}
