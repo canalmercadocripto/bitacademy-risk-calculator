@@ -79,9 +79,21 @@ const TradingViewChart = ({
 
   // Função para analisar visualmente a escala de preços do TradingView
   const analyzePriceScale = async () => {
+    console.log('🎯 analyzePriceScale INICIANDO...', {
+      currentPrice,
+      entryPrice,
+      stopLoss,
+      targetPrice,
+      chartContainer: !!chartContainerRef.current
+    });
+    
     try {
       const iframe = chartContainerRef.current?.querySelector('iframe');
-      if (!iframe) return null;
+      console.log('🎯 iframe encontrado:', !!iframe);
+      if (!iframe) {
+        console.log('❌ Nenhum iframe encontrado no container');
+        return null;
+      }
 
       // Método alternativo: usar intersecção baseada no preço atual conhecido
       if (currentPrice) {
@@ -365,14 +377,19 @@ const TradingViewChart = ({
 
   // Effect para detectar range do gráfico quando carrega
   useEffect(() => {
+    console.log('🎯 TradingView Chart Effect - chartReady:', chartReady);
     if (chartReady) {
+      console.log('🎯 Iniciando detecção de range e análise de escala...');
+      
       // Tentar detectar range real após gráfico carregar
       const detectTimer = setTimeout(() => {
+        console.log('🎯 Executando detectRealChartRange...');
         detectRealChartRange();
       }, 2000);
       
       // Tentar analisar escala visual após um delay maior
       const analyzeTimer = setTimeout(() => {
+        console.log('🎯 Executando analyzePriceScale...');
         analyzePriceScale();
       }, 4000);
       
@@ -400,8 +417,22 @@ const TradingViewChart = ({
 
   // Componente para renderizar linhas de preço com posicionamento preciso
   const PriceLevelsOverlay = () => {
-    if (!entryPrice && !stopLoss && !targetPrice) return null;
-    if (!chartDimensions.height || chartDimensions.height === 0) return null;
+    console.log('🎯 PriceLevelsOverlay renderizando...', {
+      entryPrice,
+      stopLoss,
+      targetPrice,
+      chartDimensions,
+      priceScaleData: priceScaleData.length
+    });
+    
+    if (!entryPrice && !stopLoss && !targetPrice) {
+      console.log('❌ Nenhum preço fornecido para renderizar linhas');
+      return null;
+    }
+    if (!chartDimensions.height || chartDimensions.height === 0) {
+      console.log('❌ Dimensões do gráfico inválidas:', chartDimensions);
+      return null;
+    }
     
     const levels = [];
     
