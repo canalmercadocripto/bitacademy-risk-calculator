@@ -353,26 +353,22 @@ const RiskCalculator = () => {
           onToggleTheme={toggleTheme}
         />
         
-        {/* Toggle Chart Button */}
+        {/* Professional Chart Toggle */}
         <div className="chart-toggle-container" style={{ 
           display: 'flex', 
-          justifyContent: 'flex-end', 
-          marginBottom: '20px',
-          gap: '10px'
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '24px',
+          gap: '16px'
         }}>
+          <div className="chart-toggle-status">
+            <div className="status-dot"></div>
+            <span>TradingView {showChart ? 'Ativo' : 'Inativo'}</span>
+          </div>
+          
           <button
             className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
             onClick={() => setShowChart(!showChart)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: showChart ? 'var(--accent-color)' : 'var(--bg-secondary)',
-              color: showChart ? 'white' : 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
           >
             📈 {showChart ? 'Ocultar' : 'Mostrar'} Gráfico
           </button>
@@ -391,7 +387,7 @@ const RiskCalculator = () => {
 
           {/* Calculator Section - DIREITA */}
           <div className="calculator-section">
-            <div className="container">
+            <div className="calculator-inner">
               <div className="form-section">
                 <ExchangeSelector
                   exchanges={exchanges}
