@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: transparent;
+  background: var(--bg-primary);
   border-radius: 0;
   border: none;
   overflow: hidden;
@@ -283,7 +283,7 @@
    NEW LAYOUT: 3-CONTAINER SYSTEM
    ======================================== */
 
-/* Container 1: Trading + Calculator - UNIFIED SINGLE BLOCK */
+/* Container 1: Trading + Calculator - Proper Zero Gap */
 .trading-calculator-container {
   display: grid;
   gap: 0;
@@ -330,19 +330,20 @@
   overflow: hidden;
 }
 
-/* Chart Section - NO INDIVIDUAL STYLING */
+/* Chart Section - Restored Background */
 .chart-section {
   grid-area: chart;
   display: flex;
   flex-direction: column;
   min-height: 500px;
   height: 100%;
-  background: transparent;
-  border-radius: 0;
+  background: var(--bg-primary);
+  border-radius: 16px 0 0 16px;
   overflow: hidden;
   border: none;
   margin: 0;
   padding: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* Analysis Header - Compact & Clean */
@@ -438,21 +439,22 @@
   border: 1px solid var(--border-color);
 }
 
-/* Calculator Section - NO INDIVIDUAL STYLING */
+/* Calculator Section - Restored Background */
 .calculator-section {
   grid-area: calculator;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 500px;
   height: auto;
-  background: transparent;
-  border-radius: 0;
+  background: var(--bg-primary);
+  border-radius: 0 16px 16px 0;
   position: relative;
   display: flex;
   flex-direction: column;
   border: none;
   margin: 0;
   padding: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* Calculator Inner Container - Zero Gaps */
@@ -679,21 +681,21 @@
   .chart-section {
     min-height: 400px;
     height: 400px;
-    border-radius: 0;
+    border-radius: 16px 16px 0 0;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-section {
     height: auto;
     min-height: 300px;
-    border-radius: 0;
+    border-radius: 0 0 16px 16px;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-inner {
@@ -729,20 +731,20 @@
   .chart-section {
     min-height: 350px;
     height: 350px;
-    border-radius: 0;
+    border-radius: 12px 12px 0 0;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-section {
-    border-radius: 0;
+    border-radius: 0 0 12px 12px;
     min-height: 250px;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-inner {
@@ -806,20 +808,20 @@
   .chart-section {
     min-height: 300px;
     height: 300px;
-    border-radius: 0;
+    border-radius: 8px 8px 0 0;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-section {
-    border-radius: 0;
+    border-radius: 0 0 8px 8px;
     min-height: 200px;
     border: none;
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: var(--bg-primary);
   }
   
   .calculator-inner {
