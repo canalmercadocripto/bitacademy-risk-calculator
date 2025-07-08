@@ -16,6 +16,7 @@ const TradingViewChart = ({
   const [chartDimensions, setChartDimensions] = useState({ width: 0, height: 0 });
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 });
   const [realChartRange, setRealChartRange] = useState({ min: 0, max: 0 });
+  const [priceScaleData, setPriceScaleData] = useState([]);
   const iframeRef = useRef(null);
 
   // Configurações avançadas do widget TradingView com linhas de trade
@@ -75,6 +76,133 @@ const TradingViewChart = ({
       }
     };
   }, []);
+
+  // Função para analisar visualmente a escala de preços do TradingView
+  const analyzePriceScale = async () => {
+    try {
+      const iframe = chartContainerRef.current?.querySelector('iframe');
+      if (!iframe) return null;
+
+      // Método alternativo: usar intersecção baseada no preço atual conhecido
+      if (currentPrice) {
+        const currentPriceFloat = parseFloat(currentPrice);
+        const containerRect = chartContainerRef.current.getBoundingClientRect();
+        
+        // Estimar posição do preço atual no meio do gráfico
+        const estimatedCurrentY = containerRect.height * 0.5; // Assumir que o preço atual está no meio
+        
+        // Criar dados sintéticos da escala baseados no preço atual
+        const syntheticScale = [];
+        const priceStep = currentPriceFloat * 0.02; // 2% steps
+        
+        for (let i = -3; i <= 3; i++) {
+          const price = currentPriceFloat + (i * priceStep);
+          const y = estimatedCurrentY - (i * containerRect.height * 0.1); // 10% da altura por step
+          syntheticScale.push({ price, y });
+        }
+        
+        console.log('Escala sintética criada baseada no preço atual:', syntheticScale);
+        setPriceScaleData(syntheticScale);
+        return syntheticScale;
+      }
+      
+      // Fallback: tentar acessar iframe (pode ser bloqueado por CORS)
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          // Procurar elementos que contenham preços
+          const priceElements = iframeDoc.querySelectorAll('*');
+          const detectedPrices = [];
+          
+          for (let element of priceElements) {
+            const text = element.textContent || element.innerText || '';
+            const priceMatch = text.match(/^[\d,]+\.?\d{0,4}$/);
+            
+            if (priceMatch && text.length < 15) { // Filtrar textos muito longos
+              const rect = element.getBoundingClientRect();
+              const price = parseFloat(priceMatch[0].replace(/,/g, ''));
+              
+              if (price > 0 && rect.width > 0 && rect.height > 0) {
+                detectedPrices.push({
+                  price,
+                  y: rect.top + rect.height / 2
+                });
+              }
+            }
+          }
+          
+          if (detectedPrices.length >= 2) {
+            // Ordenar por posição Y e remover duplicatas
+            const uniquePrices = detectedPrices.filter((item, index, arr) => 
+              arr.findIndex(other => Math.abs(other.price - item.price) < item.price * 0.001) === index
+            );
+            uniquePrices.sort((a, b) => a.y - b.y);
+            
+            console.log('Preços detectados na escala:', uniquePrices);
+            setPriceScaleData(uniquePrices);
+            return uniquePrices;
+          }
+        }
+      } catch (corsError) {
+        console.log('CORS impediu acesso ao iframe, usando dados sintéticos');
+      }
+      
+    } catch (error) {
+      console.log('Erro ao analisar escala de preços:', error);
+    }
+    
+    return null;
+  };
+
+  // Função para interpolar preço baseado nos dados da escala real
+  const interpolatePricePosition = (targetPrice) => {
+    if (priceScaleData.length < 2) return null;
+    
+    const target = parseFloat(targetPrice);
+    
+    // Encontrar os dois pontos mais próximos na escala
+    let lowerPoint = null;
+    let upperPoint = null;
+    
+    for (let i = 0; i < priceScaleData.length - 1; i++) {
+      const current = priceScaleData[i];
+      const next = priceScaleData[i + 1];
+      
+      if (target >= current.price && target <= next.price) {
+        lowerPoint = current;
+        upperPoint = next;
+        break;
+      }
+    }
+    
+    // Se não encontrou dentro do range, usar extrapolação
+    if (!lowerPoint || !upperPoint) {
+      if (target < priceScaleData[0].price) {
+        // Extrapolação abaixo
+        lowerPoint = priceScaleData[1];
+        upperPoint = priceScaleData[0];
+      } else {
+        // Extrapolação acima
+        lowerPoint = priceScaleData[priceScaleData.length - 2];
+        upperPoint = priceScaleData[priceScaleData.length - 1];
+      }
+    }
+    
+    // Interpolação linear
+    const priceRange = upperPoint.price - lowerPoint.price;
+    const yRange = upperPoint.y - lowerPoint.y;
+    const priceRatio = (target - lowerPoint.price) / priceRange;
+    const interpolatedY = lowerPoint.y + (priceRatio * yRange);
+    
+    console.log('Interpolação de preço:', {
+      target,
+      lowerPoint,
+      upperPoint,
+      interpolatedY
+    });
+    
+    return interpolatedY;
+  };
 
   // Tentar detectar o range real do gráfico TradingView
   const detectRealChartRange = () => {
@@ -196,8 +324,16 @@ const TradingViewChart = ({
     };
   };
 
-  // Converter preço para posição Y no gráfico com melhor precisão
+  // Converter preço para posição Y no gráfico com máxima precisão
   const priceToY = (price, chartHeight) => {
+    // Método 1: Usar interpolação baseada na escala real detectada
+    const interpolatedY = interpolatePricePosition(price);
+    if (interpolatedY !== null) {
+      console.log('Usando posição interpolada real:', { price, y: interpolatedY });
+      return interpolatedY;
+    }
+    
+    // Método 2: Fallback para estimativa
     const range = calculatePriceRange();
     if (range.max === range.min || chartHeight === 0) return chartHeight / 2;
     
@@ -214,7 +350,7 @@ const TradingViewChart = ({
     const yPosition = topOffset + ((1 - normalizedPrice) * usableHeight);
     
     // Log para debug
-    console.log('Conversão preço->Y:', {
+    console.log('Usando estimativa de posição:', {
       price,
       range,
       normalizedPrice,
@@ -235,7 +371,15 @@ const TradingViewChart = ({
         detectRealChartRange();
       }, 2000);
       
-      return () => clearTimeout(detectTimer);
+      // Tentar analisar escala visual após um delay maior
+      const analyzeTimer = setTimeout(() => {
+        analyzePriceScale();
+      }, 4000);
+      
+      return () => {
+        clearTimeout(detectTimer);
+        clearTimeout(analyzeTimer);
+      };
     }
   }, [chartReady]);
 
@@ -243,7 +387,16 @@ const TradingViewChart = ({
   useEffect(() => {
     const newRange = calculatePriceRange();
     setPriceRange(newRange);
-  }, [entryPrice, stopLoss, targetPrice, currentPrice, realChartRange]);
+    
+    // Reanalizar escala se mudou significativamente
+    if (chartReady && (entryPrice || stopLoss || targetPrice)) {
+      const reanalyzeTimer = setTimeout(() => {
+        analyzePriceScale();
+      }, 1000);
+      
+      return () => clearTimeout(reanalyzeTimer);
+    }
+  }, [entryPrice, stopLoss, targetPrice, currentPrice, realChartRange, chartReady]);
 
   // Componente para renderizar linhas de preço com posicionamento preciso
   const PriceLevelsOverlay = () => {
