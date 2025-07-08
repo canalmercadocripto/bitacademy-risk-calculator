@@ -209,13 +209,29 @@ const TradingViewChartNative = ({
           }
         }
 
-        // Configurar datafeed simples
+        // Configurar datafeed avançado - TradingView Advanced Charts
         const datafeed = new window.Datafeeds.UDFCompatibleDatafeed(
           'https://demo-feed-data.tradingview.com',
           undefined,
           {
-            maxResponseLength: 1000,
+            maxResponseLength: 10000,
             expectedOrder: 'latestFirst',
+            supports_search: true,
+            supports_group_request: false,
+            supports_marks: true,
+            supports_timescale_marks: true,
+            supports_time: true,
+            exchanges: [
+              { value: 'BINANCE', name: 'Binance', desc: 'Binance Exchange' },
+              { value: 'BYBIT', name: 'Bybit', desc: 'Bybit Exchange' },
+              { value: 'BITGET', name: 'Bitget', desc: 'Bitget Exchange' },
+              { value: 'BINGX', name: 'BingX', desc: 'BingX Exchange' }
+            ],
+            symbols_types: [
+              { name: 'crypto', value: 'crypto' },
+              { name: 'spot', value: 'spot' },
+              { name: 'futures', value: 'futures' }
+            ]
           }
         );
 
@@ -242,7 +258,14 @@ const TradingViewChartNative = ({
             'volume_force_overlay'
           ],
           enabled_features: [
-            'study_templates'
+            'study_templates',
+            'create_volume_indicator_by_default',
+            'side_toolbar_in_fullscreen_mode',
+            'header_in_fullscreen_mode',
+            'disable_resolution_rebuild',
+            'move_logo_to_main_pane',
+            'chart_crosshair_menu',
+            'popup_hints'
           ],
           theme: theme === 'dark' ? 'dark' : 'light',
           timezone: 'America/Sao_Paulo',
@@ -262,7 +285,26 @@ const TradingViewChartNative = ({
           loading_screen: {
             backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
             foregroundColor: theme === 'dark' ? '#cccccc' : '#333333'
-          }
+          },
+          // Configurações avançadas para melhor performance
+          debug: false,
+          snapshot_url: 'https://demo-feed-data.tradingview.com/snapshot',
+          charts_storage_url: 'https://demo-feed-data.tradingview.com/charts',
+          charts_storage_api_version: '1.1',
+          client_id: 'tradingview.com',
+          user_id: 'public_user',
+          // Configurações de cache e performance
+          cache_time: 120, // 2 minutos de cache
+          numeric_formatting: {
+            decimal_sign: ',',
+            thousands_separator: '.'
+          },
+          // Configurações para trading
+          trading_enabled: false,
+          withdateranges: true,
+          hide_side_toolbar: false,
+          allow_symbol_change: true,
+          save_image: false
         });
 
         widgetRef.current = widget;
