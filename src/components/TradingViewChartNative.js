@@ -298,9 +298,20 @@ const TradingViewChartNative = ({
       }
     };
 
+    // Função para carregar scripts dinamicamente
+    const loadScriptDynamically = (src) => {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+
     // Verificar se os scripts estão carregados
-    const checkScripts = (retryCount = 0) => {
-      const maxRetries = 100; // 10 segundos (100 * 100ms)
+    const checkScripts = async (retryCount = 0) => {
+      const maxRetries = 50; // 5 segundos (50 * 100ms)
       
       if (typeof window.TradingView !== 'undefined' && typeof window.Datafeeds !== 'undefined') {
         console.log('✅ All scripts loaded, initializing TradingView');
@@ -309,8 +320,16 @@ const TradingViewChartNative = ({
         console.log(`⏳ Waiting for scripts... (${retryCount + 1}/${maxRetries})`);
         setTimeout(() => checkScripts(retryCount + 1), 100);
       } else {
-        console.error('❌ Failed to load TradingView scripts after 10 seconds');
-        setHasError(true);
+        console.warn('❌ Scripts not loaded from HTML, trying dynamic loading...');
+        try {
+          await loadScriptDynamically('/charting_library/charting_library.standalone.js');
+          await loadScriptDynamically('/datafeeds/udf/dist/bundle.js');
+          console.log('✅ Scripts loaded dynamically, initializing TradingView');
+          initTradingView();
+        } catch (error) {
+          console.error('❌ Failed to load scripts dynamically:', error);
+          setHasError(true);
+        }
       }
     };
 
