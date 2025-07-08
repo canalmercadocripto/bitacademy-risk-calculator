@@ -179,7 +179,24 @@ const TradingViewChartNative = ({
       try {
         // Aguardar o script do TradingView carregar
         if (typeof window.TradingView === 'undefined') {
-          console.warn('TradingView library not loaded yet');
+          console.error('❌ TradingView library not loaded yet');
+          setHasError(true);
+          return;
+        }
+
+        // Verificar se Datafeeds está disponível
+        if (typeof window.Datafeeds === 'undefined') {
+          console.error('❌ Datafeeds library not loaded yet');
+          setHasError(true);
+          return;
+        }
+
+        console.log('✅ TradingView and Datafeeds libraries loaded successfully');
+
+        // Verificar se o container existe
+        if (!chartContainerRef.current) {
+          console.error('❌ Chart container not found');
+          setHasError(true);
           return;
         }
 
@@ -282,11 +299,18 @@ const TradingViewChartNative = ({
     };
 
     // Verificar se os scripts estão carregados
-    const checkScripts = () => {
+    const checkScripts = (retryCount = 0) => {
+      const maxRetries = 100; // 10 segundos (100 * 100ms)
+      
       if (typeof window.TradingView !== 'undefined' && typeof window.Datafeeds !== 'undefined') {
+        console.log('✅ All scripts loaded, initializing TradingView');
         initTradingView();
+      } else if (retryCount < maxRetries) {
+        console.log(`⏳ Waiting for scripts... (${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => checkScripts(retryCount + 1), 100);
       } else {
-        setTimeout(checkScripts, 100);
+        console.error('❌ Failed to load TradingView scripts after 10 seconds');
+        setHasError(true);
       }
     };
 
@@ -318,9 +342,17 @@ const TradingViewChartNative = ({
       
       {hasError && (
         <div className="chart-error">
-          <div>❌ Erro ao carregar gráfico</div>
+          <div>❌ Erro ao carregar gráfico TradingView</div>
           <div style={{ fontSize: '14px', marginTop: '10px', color: '#666' }}>
-            Verifique se a biblioteca TradingView está carregada
+            Possíveis causas:
+            <ul style={{ textAlign: 'left', marginTop: '8px' }}>
+              <li>Biblioteca TradingView não carregada</li>
+              <li>Datafeed UDF não disponível</li>
+              <li>Problema de conexão</li>
+            </ul>
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#999' }}>
+              Verifique o console do navegador para mais detalhes
+            </div>
           </div>
         </div>
       )}

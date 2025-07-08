@@ -81,7 +81,7 @@ const RiskCalculator = () => {
   // States do TradingView
   const [showChart, setShowChart] = useState(true);
   const [chartSymbol, setChartSymbol] = useState("BINANCE:BTCUSDT");
-  const [useNativeChart, setUseNativeChart] = useState(true);
+  const [useNativeChart, setUseNativeChart] = useState(false);
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -373,8 +373,9 @@ const RiskCalculator = () => {
               className={`chart-toggle-btn ${useNativeChart ? 'active' : ''}`}
               onClick={() => setUseNativeChart(!useNativeChart)}
               style={{ fontSize: '12px', padding: '8px 12px' }}
+              title={useNativeChart ? "Usando TradingView Advanced Charts (Nativo)" : "Usando TradingView Widget"}
             >
-              {useNativeChart ? '📊 Nativo' : '🔄 Widget'}
+              {useNativeChart ? '📊 Nativo ✅' : '🔄 Widget ✅'}
             </button>
             
             <button
