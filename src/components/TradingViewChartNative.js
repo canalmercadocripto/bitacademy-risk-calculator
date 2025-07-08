@@ -16,8 +16,8 @@ const TradingViewChartNative = ({
   const priceLineIds = useRef(new Set());
 
   useEffect(() => {
-    // Função para criar linhas horizontais nativas
-    const createHorizontalLines = () => {
+    // Função para criar linhas de preço nativas do TradingView
+    const createPriceLines = () => {
       if (!chartReady || !widgetRef.current) return;
 
       try {
@@ -26,151 +26,77 @@ const TradingViewChartNative = ({
         // Limpar linhas anteriores
         priceLineIds.current.forEach(id => {
           try {
-            chart.removeEntity(id);
+            chart.removePriceLine(id);
           } catch (e) {
-            console.warn('Error removing line:', e);
+            console.warn('Error removing price line:', e);
           }
         });
         priceLineIds.current.clear();
 
-        // Obter range de tempo visível
-        const visibleRange = chart.getVisibleRange();
-        const currentTime = Math.floor(Date.now() / 1000);
-        const startTime = visibleRange.from || (currentTime - 86400); // 24h atrás
-        const endTime = visibleRange.to || currentTime;
-
-        // Criar linha de entrada
+        // Criar linha de entrada usando createPriceLine
         if (entryPrice) {
-          const entryLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: parseFloat(entryPrice) },
-              { time: endTime, price: parseFloat(entryPrice) }
-            ],
-            {
-              shape: "horizontal_line",
-              lock: true,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                linecolor: "#28a745",
-                linewidth: 2,
-                linestyle: 0, // solid
-                showLabel: true,
-                text: `🟢 Entrada: $${parseFloat(entryPrice).toFixed(4)}`,
-                textColor: "#28a745",
-                fontSize: 12,
-                fontBold: true,
-                horzLabelsAlign: "right",
-                vertLabelsAlign: "middle",
-                extendLeft: true,
-                extendRight: true
-              }
-            }
-          );
+          const entryLineId = chart.createPriceLine({
+            price: parseFloat(entryPrice),
+            color: '#28a745',
+            lineWidth: 2,
+            lineStyle: 0, // solid
+            axisLabelVisible: true,
+            title: '🟢 Entrada',
+            extend: 'both'
+          });
           priceLineIds.current.add(entryLineId);
+          console.log('✅ Entry price line created:', entryPrice);
         }
 
         // Criar linha de stop loss
         if (stopLoss) {
-          const stopLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: parseFloat(stopLoss) },
-              { time: endTime, price: parseFloat(stopLoss) }
-            ],
-            {
-              shape: "horizontal_line",
-              lock: true,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                linecolor: "#dc3545",
-                linewidth: 2,
-                linestyle: 0, // solid
-                showLabel: true,
-                text: `🛑 Stop: $${parseFloat(stopLoss).toFixed(4)}`,
-                textColor: "#dc3545",
-                fontSize: 12,
-                fontBold: true,
-                horzLabelsAlign: "right",
-                vertLabelsAlign: "middle",
-                extendLeft: true,
-                extendRight: true
-              }
-            }
-          );
+          const stopLineId = chart.createPriceLine({
+            price: parseFloat(stopLoss),
+            color: '#dc3545',
+            lineWidth: 2,
+            lineStyle: 0, // solid
+            axisLabelVisible: true,
+            title: '🛑 Stop',
+            extend: 'both'
+          });
           priceLineIds.current.add(stopLineId);
+          console.log('✅ Stop loss price line created:', stopLoss);
         }
 
         // Criar linha de target
         if (targetPrice) {
-          const targetLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: parseFloat(targetPrice) },
-              { time: endTime, price: parseFloat(targetPrice) }
-            ],
-            {
-              shape: "horizontal_line",
-              lock: true,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                linecolor: "#17a2b8",
-                linewidth: 2,
-                linestyle: 0, // solid
-                showLabel: true,
-                text: `🎯 Alvo: $${parseFloat(targetPrice).toFixed(4)}`,
-                textColor: "#17a2b8",
-                fontSize: 12,
-                fontBold: true,
-                horzLabelsAlign: "right",
-                vertLabelsAlign: "middle",
-                extendLeft: true,
-                extendRight: true
-              }
-            }
-          );
+          const targetLineId = chart.createPriceLine({
+            price: parseFloat(targetPrice),
+            color: '#17a2b8',
+            lineWidth: 2,
+            lineStyle: 0, // solid
+            axisLabelVisible: true,
+            title: '🎯 Alvo',
+            extend: 'both'
+          });
           priceLineIds.current.add(targetLineId);
+          console.log('✅ Target price line created:', targetPrice);
         }
 
         // Criar linha de preço atual (se diferente da entrada)
         if (currentPrice && currentPrice !== entryPrice) {
-          const currentLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: parseFloat(currentPrice) },
-              { time: endTime, price: parseFloat(currentPrice) }
-            ],
-            {
-              shape: "horizontal_line",
-              lock: true,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                linecolor: "#ffc107",
-                linewidth: 2,
-                linestyle: 2, // dashed
-                showLabel: true,
-                text: `📊 Atual: $${parseFloat(currentPrice).toFixed(4)}`,
-                textColor: "#ffc107",
-                fontSize: 12,
-                fontBold: true,
-                horzLabelsAlign: "right",
-                vertLabelsAlign: "middle",
-                extendLeft: true,
-                extendRight: true
-              }
-            }
-          );
+          const currentLineId = chart.createPriceLine({
+            price: parseFloat(currentPrice),
+            color: '#ffc107',
+            lineWidth: 2,
+            lineStyle: 2, // dashed
+            axisLabelVisible: true,
+            title: '📊 Atual',
+            extend: 'both'
+          });
           priceLineIds.current.add(currentLineId);
+          console.log('✅ Current price line created:', currentPrice);
         }
 
-        console.log('✅ Linhas horizontais criadas:', priceLineIds.current.size);
+        console.log('✅ Price lines created:', priceLineIds.current.size);
 
       } catch (error) {
-        console.error('❌ Error creating horizontal lines:', error);
+        console.error('❌ Error creating price lines:', error);
       }
     };
 
@@ -315,16 +241,17 @@ const TradingViewChartNative = ({
           setChartReady(true);
           setHasError(false);
           
-          // Configurar listener para atualizar linhas quando o range mudar
+          // Configurar listener para atualizar linhas quando necessário
           const chart = widget.activeChart();
+          
+          // Criar linhas de preço imediatamente
+          if (entryPrice || stopLoss || targetPrice || currentPrice) {
+            createPriceLines();
+          }
+          
+          // Listener para mudanças no range (opcional - price lines persistem)
           chart.onVisibleRangeChanged().subscribe(null, () => {
-            console.log('📊 Visible range changed - updating lines');
-            setTimeout(() => {
-              // Recriar linhas após mudança de range
-              if (entryPrice || stopLoss || targetPrice) {
-                createHorizontalLines();
-              }
-            }, 100);
+            console.log('📊 Visible range changed - price lines remain visible');
           });
         });
 
@@ -387,7 +314,14 @@ const TradingViewChartNative = ({
         }
       }
     };
-  }, [symbol, theme, chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
+  }, [symbol, theme]);
+
+  // useEffect separado para atualizar price lines quando preços mudarem
+  useEffect(() => {
+    if (chartReady && widgetRef.current) {
+      createPriceLines();
+    }
+  }, [chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
 
   return (
     <div className="tradingview-chart-container">
