@@ -14,6 +14,7 @@ import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
 import TradingViewChart from './TradingViewChart';
+import TradingViewChartNative from './TradingViewChartNative';
 import '../styles/TradingViewChart.css';
 
 const RiskCalculator = () => {
@@ -80,6 +81,7 @@ const RiskCalculator = () => {
   // States do TradingView
   const [showChart, setShowChart] = useState(true);
   const [chartSymbol, setChartSymbol] = useState("BINANCE:BTCUSDT");
+  const [useNativeChart, setUseNativeChart] = useState(true);
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -363,15 +365,25 @@ const RiskCalculator = () => {
         }}>
           <div className="chart-toggle-status">
             <div className="status-dot"></div>
-            <span>TradingView {showChart ? 'Ativo' : 'Inativo'}</span>
+            <span>TradingView {showChart ? (useNativeChart ? 'Nativo' : 'Widget') : 'Inativo'}</span>
           </div>
           
-          <button
-            className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
-            onClick={() => setShowChart(!showChart)}
-          >
-            📈 {showChart ? 'Ocultar' : 'Mostrar'} Gráfico
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className={`chart-toggle-btn ${useNativeChart ? 'active' : ''}`}
+              onClick={() => setUseNativeChart(!useNativeChart)}
+              style={{ fontSize: '12px', padding: '8px 12px' }}
+            >
+              {useNativeChart ? '📊 Nativo' : '🔄 Widget'}
+            </button>
+            
+            <button
+              className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
+              onClick={() => setShowChart(!showChart)}
+            >
+              📈 {showChart ? 'Ocultar' : 'Mostrar'} Gráfico
+            </button>
+          </div>
         </div>
 
         {/* Container 1: Gráfico + Calculadora */}
@@ -379,15 +391,27 @@ const RiskCalculator = () => {
           {/* Chart Section - ESQUERDA */}
           {showChart && (
             <div className="chart-section">
-              <TradingViewChart
-                symbol={chartSymbol}
-                theme={theme}
-                entryPrice={formData.entryPrice}
-                stopLoss={formData.stopLoss}
-                targetPrice={formData.targetPrice}
-                tradeDirection={formData.direction}
-                currentPrice={liveCurrentPrice}
-              />
+              {useNativeChart ? (
+                <TradingViewChartNative
+                  symbol={chartSymbol}
+                  theme={theme}
+                  entryPrice={formData.entryPrice}
+                  stopLoss={formData.stopLoss}
+                  targetPrice={formData.targetPrice}
+                  tradeDirection={formData.direction}
+                  currentPrice={liveCurrentPrice}
+                />
+              ) : (
+                <TradingViewChart
+                  symbol={chartSymbol}
+                  theme={theme}
+                  entryPrice={formData.entryPrice}
+                  stopLoss={formData.stopLoss}
+                  targetPrice={formData.targetPrice}
+                  tradeDirection={formData.direction}
+                  currentPrice={liveCurrentPrice}
+                />
+              )}
             </div>
           )}
 
