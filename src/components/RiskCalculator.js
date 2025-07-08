@@ -386,6 +386,7 @@ const RiskCalculator = () => {
                 stopLoss={formData.stopLoss}
                 targetPrice={formData.targetPrice}
                 tradeDirection={formData.direction}
+                currentPrice={liveCurrentPrice}
               />
             </div>
           )}
