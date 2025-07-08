@@ -13,6 +13,7 @@
   position: relative;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 .tradingview-chart-container::before {
@@ -36,6 +37,8 @@
   min-height: 56px;
   position: relative;
   backdrop-filter: blur(8px);
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .chart-header::after {
@@ -327,7 +330,7 @@
   overflow: hidden;
 }
 
-/* Chart Section - Seamless Left Side */
+/* Chart Section - Perfect Left Side */
 .chart-section {
   grid-area: chart;
   display: flex;
@@ -337,7 +340,7 @@
   background: var(--bg-primary);
   border-radius: 16px 0 0 16px;
   overflow: hidden;
-  border-right: none;
+  border: none;
   margin: 0;
   padding: 0;
 }
@@ -435,7 +438,7 @@
   border: 1px solid var(--border-color);
 }
 
-/* Calculator Section - Seamless Right Side */
+/* Calculator Section - Perfect Right Side */
 .calculator-section {
   grid-area: calculator;
   overflow-y: auto;
@@ -447,19 +450,20 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border-color);
+  border: none;
   margin: 0;
   padding: 0;
 }
 
-/* Calculator Inner Container - No Gaps */
+/* Calculator Inner Container - Zero Gaps */
 .calculator-inner {
   padding: 20px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   margin: 0;
+  box-sizing: border-box;
 }
 
 /* Smooth Scrollbar */
@@ -672,23 +676,24 @@
     min-height: 400px;
     height: 400px;
     border-radius: 16px 16px 0 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-section {
     height: auto;
     min-height: 300px;
     border-radius: 0 0 16px 16px;
-    border-left: none;
-    border-top: none;
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-inner {
-    padding: 18px;
+    padding: 16px;
     margin: 0;
+    box-sizing: border-box;
   }
   
   .risk-management-container {
@@ -715,22 +720,23 @@
     min-height: 350px;
     height: 350px;
     border-radius: 12px 12px 0 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-section {
     border-radius: 0 0 12px 12px;
     min-height: 250px;
-    border-left: none;
-    border-top: none;
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-inner {
-    padding: 14px;
+    padding: 12px;
     margin: 0;
+    box-sizing: border-box;
   }
   
   .risk-management-container {
@@ -785,22 +791,23 @@
     min-height: 300px;
     height: 300px;
     border-radius: 8px 8px 0 0;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-section {
     border-radius: 0 0 8px 8px;
     min-height: 200px;
-    border-left: none;
-    border-top: none;
+    border: none;
     margin: 0;
+    padding: 0;
   }
   
   .calculator-inner {
-    padding: 10px;
+    padding: 8px;
     margin: 0;
+    box-sizing: border-box;
   }
   
   .risk-management-container {
