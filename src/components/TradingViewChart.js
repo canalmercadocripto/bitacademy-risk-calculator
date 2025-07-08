@@ -95,9 +95,10 @@ const TradingViewChart = ({
         return null;
       }
 
-      // Método alternativo: usar intersecção baseada no preço atual conhecido
-      if (currentPrice) {
-        const currentPriceFloat = parseFloat(currentPrice);
+      // Método alternativo: usar intersecção baseada no preço atual conhecido ou preços de entrada
+      const referencePrice = currentPrice || entryPrice;
+      if (referencePrice) {
+        const referencePriceFloat = parseFloat(referencePrice);
         const containerRect = chartContainerRef.current.getBoundingClientRect();
         
         // Tentar detectar a posição real do preço atual no gráfico
@@ -107,7 +108,7 @@ const TradingViewChart = ({
         try {
           const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
-            const priceText = Math.floor(currentPriceFloat).toString();
+            const priceText = Math.floor(referencePriceFloat).toString();
             const elements = Array.from(iframeDoc.querySelectorAll('*'));
             
             for (let element of elements) {
@@ -130,8 +131,8 @@ const TradingViewChart = ({
         const syntheticScale = [];
         
         // Coletar todos os preços relevantes
-        const allPrices = [currentPriceFloat];
-        if (entryPrice) allPrices.push(parseFloat(entryPrice));
+        const allPrices = [referencePriceFloat];
+        if (entryPrice && entryPrice !== referencePrice) allPrices.push(parseFloat(entryPrice));
         if (stopLoss) allPrices.push(parseFloat(stopLoss));
         if (targetPrice) allPrices.push(parseFloat(targetPrice));
         
@@ -140,16 +141,16 @@ const TradingViewChart = ({
         const priceRange = maxPrice - minPrice;
         
         // Se há um range significativo nos preços de trade, usar isso
-        if (priceRange > currentPriceFloat * 0.01) { // Mais de 1% de diferença
+        if (priceRange > referencePriceFloat * 0.01) { // Mais de 1% de diferença
           // Criar escala que cobre todo o range dos preços + margem
           const margin = priceRange * 0.2; // 20% de margem
           const scaledMinPrice = minPrice - margin;
           const scaledMaxPrice = maxPrice + margin;
           const totalRange = scaledMaxPrice - scaledMinPrice;
           
-          // Estimar onde o preço atual aparece no gráfico
-          const currentPriceRatio = (currentPriceFloat - scaledMinPrice) / totalRange;
-          const currentPriceY = containerRect.height * (1 - currentPriceRatio); // Inverter Y
+          // Estimar onde o preço de referência aparece no gráfico
+          const referencePriceRatio = (referencePriceFloat - scaledMinPrice) / totalRange;
+          const referencePriceY = containerRect.height * (1 - referencePriceRatio); // Inverter Y
           
           // Criar 7 pontos da escala
           for (let i = 0; i <= 6; i++) {
@@ -162,21 +163,21 @@ const TradingViewChart = ({
           console.log('🎯 Escala sintética baseada no range de trade:', {
             minPrice: scaledMinPrice,
             maxPrice: scaledMaxPrice,
-            currentPriceY,
+            referencePriceY,
             estimatedCurrentY
           });
         } else {
-          // Fallback: usar método original centrado no preço atual
-          const priceStep = currentPriceFloat * 0.015; // 1.5% steps (mais fino)
+          // Fallback: usar método original centrado no preço de referência
+          const priceStep = referencePriceFloat * 0.015; // 1.5% steps (mais fino)
           
           for (let i = -3; i <= 3; i++) {
-            const price = currentPriceFloat + (i * priceStep);
+            const price = referencePriceFloat + (i * priceStep);
             const y = estimatedCurrentY - (i * containerRect.height * 0.08); // 8% da altura por step
             syntheticScale.push({ price, y });
           }
         }
         
-        console.log('Escala sintética criada baseada no preço atual:', syntheticScale);
+        console.log('🎯 Escala sintética criada baseada no preço de referência:', syntheticScale);
         setPriceScaleData(syntheticScale);
         return syntheticScale;
       }
