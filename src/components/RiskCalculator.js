@@ -382,6 +382,10 @@ const RiskCalculator = () => {
               <TradingViewChart
                 symbol={chartSymbol}
                 theme={theme}
+                entryPrice={formData.entryPrice}
+                stopLoss={formData.stopLoss}
+                targetPrice={formData.targetPrice}
+                tradeDirection={formData.direction}
               />
             </div>
           )}
