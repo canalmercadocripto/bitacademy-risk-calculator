@@ -55,13 +55,6 @@ const TradingViewChart = ({
 
   return (
     <div className="tradingview-chart-container">
-      {/* Header com informações */}
-      <div className="chart-header">
-        <div className="chart-symbol">
-          <span className="symbol-text">{symbol}</span>
-        </div>
-      </div>
-
       {/* Widget TradingView */}
       <div className="chart-widget">
         {hasError ? (
