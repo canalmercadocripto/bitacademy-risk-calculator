@@ -14,6 +14,8 @@ import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
+import TradingViewChart from './TradingViewChart';
+import '../styles/TradingViewChart.css';
 
 const RiskCalculator = () => {
   const { theme, toggleTheme } = useTheme();
@@ -75,6 +77,10 @@ const RiskCalculator = () => {
   // States dos modais
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
+  
+  // States do TradingView
+  const [showChart, setShowChart] = useState(true);
+  const [chartSymbol, setChartSymbol] = useState("BINANCE:BTCUSDT");
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -89,6 +95,45 @@ const RiskCalculator = () => {
   // Hook para auto-atualização de preços - apenas para monitoramento
   usePriceUpdater(selectedExchange, selectedSymbol, handlePriceUpdate, priceUpdateEnabled);
 
+  // Função para atualizar símbolo do TradingView
+  const updateChartSymbol = useCallback((exchange, symbol) => {
+    if (!exchange || !symbol) return;
+    
+    const exchangeMap = {
+      'binance': 'BINANCE',
+      'bybit': 'BYBIT',
+      'bitget': 'BITGET',
+      'bingx': 'BINGX'
+    };
+    
+    const exchangeName = typeof exchange === 'object' ? exchange.id : exchange;
+    const symbolName = typeof symbol === 'object' ? symbol.symbol : symbol;
+    
+    const tvExchange = exchangeMap[exchangeName?.toLowerCase()] || 'BINANCE';
+    const cleanSymbol = symbolName?.replace('/', '').toUpperCase() || 'BTCUSDT';
+    
+    const newChartSymbol = `${tvExchange}:${cleanSymbol}`;
+    console.log('📈 Updating chart symbol to:', newChartSymbol);
+    setChartSymbol(newChartSymbol);
+  }, []);
+
+  // Callback para receber preço do TradingView (apenas para display)
+  const handleChartPriceUpdate = useCallback((price) => {
+    console.log('📊 Price from TradingView:', price);
+    setLiveCurrentPrice(price);
+  }, []);
+
+  // Callback para sincronizar preço do TradingView com calculadora
+  const handleSyncPriceToCalculator = useCallback((price) => {
+    console.log('🔄 Syncing price to calculator:', price);
+    setFormData(prev => ({
+      ...prev,
+      entryPrice: price.toString()
+    }));
+    setLiveCurrentPrice(price);
+    toast.success(`Preço sincronizado: $${price.toFixed(4)}`);
+  }, []);
+
   // Atualizar símbolos quando exchange muda
   useEffect(() => {
     if (selectedExchange) {
@@ -97,6 +142,13 @@ const RiskCalculator = () => {
       setFormData(prev => ({ ...prev, entryPrice: '' }));
     }
   }, [selectedExchange, loadSymbols]);
+
+  // Atualizar símbolo do gráfico quando exchange/symbol mudam
+  useEffect(() => {
+    if (selectedExchange && selectedSymbol) {
+      updateChartSymbol(selectedExchange, selectedSymbol);
+    }
+  }, [selectedExchange, selectedSymbol, updateChartSymbol]);
 
   // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
   useEffect(() => {
@@ -320,67 +372,112 @@ const RiskCalculator = () => {
           onToggleTheme={toggleTheme}
         />
         
-        <div className="container">
-        <div className="instructions-section">
-          <Instructions />
+        {/* Toggle Chart Button */}
+        <div className="chart-toggle-container" style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          marginBottom: '20px',
+          gap: '10px'
+        }}>
+          <button
+            className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
+            onClick={() => setShowChart(!showChart)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: showChart ? 'var(--accent-color)' : 'var(--bg-secondary)',
+              color: showChart ? 'white' : 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            📈 {showChart ? 'Ocultar' : 'Mostrar'} Gráfico
+          </button>
         </div>
-        
-        <div className="form-section">
-          <ExchangeSelector
-            exchanges={exchanges}
-            selectedExchange={selectedExchange}
-            onExchangeSelect={setSelectedExchange}
-            loading={loading}
-          />
 
-          <div className="input-group">
-            <label>Par de Moedas:</label>
-            <Select
-              className="react-select-container"
-              classNamePrefix="react-select"
-              placeholder={selectedExchange ? "Selecione um par..." : "Selecione uma corretora primeiro"}
-              options={formatSymbolOptions()}
-              value={selectedSymbol ? { value: selectedSymbol, label: `${selectedSymbol.symbol} (${selectedSymbol.baseAsset}/${selectedSymbol.quoteAsset})` } : null}
-              onChange={(option) => setSelectedSymbol(option?.value || null)}
-              isLoading={loading.symbols}
-              isDisabled={!selectedExchange}
-              isClearable
-              isSearchable
-            />
-            {selectedSymbol && (
-              <div className="price-info">
-                <span className="current-price-reference">
-                  📊 Cotação atual: {loading.price ? "Carregando..." : liveCurrentPrice ? `$${Number(liveCurrentPrice).toFixed(4)}` : "N/A"}
-                </span>
-                {!loading.price && liveCurrentPrice && (
-                  <div className="price-update-indicator">
-                    <div className="price-update-dot"></div>
-                    Atualiza a cada 5s
-                  </div>
-                )}
+        <div className={`calculator-with-chart ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
+          {/* Calculator Section */}
+          <div className="calculator-section">
+            <div className="container">
+              <div className="instructions-section">
+                <Instructions />
               </div>
-            )}
+              
+              <div className="form-section">
+                <ExchangeSelector
+                  exchanges={exchanges}
+                  selectedExchange={selectedExchange}
+                  onExchangeSelect={setSelectedExchange}
+                  loading={loading}
+                />
+
+                <div className="input-group">
+                  <label>Par de Moedas:</label>
+                  <Select
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    placeholder={selectedExchange ? "Selecione um par..." : "Selecione uma corretora primeiro"}
+                    options={formatSymbolOptions()}
+                    value={selectedSymbol ? { value: selectedSymbol, label: `${selectedSymbol.symbol} (${selectedSymbol.baseAsset}/${selectedSymbol.quoteAsset})` } : null}
+                    onChange={(option) => setSelectedSymbol(option?.value || null)}
+                    isLoading={loading.symbols}
+                    isDisabled={!selectedExchange}
+                    isClearable
+                    isSearchable
+                  />
+                  {selectedSymbol && (
+                    <div className="price-info">
+                      <span className="current-price-reference">
+                        📊 Cotação atual: {loading.price ? "Carregando..." : liveCurrentPrice ? `$${Number(liveCurrentPrice).toFixed(4)}` : "N/A"}
+                      </span>
+                      {!loading.price && liveCurrentPrice && (
+                        <div className="price-update-indicator">
+                          <div className="price-update-dot"></div>
+                          Atualiza a cada 5s
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <CalculatorForm
+                  formData={formData}
+                  onInputChange={handleInputChange}
+                  onDirectionChange={handleDirectionChange}
+                  onCalculate={handleCalculate}
+                  calculating={calculating}
+                  loading={loading}
+                  currentPrice={liveCurrentPrice}
+                />
+              </div>
+
+              <EnhancedResults 
+                results={results} 
+                selectedSymbol={selectedSymbol}
+                selectedExchange={selectedExchange}
+                formData={formData}
+                currentPrice={liveCurrentPrice}
+              />
+            </div>
           </div>
 
-          <CalculatorForm
-            formData={formData}
-            onInputChange={handleInputChange}
-            onDirectionChange={handleDirectionChange}
-            onCalculate={handleCalculate}
-            calculating={calculating}
-            loading={loading}
-            currentPrice={liveCurrentPrice}
-          />
+          {/* Chart Section */}
+          {showChart && (
+            <div className="chart-section">
+              <TradingViewChart
+                symbol={chartSymbol}
+                theme={theme}
+                onPriceUpdate={handleSyncPriceToCalculator}
+                entryPrice={formData.entryPrice}
+                stopLoss={formData.stopLoss}
+                takeProfit={formData.targetPrice}
+                showLevels={!!results}
+              />
+            </div>
+          )}
         </div>
-
-        <EnhancedResults 
-          results={results} 
-          selectedSymbol={selectedSymbol}
-          selectedExchange={selectedExchange}
-          formData={formData}
-          currentPrice={liveCurrentPrice}
-        />
-      </div>
 
         {/* Modais */}
         <AuthModal

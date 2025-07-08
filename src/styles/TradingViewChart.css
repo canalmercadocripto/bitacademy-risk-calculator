@@ -1,0 +1,347 @@
+/* TradingView Chart Styles */
+.tradingview-chart-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 500px;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  min-height: 60px;
+}
+
+.chart-symbol {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.symbol-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.current-price {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--accent-color);
+  background: rgba(0, 123, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.trade-levels {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sync-price-btn {
+  padding: 4px 8px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sync-price-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.level {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.level.entry {
+  background: #007bff;
+}
+
+.level.stop-loss {
+  background: #dc3545;
+}
+
+.level.take-profit {
+  background: #28a745;
+}
+
+.chart-widget {
+  flex: 1;
+  position: relative;
+  min-height: 440px;
+}
+
+.chart-widget iframe {
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.chart-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-primary);
+  z-index: 10;
+}
+
+.chart-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+.chart-loading p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tradingview-chart-container {
+    min-height: 400px;
+  }
+  
+  .chart-header {
+    padding: 10px 15px;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .chart-symbol {
+    gap: 10px;
+  }
+  
+  .symbol-text {
+    font-size: 16px;
+  }
+  
+  .current-price {
+    font-size: 14px;
+  }
+  
+  .trade-levels {
+    gap: 8px;
+  }
+  
+  .level {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .chart-widget {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tradingview-chart-container {
+    min-height: 350px;
+    border-radius: 8px;
+  }
+  
+  .chart-header {
+    padding: 8px 12px;
+  }
+  
+  .chart-widget {
+    min-height: 280px;
+  }
+}
+
+/* Dark Theme Adjustments */
+[data-theme="dark"] .tradingview-chart-container {
+  background: #1a1a1a;
+  border-color: #333;
+}
+
+[data-theme="dark"] .chart-header {
+  background: #2d2d2d;
+  border-color: #333;
+}
+
+[data-theme="dark"] .symbol-text {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .current-price {
+  background: rgba(0, 123, 255, 0.2);
+  color: #007bff;
+}
+
+[data-theme="dark"] .chart-loading {
+  background: #1a1a1a;
+}
+
+[data-theme="dark"] .chart-loading p {
+  color: #cccccc;
+}
+
+/* Integration with Calculator Layout */
+.calculator-with-chart {
+  display: grid;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+
+.calculator-with-chart.chart-visible {
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  max-height: calc(100vh - 120px);
+}
+
+.calculator-with-chart.chart-hidden {
+  grid-template-columns: 1fr;
+  height: auto;
+}
+
+.calculator-section {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Chart Toggle Button */
+.chart-toggle-container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chart-toggle-btn {
+  transition: all 0.2s ease;
+}
+
+.chart-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.chart-toggle-btn.active {
+  box-shadow: 0 2px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .calculator-with-chart.chart-visible {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .calculator-with-chart.chart-visible {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 500px;
+    gap: 15px;
+    height: auto;
+    max-height: none;
+  }
+  
+  .chart-section {
+    order: 2;
+    min-height: 500px;
+  }
+  
+  .calculator-section {
+    order: 1;
+  }
+  
+  .tradingview-chart-container {
+    min-height: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calculator-with-chart.chart-visible {
+    grid-template-rows: auto 400px;
+    gap: 10px;
+  }
+  
+  .chart-section {
+    min-height: 400px;
+  }
+  
+  .tradingview-chart-container {
+    min-height: 380px;
+  }
+  
+  .chart-toggle-container {
+    margin-bottom: 15px;
+  }
+  
+  .chart-toggle-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calculator-with-chart.chart-visible {
+    grid-template-rows: auto 350px;
+    gap: 8px;
+  }
+  
+  .chart-section {
+    min-height: 350px;
+  }
+  
+  .tradingview-chart-container {
+    min-height: 330px;
+  }
+  
+  .chart-toggle-container {
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+}
