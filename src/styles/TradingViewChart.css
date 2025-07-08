@@ -6,14 +6,10 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 500px;
   background: var(--bg-primary);
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
+  border-radius: 0;
+  border: none;
   overflow: hidden;
-  box-shadow: 
-    0 10px 40px rgba(0, 0, 0, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.04);
   position: relative;
 }
 
@@ -32,10 +28,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 16px 20px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  min-height: 70px;
+  min-height: 56px;
   position: relative;
   backdrop-filter: blur(8px);
 }
@@ -282,28 +278,27 @@
    NEW LAYOUT: 3-CONTAINER SYSTEM
    ======================================== */
 
-/* Container 1: Trading + Calculator (Top) */
+/* Container 1: Trading + Calculator (Top) - Clean & Professional */
 .trading-calculator-container {
   display: grid;
-  gap: 24px;
+  gap: 0;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0;
   margin: 0 0 24px 0;
-  min-height: calc(60vh - 80px);
+  height: 600px;
   max-width: 100%;
   overflow: hidden;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-/* Desktop Layout - Side by Side */
+/* Desktop Layout - Side by Side with Equal Heights */
 .trading-calculator-container.chart-visible {
   grid-template-columns: 1.4fr 1fr;
   grid-template-areas: "chart calculator";
-  height: calc(60vh - 80px);
-  align-items: stretch;
+  height: 600px;
 }
 
 /* Chart Hidden - Full Width Calculator */
@@ -311,56 +306,57 @@
   grid-template-columns: 1fr;
   grid-template-areas: "calculator";
   height: auto;
-  min-height: auto;
+  min-height: 400px;
 }
 
-/* Container 2: Risk Management Analysis (Bottom) */
+/* Container 2: Risk Management Analysis (Bottom) - Contained Width */
 .risk-management-container {
   display: flex;
   flex-direction: column;
-  min-height: calc(40vh - 60px);
-  max-height: calc(40vh - 60px);
+  min-height: 400px;
+  max-height: 500px;
+  max-width: 1200px;
+  margin: 0 auto 24px auto;
   background: var(--bg-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  margin-bottom: 24px;
 }
 
-/* Chart Section - Back to Original */
+/* Chart Section - Seamless Left Side */
 .chart-section {
   grid-area: chart;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  height: 100%;
+  height: 600px;
   background: var(--bg-primary);
   border-radius: 16px 0 0 16px;
   overflow: hidden;
+  border-right: 1px solid var(--border-color);
 }
 
-/* Analysis Header for Risk Management Container */
+/* Analysis Header - Compact & Clean */
 .analysis-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 16px 24px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  min-height: 64px;
+  min-height: 56px;
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;
 }
 
 .analysis-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .analysis-status {
@@ -390,11 +386,13 @@
   border-radius: 0 0 16px 16px;
 }
 
-/* Enhanced Results within Risk Management */
+/* Enhanced Results within Risk Management - Optimized */
 .analysis-content .enhanced-results-container {
-  padding: 20px;
+  padding: 16px 20px;
   height: 100%;
   box-sizing: border-box;
+  max-width: 1160px;
+  margin: 0 auto;
 }
 
 /* Smooth Scrollbar for Risk Management */
@@ -431,16 +429,14 @@
   border: 1px solid var(--border-color);
 }
 
-/* Calculator Section - Integrated with Chart */
+/* Calculator Section - Seamless Right Side */
 .calculator-section {
   grid-area: calculator;
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0;
-  height: 100%;
+  height: 600px;
   background: var(--bg-primary);
   border-radius: 0 16px 16px 0;
-  border-left: 1px solid var(--border-color);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -646,34 +642,31 @@
 
 /* ========================================\n   RESPONSIVE BREAKPOINTS - NEW LAYOUT\n   ======================================== */
 
-/* Tablet Landscape - Stack Vertically */
+/* Tablet Landscape - Clean Vertical Stack */
 @media (max-width: 1023px) {
   .trading-calculator-container {
-    min-height: auto;
-    gap: 16px;
+    height: auto;
     margin-bottom: 16px;
   }
   
   .trading-calculator-container.chart-visible {
     grid-template-columns: 1fr;
-    grid-template-rows: 400px auto;
+    grid-template-rows: 450px auto;
     grid-template-areas: "chart" "calculator";
     height: auto;
-    min-height: auto;
   }
   
   .chart-section {
-    min-height: 400px;
-    height: 400px;
+    height: 450px;
     border-radius: 16px 16px 0 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
   }
   
   .calculator-section {
     height: auto;
-    max-height: none;
+    min-height: 300px;
     border-radius: 0 0 16px 16px;
-    border-left: none;
-    border-top: 1px solid var(--border-color);
   }
   
   .calculator-inner {
@@ -681,32 +674,32 @@
   }
   
   .risk-management-container {
-    min-height: 300px;
-    max-height: 400px;
+    min-height: 350px;
+    max-height: 450px;
+    max-width: 100%;
   }
 }
 
-/* Tablet Portrait - Compact Layout */
+/* Tablet Portrait - Optimized Layout */
 @media (max-width: 767px) {
   .trading-calculator-container {
-    gap: 12px;
     margin-bottom: 12px;
+    border-radius: 12px;
   }
   
   .trading-calculator-container.chart-visible {
-    grid-template-rows: 350px auto;
+    grid-template-rows: 380px auto;
     grid-template-areas: "chart" "calculator";
   }
   
   .chart-section {
-    min-height: 350px;
-    height: 350px;
+    height: 380px;
     border-radius: 12px 12px 0 0;
   }
   
   .calculator-section {
     border-radius: 0 0 12px 12px;
-    max-height: none;
+    min-height: 280px;
   }
   
   .calculator-inner {
@@ -714,23 +707,28 @@
   }
   
   .risk-management-container {
-    min-height: 250px;
-    max-height: 300px;
+    min-height: 300px;
+    max-height: 350px;
     border-radius: 12px;
+    max-width: 100%;
   }
   
   .analysis-header {
-    padding: 16px 20px;
-    min-height: 56px;
+    padding: 14px 18px;
+    min-height: 50px;
     border-radius: 12px 12px 0 0;
   }
   
   .analysis-title {
-    font-size: 16px;
+    font-size: 15px;
   }
   
   .analysis-content {
     border-radius: 0 0 12px 12px;
+  }
+  
+  .analysis-content .enhanced-results-container {
+    padding: 14px 16px;
   }
   
   .chart-toggle-container {
@@ -743,27 +741,26 @@
   }
 }
 
-/* Mobile - Compact Experience */
+/* Mobile - Ultra Compact */
 @media (max-width: 479px) {
   .trading-calculator-container {
-    gap: 8px;
     margin-bottom: 8px;
+    border-radius: 8px;
   }
   
   .trading-calculator-container.chart-visible {
-    grid-template-rows: 300px auto;
+    grid-template-rows: 320px auto;
     grid-template-areas: "chart" "calculator";
   }
   
   .chart-section {
-    min-height: 300px;
-    height: 300px;
+    height: 320px;
     border-radius: 8px 8px 0 0;
   }
   
   .calculator-section {
     border-radius: 0 0 8px 8px;
-    max-height: none;
+    min-height: 250px;
   }
   
   .calculator-inner {
@@ -771,14 +768,15 @@
   }
   
   .risk-management-container {
-    min-height: 200px;
-    max-height: 250px;
+    min-height: 250px;
+    max-height: 300px;
     border-radius: 8px;
+    max-width: 100%;
   }
   
   .analysis-header {
-    padding: 12px 16px;
-    min-height: 48px;
+    padding: 10px 14px;
+    min-height: 44px;
     border-radius: 8px 8px 0 0;
   }
   
@@ -791,7 +789,7 @@
   }
   
   .analysis-content .enhanced-results-container {
-    padding: 12px;
+    padding: 10px 12px;
   }
   
   .chart-toggle-container {
