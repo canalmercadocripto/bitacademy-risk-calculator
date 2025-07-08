@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import MockDatafeed from '../utils/mockDatafeed';
+import BinanceDatafeed from '../utils/binanceDatafeed';
 
 const TradingViewChartAdvanced = ({ 
   symbol = "BINANCE:BTCUSDT", 
@@ -34,10 +34,10 @@ const TradingViewChartAdvanced = ({
           return;
         }
 
-        console.log('✅ Initializing TradingView Advanced Charts with Mock Datafeed');
+        console.log('✅ Initializing TradingView Advanced Charts with Binance Real Data');
 
-        // Configurar datafeed mock (sem dependência externa)
-        const datafeed = new MockDatafeed();
+        // Configurar datafeed com dados reais da Binance
+        const datafeed = new BinanceDatafeed();
 
         // Limpar widget anterior
         if (widgetRef.current) {
@@ -319,16 +319,17 @@ const TradingViewChartAdvanced = ({
         <div className="chart-error">
           <div>❌ Erro ao carregar TradingView Advanced Charts</div>
           <div style={{ fontSize: '14px', marginTop: '10px', color: '#666' }}>
-            Usando datafeed mock com dados simulados do Bitcoin.
+            Usando dados reais da API Binance.
             <br />
             <strong>Possíveis causas:</strong>
             <ul style={{ textAlign: 'left', marginTop: '8px' }}>
               <li>Biblioteca TradingView não carregada</li>
               <li>Container do gráfico não encontrado</li>
-              <li>Erro na inicialização do widget</li>
+              <li>Erro na conexão com API Binance</li>
+              <li>Problema na inicialização do widget</li>
             </ul>
             <div style={{ marginTop: '10px', fontSize: '12px', color: '#999' }}>
-              ✅ Sem dependência de conexão externa - usando dados simulados
+              📡 Dados em tempo real via WebSocket Binance
             </div>
           </div>
         </div>
@@ -337,7 +338,7 @@ const TradingViewChartAdvanced = ({
       {!chartReady && !hasError && (
         <div className="chart-loading">
           <div className="loading-spinner"></div>
-          <p>Carregando TradingView Advanced Charts...</p>
+          <p>Carregando dados reais da Binance...</p>
         </div>
       )}
     </div>

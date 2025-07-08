@@ -81,7 +81,7 @@ const RiskCalculator = () => {
   
   // States do TradingView
   const [showChart, setShowChart] = useState(true);
-  const [chartSymbol, setChartSymbol] = useState("BINANCE:BTCUSDT");
+  const [chartSymbol, setChartSymbol] = useState("BTCUSDT");
   const [useNativeChart, setUseNativeChart] = useState(false);
   const [useAdvancedChart, setUseAdvancedChart] = useState(true);
 
@@ -102,22 +102,29 @@ const RiskCalculator = () => {
   const updateChartSymbol = useCallback((exchange, symbol) => {
     if (!exchange || !symbol) return;
     
-    const exchangeMap = {
-      'binance': 'BINANCE',
-      'bybit': 'BYBIT',
-      'bitget': 'BITGET',
-      'bingx': 'BINGX'
-    };
-    
     const exchangeName = typeof exchange === 'object' ? exchange.id : exchange;
     const symbolName = typeof symbol === 'object' ? symbol.symbol : symbol;
     
-    const tvExchange = exchangeMap[exchangeName?.toLowerCase()] || 'BINANCE';
+    // Para Advanced Charts, usar apenas o símbolo sem exchange prefix
     const cleanSymbol = symbolName?.replace('/', '').toUpperCase() || 'BTCUSDT';
     
-    const newChartSymbol = `${tvExchange}:${cleanSymbol}`;
-    setChartSymbol(newChartSymbol);
-  }, []);
+    if (useAdvancedChart) {
+      // Advanced Charts usa apenas o símbolo (ex: BTCUSDT)
+      setChartSymbol(cleanSymbol);
+    } else {
+      // Widget/Native usam formato com exchange (ex: BINANCE:BTCUSDT)
+      const exchangeMap = {
+        'binance': 'BINANCE',
+        'bybit': 'BYBIT',
+        'bitget': 'BITGET',
+        'bingx': 'BINGX'
+      };
+      
+      const tvExchange = exchangeMap[exchangeName?.toLowerCase()] || 'BINANCE';
+      const newChartSymbol = `${tvExchange}:${cleanSymbol}`;
+      setChartSymbol(newChartSymbol);
+    }
+  }, [useAdvancedChart]);
 
   // Atualizar símbolos quando exchange muda
   useEffect(() => {
@@ -133,7 +140,7 @@ const RiskCalculator = () => {
     if (selectedExchange && selectedSymbol) {
       updateChartSymbol(selectedExchange, selectedSymbol);
     }
-  }, [selectedExchange, selectedSymbol, updateChartSymbol]);
+  }, [selectedExchange, selectedSymbol, updateChartSymbol, useAdvancedChart]);
 
   // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
   useEffect(() => {
