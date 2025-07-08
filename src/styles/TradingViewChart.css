@@ -307,7 +307,122 @@
   max-height: none;
 }
 
-/* Chart Section - Optimized for Trading */
+/* ========================================
+   TRADING & ANALYSIS SECTION - INTEGRATED
+   ======================================== */
+
+/* New Trading Analysis Section - Replaces chart-section */
+.trading-analysis-section {
+  grid-area: chart;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  gap: 0;
+}
+
+/* Chart Container - Upper Section */
+.chart-container {
+  flex: 1;
+  min-height: 60%;
+  max-height: 60%;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Risk Analysis Container - Lower Section */
+.risk-analysis-container {
+  flex: 1;
+  min-height: 40%;
+  max-height: 40%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+}
+
+/* Analysis Header */
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  min-height: 56px;
+  flex-shrink: 0;
+}
+
+.analysis-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analysis-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+/* Analysis Content - Scrollable */
+.analysis-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  background: var(--bg-primary);
+}
+
+/* Enhanced Results within Analysis */
+.analysis-content .enhanced-results-container {
+  padding: 16px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Smooth Scrollbar for Analysis */
+.analysis-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.analysis-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 2px;
+}
+
+.analysis-content::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.analysis-content::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+}
+
+/* Legacy chart-section for backward compatibility */
 .chart-section {
   grid-area: chart;
   display: flex;
@@ -321,7 +436,7 @@
   border: 1px solid var(--border-color);
 }
 
-/* Calculator Section - Scrollable Content */
+/* Calculator Section - Optimized for New Layout */
 .calculator-section {
   grid-area: calculator;
   overflow-y: auto;
@@ -333,6 +448,8 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-color);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Calculator Inner Container */
@@ -584,6 +701,21 @@
     max-height: none;
   }
   
+  .trading-analysis-section {
+    min-height: 520px;
+    height: 520px;
+  }
+  
+  .chart-container {
+    min-height: 60%;
+    max-height: 60%;
+  }
+  
+  .risk-analysis-container {
+    min-height: 40%;
+    max-height: 40%;
+  }
+  
   .chart-section {
     min-height: 520px;
     height: 520px;
@@ -612,6 +744,31 @@
   .calculator-with-chart.chart-visible {
     grid-template-rows: 450px auto;
     grid-template-areas: "chart" "calculator";
+  }
+  
+  .trading-analysis-section {
+    min-height: 450px;
+    height: 450px;
+    border-radius: 12px;
+  }
+  
+  .chart-container {
+    min-height: 65%;
+    max-height: 65%;
+  }
+  
+  .risk-analysis-container {
+    min-height: 35%;
+    max-height: 35%;
+  }
+  
+  .analysis-header {
+    padding: 12px 16px;
+    min-height: 48px;
+  }
+  
+  .analysis-title {
+    font-size: 14px;
   }
   
   .chart-section {
@@ -652,6 +809,35 @@
   .calculator-with-chart.chart-visible {
     grid-template-rows: 380px auto;
     grid-template-areas: "chart" "calculator";
+  }
+  
+  .trading-analysis-section {
+    min-height: 380px;
+    height: 380px;
+    border-radius: 8px;
+  }
+  
+  .chart-container {
+    min-height: 70%;
+    max-height: 70%;
+  }
+  
+  .risk-analysis-container {
+    min-height: 30%;
+    max-height: 30%;
+  }
+  
+  .analysis-header {
+    padding: 8px 12px;
+    min-height: 40px;
+  }
+  
+  .analysis-title {
+    font-size: 13px;
+  }
+  
+  .analysis-content .enhanced-results-container {
+    padding: 8px;
   }
   
   .chart-section {

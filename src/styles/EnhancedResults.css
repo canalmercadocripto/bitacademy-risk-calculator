@@ -1,16 +1,38 @@
-/* Enhanced Results - Layout Vertical Organizado */
+/* ========================================
+   ENHANCED RESULTS - INTEGRATED LAYOUT
+   ======================================== */
 
+/* Main container for enhanced results */
 .results-section.enhanced {
-  background: var(--bg-section);
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: var(--shadow-light);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
   max-width: 100%;
-  margin: 0 auto;
-  overflow: hidden;
+  margin: 0;
+  overflow: visible;
   min-width: 0;
   box-sizing: border-box;
+  height: 100%;
+}
+
+/* Enhanced results within analysis container */
+.enhanced-results-container {
+  background: var(--bg-primary);
+  border-radius: 0;
+  padding: 16px;
+  box-shadow: none;
+  border: none;
+  max-width: 100%;
+  margin: 0;
+  overflow-y: auto;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Header Limpo */
@@ -18,15 +40,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .results-header-clean h3 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 1.4em;
+  font-size: 1.1em;
   font-weight: 600;
 }
 
@@ -38,7 +61,7 @@
 }
 
 .trade-pair {
-  font-size: 0.9em;
+  font-size: 0.8em;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -47,7 +70,7 @@
   font-family: 'Courier New', monospace;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 1.1em;
+  font-size: 0.9em;
   padding: 4px 8px;
   background: var(--bg-gradient-light);
   border-radius: 6px;
@@ -61,28 +84,30 @@
   margin-bottom: 20px;
 }
 
-/* Section Cards */
+/* Section Cards - Compact for Analysis Container */
 .section-card {
   background: var(--bg-gradient-light);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   transition: all 0.3s ease;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .section-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .section-card-title {
-  margin: 0 0 15px 0;
+  margin: 0 0 8px 0;
   color: var(--text-primary);
-  font-size: 1.1em;
+  font-size: 0.9em;
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 /* 1. POSIÇÃO */
@@ -96,14 +121,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 6px 8px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  border-left: 3px solid var(--accent-color, #667eea);
+  border-radius: 6px;
+  border-left: 2px solid var(--accent-color, #667eea);
 }
 
 .item-label {
-  font-size: 0.9em;
+  font-size: 0.75em;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -111,7 +136,7 @@
 .item-value {
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.95em;
+  font-size: 0.8em;
 }
 
 .direction.long { 

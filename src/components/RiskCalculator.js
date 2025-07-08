@@ -375,13 +375,37 @@ const RiskCalculator = () => {
         </div>
 
         <div className={`calculator-with-chart ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
-          {/* Chart Section - ESQUERDA */}
+          {/* Trading & Analysis Section - ESQUERDA */}
           {showChart && (
-            <div className="chart-section">
-              <TradingViewChart
-                symbol={chartSymbol}
-                theme={theme}
-              />
+            <div className="trading-analysis-section">
+              {/* TradingView Chart */}
+              <div className="chart-container">
+                <TradingViewChart
+                  symbol={chartSymbol}
+                  theme={theme}
+                />
+              </div>
+              
+              {/* Risk Management Analysis - Abaixo do Gráfico */}
+              <div className="risk-analysis-container">
+                <div className="analysis-header">
+                  <h4 className="analysis-title">📊 Análise de Risk Management</h4>
+                  <div className="analysis-status">
+                    <div className="status-indicator"></div>
+                    <span>Análise em Tempo Real</span>
+                  </div>
+                </div>
+                
+                <div className="analysis-content">
+                  <EnhancedResults 
+                    results={results} 
+                    selectedSymbol={selectedSymbol}
+                    selectedExchange={selectedExchange}
+                    formData={formData}
+                    currentPrice={liveCurrentPrice}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -435,14 +459,6 @@ const RiskCalculator = () => {
                   currentPrice={liveCurrentPrice}
                 />
               </div>
-
-              <EnhancedResults 
-                results={results} 
-                selectedSymbol={selectedSymbol}
-                selectedExchange={selectedExchange}
-                formData={formData}
-                currentPrice={liveCurrentPrice}
-              />
             </div>
           </div>
         </div>

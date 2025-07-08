@@ -372,9 +372,10 @@ ${generateProfessionalRecommendations().join('\n')}
 
   return (
     <div className="results-section enhanced">
-      {/* Header Simples */}
-      <div className="results-header-clean">
-        <h3>📊 Análise de Risk Management</h3>
+      <div className="enhanced-results-container">
+        {/* Header Simples */}
+        <div className="results-header-clean">
+          <h3>📊 Análise Completa</h3>
         {selectedSymbol && selectedExchange && (
           <div className="trade-info">
             <span className="trade-pair">{selectedExchange.name} • {selectedSymbol.symbol}</span>
@@ -618,6 +619,7 @@ ${generateProfessionalRecommendations().join('\n')}
           selectedSymbol={selectedSymbol}
           selectedExchange={selectedExchange}
         />
+        </div>
       </div>
     </div>
   );
