@@ -9,7 +9,6 @@ import { usePriceUpdater } from '../hooks/usePriceUpdater';
 import { calculatorApi } from '../services/api';
 import { tradeApi } from '../services/authApi';
 import Header from './Header';
-import Instructions from './Instructions';
 import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
@@ -95,7 +94,7 @@ const RiskCalculator = () => {
   // Hook para auto-atualização de preços - apenas para monitoramento
   usePriceUpdater(selectedExchange, selectedSymbol, handlePriceUpdate, priceUpdateEnabled);
 
-  // Função para atualizar símbolo do TradingView
+  // Função simples para atualizar símbolo do TradingView
   const updateChartSymbol = useCallback((exchange, symbol) => {
     if (!exchange || !symbol) return;
     
@@ -113,25 +112,7 @@ const RiskCalculator = () => {
     const cleanSymbol = symbolName?.replace('/', '').toUpperCase() || 'BTCUSDT';
     
     const newChartSymbol = `${tvExchange}:${cleanSymbol}`;
-    console.log('📈 Updating chart symbol to:', newChartSymbol);
     setChartSymbol(newChartSymbol);
-  }, []);
-
-  // Callback para receber preço do TradingView (apenas para display)
-  const handleChartPriceUpdate = useCallback((price) => {
-    console.log('📊 Price from TradingView:', price);
-    setLiveCurrentPrice(price);
-  }, []);
-
-  // Callback para sincronizar preço do TradingView com calculadora
-  const handleSyncPriceToCalculator = useCallback((price) => {
-    console.log('🔄 Syncing price to calculator:', price);
-    setFormData(prev => ({
-      ...prev,
-      entryPrice: price.toString()
-    }));
-    setLiveCurrentPrice(price);
-    toast.success(`Preço sincronizado: $${price.toFixed(4)}`);
   }, []);
 
   // Atualizar símbolos quando exchange muda
@@ -398,13 +379,19 @@ const RiskCalculator = () => {
         </div>
 
         <div className={`calculator-with-chart ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
-          {/* Calculator Section */}
+          {/* Chart Section - ESQUERDA */}
+          {showChart && (
+            <div className="chart-section">
+              <TradingViewChart
+                symbol={chartSymbol}
+                theme={theme}
+              />
+            </div>
+          )}
+
+          {/* Calculator Section - DIREITA */}
           <div className="calculator-section">
             <div className="container">
-              <div className="instructions-section">
-                <Instructions />
-              </div>
-              
               <div className="form-section">
                 <ExchangeSelector
                   exchanges={exchanges}
@@ -462,21 +449,6 @@ const RiskCalculator = () => {
               />
             </div>
           </div>
-
-          {/* Chart Section */}
-          {showChart && (
-            <div className="chart-section">
-              <TradingViewChart
-                symbol={chartSymbol}
-                theme={theme}
-                onPriceUpdate={handleSyncPriceToCalculator}
-                entryPrice={formData.entryPrice}
-                stopLoss={formData.stopLoss}
-                takeProfit={formData.targetPrice}
-                showLevels={!!results}
-              />
-            </div>
-          )}
         </div>
 
         {/* Modais */}

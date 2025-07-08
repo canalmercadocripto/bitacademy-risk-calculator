@@ -229,21 +229,25 @@
 
 .calculator-with-chart.chart-visible {
   grid-template-columns: 1fr 1fr;
+  grid-template-areas: "chart calculator";
   height: 100vh;
   max-height: calc(100vh - 120px);
 }
 
 .calculator-with-chart.chart-hidden {
   grid-template-columns: 1fr;
+  grid-template-areas: "calculator";
   height: auto;
 }
 
 .calculator-section {
+  grid-area: calculator;
   overflow-y: auto;
   min-height: 0;
 }
 
 .chart-section {
+  grid-area: chart;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -282,19 +286,15 @@
 @media (max-width: 1024px) {
   .calculator-with-chart.chart-visible {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 500px;
+    grid-template-rows: 500px auto;
+    grid-template-areas: "chart" "calculator";
     gap: 15px;
     height: auto;
     max-height: none;
   }
   
   .chart-section {
-    order: 2;
     min-height: 500px;
-  }
-  
-  .calculator-section {
-    order: 1;
   }
   
   .tradingview-chart-container {
@@ -304,7 +304,8 @@
 
 @media (max-width: 768px) {
   .calculator-with-chart.chart-visible {
-    grid-template-rows: auto 400px;
+    grid-template-rows: 400px auto;
+    grid-template-areas: "chart" "calculator";
     gap: 10px;
   }
   
@@ -328,7 +329,8 @@
 
 @media (max-width: 480px) {
   .calculator-with-chart.chart-visible {
-    grid-template-rows: auto 350px;
+    grid-template-rows: 350px auto;
+    grid-template-areas: "chart" "calculator";
     gap: 8px;
   }
   
