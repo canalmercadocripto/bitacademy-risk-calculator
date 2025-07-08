@@ -15,6 +15,7 @@ const TradingViewChartAdvanced = ({
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const priceLineIds = useRef([]);
+  const lastPrices = useRef({ entryPrice: null, stopLoss: null, targetPrice: null, currentPrice: null });
 
   useEffect(() => {
 
@@ -100,16 +101,29 @@ const TradingViewChartAdvanced = ({
           setChartReady(true);
           setHasError(false);
           
-          // Criar linhas horizontais
-          createHorizontalLines();
+          // Criar linhas horizontais iniciais
+          setTimeout(() => {
+            createHorizontalLines();
+          }, 500);
           
-          // Listener para atualizar linhas quando o range mudar
+          // Listener para atualizar linhas quando o range mudar (com debounce)
           const chart = widget.activeChart();
+          let rangeChangeTimeout;
+          
           chart.onVisibleRangeChanged().subscribe(null, () => {
-            console.log('📊 Visible range changed - updating horizontal lines');
-            setTimeout(() => {
+            console.log('📊 Visible range changed - debouncing line update');
+            
+            // Limpar timeout anterior
+            if (rangeChangeTimeout) {
+              clearTimeout(rangeChangeTimeout);
+            }
+            
+            // Debounce para evitar recriação excessiva
+            rangeChangeTimeout = setTimeout(() => {
+              console.log('📊 Updating lines after range change');
+              clearAllLines();
               createHorizontalLines();
-            }, 200);
+            }, 500);
           });
         });
 
@@ -149,14 +163,14 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
-  // Função para criar linhas horizontais - definida fora do useEffect para poder ser chamada em qualquer lugar
-  const createHorizontalLines = () => {
+  // Função para remover todas as linhas
+  const clearAllLines = () => {
     if (!chartReady || !widgetRef.current) return;
-
+    
     try {
       const chart = widgetRef.current.activeChart();
       
-      // Remover linhas anteriores
+      // Remover todas as linhas existentes
       priceLineIds.current.forEach(lineId => {
         try {
           chart.removeEntity(lineId);
@@ -165,14 +179,26 @@ const TradingViewChartAdvanced = ({
         }
       });
       priceLineIds.current = [];
+      console.log('🗑️ All lines cleared');
+    } catch (error) {
+      console.error('❌ Error clearing lines:', error);
+    }
+  };
 
+  // Função para criar linhas horizontais - com debounce para evitar duplicação
+  const createHorizontalLines = () => {
+    if (!chartReady || !widgetRef.current) return;
+
+    try {
+      const chart = widgetRef.current.activeChart();
+      
       // Obter range de tempo para as linhas horizontais
       const visibleRange = chart.getVisibleRange();
       const currentTime = Math.floor(Date.now() / 1000);
       const startTime = visibleRange.from || (currentTime - 86400 * 30); // 30 dias atrás
       const endTime = visibleRange.to || currentTime;
 
-      // Criar linha de entrada (verde)
+      // Criar linha de entrada (verde) - apenas se não existir
       if (entryPrice) {
         const entryLineId = chart.createMultipointShape(
           [
@@ -256,7 +282,7 @@ const TradingViewChartAdvanced = ({
         console.log('✅ Target line created:', targetPrice);
       }
 
-      // Criar linha de preço atual (amarelo)
+      // Criar linha de preço atual (amarelo) - apenas se diferente da entrada
       if (currentPrice && currentPrice !== entryPrice) {
         const currentLineId = chart.createMultipointShape(
           [
@@ -291,16 +317,33 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // useEffect para atualizar linhas quando preços mudarem
+  // useEffect para atualizar linhas quando preços mudarem - apenas se realmente mudaram
   useEffect(() => {
-    if (chartReady && widgetRef.current) {
-      const chart = widgetRef.current.activeChart();
-      if (chart) {
-        setTimeout(() => {
-          createHorizontalLines();
-        }, 100);
-      }
-    }
+    if (!chartReady || !widgetRef.current) return;
+
+    // Verificar se os preços realmente mudaram
+    const pricesChanged = 
+      lastPrices.current.entryPrice !== entryPrice ||
+      lastPrices.current.stopLoss !== stopLoss ||
+      lastPrices.current.targetPrice !== targetPrice ||
+      lastPrices.current.currentPrice !== currentPrice;
+
+    if (!pricesChanged) return;
+
+    console.log('💡 Prices changed, updating lines...');
+
+    // Atualizar referência dos últimos preços
+    lastPrices.current = { entryPrice, stopLoss, targetPrice, currentPrice };
+
+    // Limpar linhas existentes
+    clearAllLines();
+
+    // Debounce para evitar recriação excessiva
+    const timeoutId = setTimeout(() => {
+      createHorizontalLines();
+    }, 200);
+
+    return () => clearTimeout(timeoutId);
   }, [chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
 
   return (
