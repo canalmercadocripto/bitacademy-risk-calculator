@@ -23,32 +23,64 @@ const TradingViewChart = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Componente simples de overlay de preços
+  // Componente melhorado de overlay de preços com melhor posicionamento
   const SimplePriceLevels = () => {
     if (!entryPrice && !stopLoss && !targetPrice) return null;
     if (!chartReady) return null;
 
     // Calcular range dos preços para posicionamento relativo
     const prices = [];
-    if (entryPrice) prices.push(parseFloat(entryPrice));
-    if (stopLoss) prices.push(parseFloat(stopLoss));
-    if (targetPrice) prices.push(parseFloat(targetPrice));
+    if (entryPrice && !isNaN(parseFloat(entryPrice))) prices.push(parseFloat(entryPrice));
+    if (stopLoss && !isNaN(parseFloat(stopLoss))) prices.push(parseFloat(stopLoss));
+    if (targetPrice && !isNaN(parseFloat(targetPrice))) prices.push(parseFloat(targetPrice));
+    if (currentPrice && !isNaN(parseFloat(currentPrice))) prices.push(parseFloat(currentPrice));
     
-    if (prices.length === 0) return null;
+    if (prices.length === 0) {
+      console.warn('⚠️ No valid prices for chart overlay');
+      return null;
+    }
+    
+    console.log('💰 Price levels overlay - Data:', {
+      entryPrice,
+      stopLoss,
+      targetPrice,
+      currentPrice,
+      validPrices: prices
+    });
 
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice;
     
-    // Se range muito pequeno, usar padding
-    const padding = priceRange < minPrice * 0.02 ? minPrice * 0.05 : priceRange * 0.2;
-    const scaledMin = minPrice - padding;
-    const scaledMax = maxPrice + padding;
+    // Calcular padding baseado no range atual do mercado
+    const marketPadding = priceRange > 0 ? priceRange * 0.25 : minPrice * 0.05;
+    const scaledMin = minPrice - marketPadding;
+    const scaledMax = maxPrice + marketPadding;
     const totalRange = scaledMax - scaledMin;
 
     const calculatePosition = (price) => {
+      if (totalRange === 0) return 50; // Posição central se não há range
       const ratio = (price - scaledMin) / totalRange;
-      return 85 - (ratio * 70); // 85% = bottom, 15% = top (70% usable area)
+      // Inverter para que preços maiores fiquem no topo
+      const position = 90 - (ratio * 80); // 90% = bottom, 10% = top (80% usable area)
+      
+      console.log(`📍 Price positioning: ${price} -> ${position.toFixed(1)}% (ratio: ${ratio.toFixed(3)})`, {
+        price,
+        scaledMin,
+        scaledMax,
+        totalRange,
+        ratio,
+        position
+      });
+      
+      return position;
+    };
+
+    const getPriceDecimalPlaces = (price) => {
+      if (price >= 1000) return 2;
+      if (price >= 100) return 3;
+      if (price >= 10) return 4;
+      return 5;
     };
 
     return (
@@ -59,7 +91,7 @@ const TradingViewChart = ({
             style={{ top: `${calculatePosition(parseFloat(entryPrice))}%` }}
           >
             <div className="price-label">
-              🟢 Entrada: ${parseFloat(entryPrice).toFixed(2)}
+              🟢 Entrada: ${parseFloat(entryPrice).toFixed(getPriceDecimalPlaces(parseFloat(entryPrice)))}
             </div>
           </div>
         )}
@@ -70,7 +102,7 @@ const TradingViewChart = ({
             style={{ top: `${calculatePosition(parseFloat(stopLoss))}%` }}
           >
             <div className="price-label">
-              🛑 Stop: ${parseFloat(stopLoss).toFixed(2)}
+              🛑 Stop: ${parseFloat(stopLoss).toFixed(getPriceDecimalPlaces(parseFloat(stopLoss)))}
             </div>
           </div>
         )}
@@ -81,7 +113,18 @@ const TradingViewChart = ({
             style={{ top: `${calculatePosition(parseFloat(targetPrice))}%` }}
           >
             <div className="price-label">
-              🎯 Alvo: ${parseFloat(targetPrice).toFixed(2)}
+              🎯 Alvo: ${parseFloat(targetPrice).toFixed(getPriceDecimalPlaces(parseFloat(targetPrice)))}
+            </div>
+          </div>
+        )}
+        
+        {currentPrice && currentPrice !== entryPrice && (
+          <div 
+            className="price-line current"
+            style={{ top: `${calculatePosition(parseFloat(currentPrice))}%` }}
+          >
+            <div className="price-label">
+              📊 Atual: ${parseFloat(currentPrice).toFixed(getPriceDecimalPlaces(parseFloat(currentPrice)))}
             </div>
           </div>
         )}
@@ -107,6 +150,11 @@ const TradingViewChart = ({
           timezone="America/Sao_Paulo"
           theme={theme === "dark" ? "dark" : "light"}
           locale="pt_BR"
+          hide_side_toolbar={false}
+          hide_top_toolbar={false}
+          disabled_features={[]}
+          enabled_features={["study_templates"]}
+          container_id="tradingview_chart"
         />
       );
     } catch (error) {

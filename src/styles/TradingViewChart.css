@@ -22,9 +22,10 @@
   left: 0;
   right: 0;
   height: 2px;
-  border-top: 2px dashed;
-  opacity: 0.9;
+  border-top: 2px solid;
+  opacity: 0.8;
   animation: fadeInLine 0.5s ease-out;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
 }
 
 .price-line.entry {
@@ -42,19 +43,28 @@
   box-shadow: 0 0 6px rgba(23, 162, 184, 0.4);
 }
 
+.price-line.current {
+  border-color: #ffc107;
+  box-shadow: 0 0 6px rgba(255, 193, 7, 0.4);
+  border-top: 2px solid #ffc107;
+  animation: pulseLine 2s infinite;
+}
+
 .price-label {
   position: absolute;
-  right: 10px;
-  top: -10px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  right: 15px;
+  top: -12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
   color: white;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(6px);
   white-space: nowrap;
   pointer-events: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .price-line.entry .price-label {
@@ -69,6 +79,11 @@
   background: rgba(23, 162, 184, 0.9);
 }
 
+.price-line.current .price-label {
+  background: rgba(255, 193, 7, 0.9);
+  color: #333;
+}
+
 @keyframes fadeInLine {
   from {
     opacity: 0;
@@ -77,6 +92,17 @@
   to {
     opacity: 0.9;
     transform: scaleX(1);
+  }
+}
+
+@keyframes pulseLine {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 6px rgba(255, 193, 7, 0.4);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.8);
   }
 }
 
