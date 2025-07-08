@@ -3,10 +3,10 @@
    ======================================== */
 
 /* ========================================
-   PRICE LEVELS OVERLAY - DESENHAR NO GRÁFICO
+   SIMPLE PRICE LEVELS OVERLAY
    ======================================== */
 
-.price-levels-overlay {
+.simple-price-levels {
   position: absolute;
   top: 0;
   left: 0;
@@ -17,120 +17,82 @@
   overflow: hidden;
 }
 
-.price-level-line {
+.price-line {
   position: absolute;
   left: 0;
   right: 0;
   height: 2px;
   border-top: 2px dashed;
-  opacity: 0.8;
-  transition: all 0.3s ease;
-  animation: drawLine 0.6s ease-out;
+  opacity: 0.9;
+  animation: fadeInLine 0.5s ease-out;
 }
 
-.price-level-line:hover {
-  opacity: 1;
-  height: 3px;
-  border-top-width: 3px;
-}
-
-.price-level-line.entry {
+.price-line.entry {
   border-color: #28a745;
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
 }
 
-.price-level-line.stop {
+.price-line.stop {
   border-color: #dc3545;
-  box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 0 6px rgba(220, 53, 69, 0.4);
 }
 
-.price-level-line.target {
+.price-line.target {
   border-color: #17a2b8;
-  box-shadow: 0 0 8px rgba(23, 162, 184, 0.3);
+  box-shadow: 0 0 6px rgba(23, 162, 184, 0.4);
 }
 
-.price-level-label {
+.price-label {
   position: absolute;
   right: 10px;
-  top: -12px;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  top: -10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
   font-weight: 600;
   color: white;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(4px);
+  white-space: nowrap;
   pointer-events: auto;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.price-level-label:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.price-line.entry .price-label {
+  background: rgba(40, 167, 69, 0.9);
 }
 
-.level-icon {
-  font-size: 14px;
+.price-line.stop .price-label {
+  background: rgba(220, 53, 69, 0.9);
 }
 
-.level-text {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.price-line.target .price-label {
+  background: rgba(23, 162, 184, 0.9);
 }
 
-.level-price {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  font-weight: 700;
-  margin-left: 4px;
-}
-
-@keyframes drawLine {
+@keyframes fadeInLine {
   from {
-    width: 0;
     opacity: 0;
+    transform: scaleX(0);
   }
   to {
-    width: 100%;
-    opacity: 0.8;
+    opacity: 0.9;
+    transform: scaleX(1);
   }
 }
 
-/* Responsive adjustments for price levels */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .price-level-label {
-    padding: 3px 8px;
+  .price-label {
     font-size: 10px;
+    padding: 2px 6px;
     right: 5px;
-  }
-  
-  .level-icon {
-    font-size: 12px;
-  }
-  
-  .level-text {
-    font-size: 9px;
-  }
-  
-  .level-price {
-    font-size: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .price-level-label {
-    padding: 2px 6px;
+  .price-label {
     font-size: 9px;
-  }
-  
-  .level-price {
-    display: none; /* Hide price on very small screens */
+    padding: 2px 4px;
   }
 }
 
