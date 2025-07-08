@@ -100,17 +100,80 @@ const TradingViewChart = ({
         const currentPriceFloat = parseFloat(currentPrice);
         const containerRect = chartContainerRef.current.getBoundingClientRect();
         
-        // Estimar posição do preço atual no meio do gráfico
-        const estimatedCurrentY = containerRect.height * 0.5; // Assumir que o preço atual está no meio
+        // Tentar detectar a posição real do preço atual no gráfico
+        let estimatedCurrentY = containerRect.height * 0.5; // Default: meio do gráfico
         
-        // Criar dados sintéticos da escala baseados no preço atual
+        // Método 1: Procurar pelo preço atual exibido no gráfico
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            const priceText = Math.floor(currentPriceFloat).toString();
+            const elements = Array.from(iframeDoc.querySelectorAll('*'));
+            
+            for (let element of elements) {
+              const text = element.textContent || '';
+              if (text.includes(priceText) && text.length < 20) {
+                const rect = element.getBoundingClientRect();
+                if (rect.height > 0 && rect.width > 0) {
+                  estimatedCurrentY = rect.top + rect.height / 2;
+                  console.log('🎯 Posição real do preço atual detectada:', estimatedCurrentY);
+                  break;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.log('Não foi possível detectar posição real, usando estimativa');
+        }
+        
+        // Criar dados sintéticos da escala baseados no preço atual e preços de trade
         const syntheticScale = [];
-        const priceStep = currentPriceFloat * 0.02; // 2% steps
         
-        for (let i = -3; i <= 3; i++) {
-          const price = currentPriceFloat + (i * priceStep);
-          const y = estimatedCurrentY - (i * containerRect.height * 0.1); // 10% da altura por step
-          syntheticScale.push({ price, y });
+        // Coletar todos os preços relevantes
+        const allPrices = [currentPriceFloat];
+        if (entryPrice) allPrices.push(parseFloat(entryPrice));
+        if (stopLoss) allPrices.push(parseFloat(stopLoss));
+        if (targetPrice) allPrices.push(parseFloat(targetPrice));
+        
+        const minPrice = Math.min(...allPrices);
+        const maxPrice = Math.max(...allPrices);
+        const priceRange = maxPrice - minPrice;
+        
+        // Se há um range significativo nos preços de trade, usar isso
+        if (priceRange > currentPriceFloat * 0.01) { // Mais de 1% de diferença
+          // Criar escala que cobre todo o range dos preços + margem
+          const margin = priceRange * 0.2; // 20% de margem
+          const scaledMinPrice = minPrice - margin;
+          const scaledMaxPrice = maxPrice + margin;
+          const totalRange = scaledMaxPrice - scaledMinPrice;
+          
+          // Estimar onde o preço atual aparece no gráfico
+          const currentPriceRatio = (currentPriceFloat - scaledMinPrice) / totalRange;
+          const currentPriceY = containerRect.height * (1 - currentPriceRatio); // Inverter Y
+          
+          // Criar 7 pontos da escala
+          for (let i = 0; i <= 6; i++) {
+            const priceRatio = i / 6;
+            const price = scaledMinPrice + (priceRatio * totalRange);
+            const y = containerRect.height * (1 - priceRatio);
+            syntheticScale.push({ price, y });
+          }
+          
+          console.log('🎯 Escala sintética baseada no range de trade:', {
+            minPrice: scaledMinPrice,
+            maxPrice: scaledMaxPrice,
+            currentPriceY,
+            estimatedCurrentY
+          });
+        } else {
+          // Fallback: usar método original centrado no preço atual
+          const priceStep = currentPriceFloat * 0.015; // 1.5% steps (mais fino)
+          
+          for (let i = -3; i <= 3; i++) {
+            const price = currentPriceFloat + (i * priceStep);
+            const y = estimatedCurrentY - (i * containerRect.height * 0.08); // 8% da altura por step
+            syntheticScale.push({ price, y });
+          }
         }
         
         console.log('Escala sintética criada baseada no preço atual:', syntheticScale);
