@@ -2,6 +2,138 @@
    TRADINGVIEW CHART - PREMIUM DESIGN
    ======================================== */
 
+/* ========================================
+   PRICE LEVELS OVERLAY - DESENHAR NO GRÁFICO
+   ======================================== */
+
+.price-levels-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.price-level-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-top: 2px dashed;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  animation: drawLine 0.6s ease-out;
+}
+
+.price-level-line:hover {
+  opacity: 1;
+  height: 3px;
+  border-top-width: 3px;
+}
+
+.price-level-line.entry {
+  border-color: #28a745;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
+}
+
+.price-level-line.stop {
+  border-color: #dc3545;
+  box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
+}
+
+.price-level-line.target {
+  border-color: #17a2b8;
+  box-shadow: 0 0 8px rgba(23, 162, 184, 0.3);
+}
+
+.price-level-label {
+  position: absolute;
+  right: 10px;
+  top: -12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.price-level-label:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.level-icon {
+  font-size: 14px;
+}
+
+.level-text {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.level-price {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+@keyframes drawLine {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 100%;
+    opacity: 0.8;
+  }
+}
+
+/* Responsive adjustments for price levels */
+@media (max-width: 768px) {
+  .price-level-label {
+    padding: 3px 8px;
+    font-size: 10px;
+    right: 5px;
+  }
+  
+  .level-icon {
+    font-size: 12px;
+  }
+  
+  .level-text {
+    font-size: 9px;
+  }
+  
+  .level-price {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .price-level-label {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  
+  .level-price {
+    display: none; /* Hide price on very small screens */
+  }
+}
+
 .tradingview-chart-container {
   display: flex;
   flex-direction: column;
