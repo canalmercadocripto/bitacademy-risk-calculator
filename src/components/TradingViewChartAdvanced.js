@@ -126,11 +126,11 @@ const TradingViewChartAdvanced = ({
           // Armazenar referência para uso posterior
           chartRef.current = chart;
           
-          // Listener para mudanças nas shapes/linhas - polling simples
+          // Listener para mudanças nas shapes/linhas - polling mais frequente
           if (onPriceChange) {
             const pollInterval = setInterval(() => {
               syncLinePriceCoordinates();
-            }, 500); // Verificar a cada 0.5 segundos
+            }, 200); // Verificar a cada 0.2 segundos para maior responsividade
             
             // Cleanup
             return () => {
@@ -183,57 +183,53 @@ const TradingViewChartAdvanced = ({
     
     try {
       const chart = chartRef.current;
+      const allShapes = chart.getAllShapes();
       
-      // Função para extrair coordenadas de preço de uma linha
-      const extractPriceCoordinate = (lineId, lineType) => {
-        if (!lineId) return;
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
+      }
+      
+      // Verificar cada linha individualmente
+      allShapes.forEach(shape => {
+        if (!shape || !shape.points || shape.points.length === 0) return;
         
-        try {
-          const allShapes = chart.getAllShapes();
-          const shape = allShapes.find(s => s.id === lineId);
-          
-          if (shape && shape.points && shape.points.length > 0) {
-            const currentPrice = shape.points[0].price;
-            const lastKnownPrice = lastKnownPrices.current[lineType];
-            
-            // Verificar se a coordenada de preço mudou significativamente
-            if (lastKnownPrice && Math.abs(currentPrice - lastKnownPrice) > 0.01) {
-              lastKnownPrices.current[lineType] = currentPrice;
-              
-              // Sincronizar coordenada com campo da calculadora
-              if (lineType === 'entry') {
-                onPriceChange('entryPrice', currentPrice.toString());
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Entry price synced: ${formatPrice(currentPrice)}`);
-                }
-              } else if (lineType === 'stop') {
-                onPriceChange('stopLoss', currentPrice.toString());
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Stop loss synced: ${formatPrice(currentPrice)}`);
-                }
-              } else if (lineType === 'target') {
-                onPriceChange('targetPrice', currentPrice.toString());
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Target price synced: ${formatPrice(currentPrice)}`);
-                }
-              }
+        const shapeId = shape.id;
+        const currentPrice = shape.points[0].price;
+        
+        // Verificar se é uma das nossas linhas
+        if (priceLineIds.current.entry === shapeId) {
+          const lastPrice = lastKnownPrices.current.entry;
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+            lastKnownPrices.current.entry = currentPrice;
+            onPriceChange('entryPrice', currentPrice.toString());
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🟢 Entry synced: ${currentPrice}`);
             }
           }
-        } catch (shapeError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(`⚠️ Error extracting price coordinate for ${lineType}:`, shapeError);
+        } else if (priceLineIds.current.stop === shapeId) {
+          const lastPrice = lastKnownPrices.current.stop;
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+            lastKnownPrices.current.stop = currentPrice;
+            onPriceChange('stopLoss', currentPrice.toString());
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔴 Stop synced: ${currentPrice}`);
+            }
+          }
+        } else if (priceLineIds.current.target === shapeId) {
+          const lastPrice = lastKnownPrices.current.target;
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+            lastKnownPrices.current.target = currentPrice;
+            onPriceChange('targetPrice', currentPrice.toString());
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔵 Target synced: ${currentPrice}`);
+            }
           }
         }
-      };
-      
-      // Sincronizar coordenadas das linhas principais
-      extractPriceCoordinate(priceLineIds.current.entry, 'entry');
-      extractPriceCoordinate(priceLineIds.current.stop, 'stop');
-      extractPriceCoordinate(priceLineIds.current.target, 'target');
+      });
       
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Error syncing price coordinates:', error);
+        console.error('❌ Error syncing coordinates:', error);
       }
     }
   };
@@ -546,7 +542,7 @@ const TradingViewChartAdvanced = ({
         priceLineIds.current.entry = entryLineId;
         lastKnownPrices.current.entry = parseFloat(entryPrice);
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Entry line created with coordinate sync:', entryPrice);
+          console.log('✅ Entry line created:', entryPrice, 'ID:', entryLineId);
         }
       }
 
@@ -586,7 +582,7 @@ const TradingViewChartAdvanced = ({
         priceLineIds.current.stop = stopLineId;
         lastKnownPrices.current.stop = parseFloat(stopLoss);
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Stop loss line created with coordinate sync:', stopLoss);
+          console.log('✅ Stop loss line created:', stopLoss, 'ID:', stopLineId);
         }
       }
 
@@ -629,7 +625,7 @@ const TradingViewChartAdvanced = ({
         priceLineIds.current.target = targetLineId;
         lastKnownPrices.current.target = parseFloat(targetPrice);
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Target line created with coordinate sync:', targetPrice);
+          console.log('✅ Target line created:', targetPrice, 'ID:', targetLineId);
         }
       }
 
@@ -780,30 +776,30 @@ const TradingViewChartAdvanced = ({
   };
 
 
-  // useEffect simplificado - apenas para mudanças estruturais
+  // useEffect para mudanças nos valores - mais conservador
   useEffect(() => {
     if (!chartReady || !widgetRef.current) return;
 
-    // Verificar se os valores realmente mudaram
+    // Verificar apenas se mudanças estruturais realmente necessárias
     const currentValues = {
-      entryPrice,
-      stopLoss,
-      targetPrice,
+      hasEntryPrice: !!entryPrice && entryPrice.trim() !== '',
+      hasStopLoss: !!stopLoss && stopLoss.trim() !== '',
+      hasTargetPrice: !!targetPrice && targetPrice.trim() !== '',
       hasResults: !!results,
       tradeDirection
     };
     
-    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
+    const structuralChange = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
     
-    if (!valuesChanged) {
+    if (!structuralChange) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('💡 Values unchanged, skipping update');
+        console.log('💡 No structural changes, skipping recreation');
       }
       return;
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('💡 Price values changed, recreating lines...');
+      console.log('💡 Structural changes detected, recreating lines...');
     }
     
     // Definir flag para evitar sincronização durante recriação
@@ -816,14 +812,14 @@ const TradingViewChartAdvanced = ({
       clearTimeout(updateTimeoutRef.current);
     }
     
-    // Debounce para recriação completa apenas quando necessário
+    // Debounce para recriação completa
     updateTimeoutRef.current = setTimeout(() => {
       createOrUpdateLines();
       // Liberar flag após recriação
       setTimeout(() => {
         isUpdatingFromCalculator.current = false;
-      }, 1000);
-    }, 300);
+      }, 1500);
+    }, 500);
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {
