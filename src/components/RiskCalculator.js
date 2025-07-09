@@ -89,7 +89,9 @@ const RiskCalculator = () => {
   const handlePriceUpdate = useCallback((newPrice) => {
     // Atualizar APENAS o currentPrice para exibição e monitoramento
     // NÃO tocar no campo entryPrice (entrada manual)
-    console.log('💡 Cotação atual atualizada para:', newPrice, '(Entrada permanece manual)');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💡 Cotação atual atualizada para:', newPrice);
+    }
     
     // Atualizar o preço atual para exibição
     setLiveCurrentPrice(newPrice);

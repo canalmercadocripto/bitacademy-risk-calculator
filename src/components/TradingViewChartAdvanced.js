@@ -13,33 +13,24 @@ const TradingViewChartAdvanced = ({
   onPriceChange = null  // Callback para sincronizar com calculadora
 }) => {
   
-  // Debug inicial - forçar sempre
-  console.log('🚀 TradingViewChartAdvanced mounted with props:', {
-    symbol,
-    theme,
-    entryPrice,
-    stopLoss,
-    targetPrice,
-    tradeDirection,
-    onPriceChange: !!onPriceChange
-  });
-  
-  // Capturar logs em variável global para debug
-  if (!window.tradingViewLogs) {
-    window.tradingViewLogs = [];
+  // Debug apenas em desenvolvimento
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🚀 TradingViewChartAdvanced mounted');
   }
-  window.tradingViewLogs.push(`🚀 Component mounted: ${new Date().toLocaleTimeString()}`);
   
-  // Enviar logs para localStorage também
+  // Logs para localStorage apenas em desenvolvimento
   const addToLocalStorage = (log) => {
-    const logs = JSON.parse(localStorage.getItem('tradingViewLogs') || '[]');
-    logs.push(`${new Date().toISOString()}: ${log}`);
-    // Manter apenas últimos 50 logs
-    if (logs.length > 50) logs.shift();
-    localStorage.setItem('tradingViewLogs', JSON.stringify(logs));
+    if (process.env.NODE_ENV !== 'development') return;
     
-    // Também enviar para console com timestamp
-    console.log(`[${new Date().toLocaleTimeString()}] ${log}`);
+    try {
+      const logs = JSON.parse(localStorage.getItem('tradingViewLogs') || '[]');
+      logs.push(`${new Date().toISOString()}: ${log}`);
+      // Manter apenas últimos 20 logs
+      if (logs.length > 20) logs.shift();
+      localStorage.setItem('tradingViewLogs', JSON.stringify(logs));
+    } catch (e) {
+      // Silenciar erros de localStorage
+    }
   };
   
   addToLocalStorage('🚀 Component mounted');
@@ -961,40 +952,37 @@ const TradingViewChartAdvanced = ({
   };
 
 
-  // useEffect para mudanças nos valores - MUITO mais conservador
+  // useEffect ULTRA conservador - só atualiza quando valores REALMENTE mudam
   useEffect(() => {
     if (!chartReady || !widgetRef.current || isUpdatingFromCalculator.current) return;
 
-    // Verificar apenas mudanças REAIS nos valores, não existência
-    const currentValues = {
-      entryPrice: entryPrice || '',
-      stopLoss: stopLoss || '',
-      targetPrice: targetPrice || '',
-      hasResults: !!results,
-      tradeDirection: tradeDirection || ''
-    };
+    // Criar hash dos valores importantes para detectar mudanças reais
+    const currentHash = `${entryPrice || 'null'}_${stopLoss || 'null'}_${targetPrice || 'null'}_${tradeDirection || 'LONG'}_${results?.smartTargets?.length || 0}`;
     
-    // Comparar valores exatos, não apenas existência
-    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
-    
-    if (!valuesChanged) {
-      return; // Não fazer nada se valores não mudaram
+    // Se hash não mudou, não fazer nada
+    if (currentHash === lastValuesRef.current?.hash) {
+      return;
     }
     
-    console.log('💡 Values changed, recreating lines...');
-    addToLocalStorage(`💡 Values changed: ${JSON.stringify(currentValues)}`);
+    // Primeiro render OU mudança real detectada
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💡 Real value change detected, updating lines...', {
+        oldHash: lastValuesRef.current?.hash,
+        newHash: currentHash
+      });
+    }
     
-    lastValuesRef.current = currentValues;
+    lastValuesRef.current = { hash: currentHash };
     
     // Limpar timeout anterior
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
     }
     
-    // Debounce maior para reduzir recriações
+    // Debounce para evitar recriações rápidas
     updateTimeoutRef.current = setTimeout(() => {
       createOrUpdateLines();
-    }, 1000); // Aumentado para 1 segundo
+    }, 500);
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {

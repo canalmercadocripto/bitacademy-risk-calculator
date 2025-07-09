@@ -24,7 +24,9 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
       const entryPrice = parseFloat(formData.entryPrice);
       if (!isNaN(entryPrice)) {
         setFixedEntryPrice(entryPrice);
-        console.log('✅ Preço de entrada FIXADO em:', entryPrice);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Preço de entrada FIXADO em:', entryPrice);
+        }
       }
     }
   }, [results, formData]);
@@ -34,15 +36,9 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     const finalTarget = formData.exitPrice || formData.targetPrice || formData.target;
     
     if (!results || !fixedEntryPrice || !finalTarget) {
-      console.log('❌ Alvos não calculados - dados insuficientes:', {
-        results: !!results,
-        fixedEntryPrice,
-        exitPrice: formData.exitPrice,
-        targetPrice: formData.targetPrice,
-        target: formData.target,
-        finalTarget,
-        formDataKeys: formData ? Object.keys(formData) : null
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Alvos não calculados - dados insuficientes');
+      }
       return [];
     }
     
@@ -194,12 +190,9 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     if (!results || !fixedEntryPrice) return [];
     
     const isLong = (formData.tradeType === 'long') || (formData.direction === 'LONG');
-    console.log('🔍 Debug direção do trade:', {
-      tradeType: formData.tradeType,
-      direction: formData.direction,
-      isLong,
-      formData
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Debug direção do trade:', { direction: formData.direction, isLong });
+    }
     const riskReward = results.riskRewardRatio;
     const riskLevel = getRiskLevel(results.riskRewardRatio);
     const riskPercentage = parseFloat(formData.riskPercent || 2);
