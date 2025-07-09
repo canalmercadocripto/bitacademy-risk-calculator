@@ -829,6 +829,14 @@ const TradingViewChartAdvanced = ({
     };
   }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
+  // Função de teste para debug
+  const testSyncFunction = () => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Testing sync function manually...');
+      syncLinePriceCoordinates();
+    }
+  };
+
   return (
     <div className="tradingview-chart-container">
       <div
@@ -840,6 +848,25 @@ const TradingViewChartAdvanced = ({
           minHeight: '400px'
         }}
       />
+      
+      {process.env.NODE_ENV === 'development' && chartReady && (
+        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+          <button 
+            onClick={testSyncFunction}
+            style={{
+              padding: '5px 10px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Test Sync
+          </button>
+        </div>
+      )}
       
       {hasError && (
         <div className="chart-error">
