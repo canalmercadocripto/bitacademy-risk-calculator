@@ -172,18 +172,6 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
-  // Função otimizada com debounce para atualizar linhas
-  const debouncedUpdateLines = useCallback(() => {
-    // Limpar timeout anterior
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-    
-    // Definir novo timeout
-    updateTimeoutRef.current = setTimeout(() => {
-      createOrUpdateLines();
-    }, 300); // 300ms de debounce
-  }, []);
 
   // Função para calcular alvos inteligentes baseados nos resultados
   const calculateSmartTargets = () => {
@@ -338,7 +326,7 @@ const TradingViewChartAdvanced = ({
   };
 
   // Função para criar/atualizar linhas horizontais - SOLUÇÃO DEFINITIVA
-  const createOrUpdateLines = async () => {
+  const createOrUpdateLines = useCallback(async () => {
     if (!chartReady || !widgetRef.current) {
       console.log('❌ createOrUpdateLines called but chart not ready');
       return;
@@ -528,9 +516,9 @@ const TradingViewChartAdvanced = ({
     } catch (error) {
       console.error('❌ Error creating/updating horizontal lines:', error);
     }
-  };
+  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
-  // useEffect otimizado com debounce e cache para criar/atualizar linhas
+  // useEffect simplificado com debounce inline
   useEffect(() => {
     if (!chartReady || !widgetRef.current) return;
 
@@ -553,8 +541,15 @@ const TradingViewChartAdvanced = ({
     console.log('💡 Price values changed, debouncing update...');
     lastValuesRef.current = currentValues;
     
-    // Usar debounce para evitar updates excessivos
-    debouncedUpdateLines();
+    // Limpar timeout anterior
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    
+    // Debounce inline
+    updateTimeoutRef.current = setTimeout(() => {
+      createOrUpdateLines();
+    }, 300);
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {
@@ -562,7 +557,7 @@ const TradingViewChartAdvanced = ({
         clearTimeout(updateTimeoutRef.current);
       }
     };
-  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection, debouncedUpdateLines]);
+  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection, createOrUpdateLines]);
 
   return (
     <div className="tradingview-chart-container">
