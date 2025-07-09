@@ -475,7 +475,19 @@ const TradingViewChartAdvanced = ({
 
   // Função para calcular alvos inteligentes baseados nos resultados
   const calculateSmartTargets = () => {
-    if (!results || !entryPrice || !targetPrice) return null;
+    if (!entryPrice || !targetPrice) return null;
+    
+    // Se há resultados com smartTargets, usar eles
+    if (results && results.smartTargets && results.smartTargets.length > 0) {
+      return results.smartTargets.map((target, index) => ({
+        level: index + 1,
+        percentage: target.percentage,
+        price: target.price,
+        label: `TP${index + 1} - ${target.percentage}%`
+      }));
+    }
+    
+    // Senão, calcular alvos básicos
     
     const entry = parseFloat(entryPrice);
     const target = parseFloat(targetPrice);
@@ -844,7 +856,15 @@ const TradingViewChartAdvanced = ({
 
       // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
       const smartTargets = calculateSmartTargets();
-      const hasSmartTargets = smartTargets && results;
+      const hasSmartTargets = smartTargets && smartTargets.length > 0;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Smart targets check:', { 
+          smartTargets: smartTargets?.length, 
+          hasSmartTargets, 
+          results: !!results 
+        });
+      }
       
       if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
         lineCounter.current++;

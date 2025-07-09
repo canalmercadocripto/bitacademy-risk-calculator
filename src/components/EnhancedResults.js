@@ -354,14 +354,10 @@ ${generateProfessionalRecommendations().join('\n')}
   const profitLoss = organizeResultsByType();
   const targets = calculateProfitTargets();
   
-  // Debug log para verificar alvos
-  console.log('🔍 Debug EnhancedResults:', {
-    results: !!results,
-    fixedEntryPrice,
-    exitPrice: formData?.exitPrice,
-    targets: targets.length,
-    formData: formData ? Object.keys(formData) : 'null'
-  });
+  // Debug apenas em desenvolvimento
+  if (process.env.NODE_ENV === 'development' && targets.length === 0) {
+    console.log('🔍 No targets calculated');
+  }
 
   return (
     <div className="results-section enhanced">
