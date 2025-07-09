@@ -737,7 +737,7 @@ const TradingViewChartAdvanced = ({
               lineWidth: 2,
               lineStyle: 0, // solid
               axisLabelVisible: true,
-              title: `🟢 Entrada: $${formatPrice(entryPrice)}`
+              title: `🟢 Entrada`
             });
             addToLocalStorage(`🟢 Entry PriceLine created: ID=${entryLineId}, Price=${entryPrice}`);
           } else {
@@ -757,7 +757,7 @@ const TradingViewChartAdvanced = ({
                   linecolor: "#00FF00",
                   extendLeft: false,
                   extendRight: true,
-                  text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
+                  text: `🟢 Entrada`,
                   horzLabelsAlign: "right",
                   vertLabelsAlign: "middle",
                   textColor: "#FFFFFF",
@@ -810,7 +810,7 @@ const TradingViewChartAdvanced = ({
               linecolor: "#FF0000",
               extendLeft: false,
               extendRight: true,
-              text: `🛑 Stop: $${formatPrice(stopLoss)}`,
+              text: `🛑 Stop`,
               horzLabelsAlign: "right",
               vertLabelsAlign: "middle",
               textColor: "#FFFFFF",
@@ -853,7 +853,7 @@ const TradingViewChartAdvanced = ({
               linecolor: "#0000FF",
               extendLeft: false,
               extendRight: true,
-              text: `🎯 Alvo: $${formatPrice(targetPrice)}`,
+              text: `🎯 Alvo`,
               horzLabelsAlign: "right",
               vertLabelsAlign: "middle",
               textColor: "#FFFFFF",
@@ -897,7 +897,7 @@ const TradingViewChartAdvanced = ({
                 linestyle: 2, // Linha pontilhada
                 extendLeft: false,
                 extendRight: true,
-                text: `🎯 ${target.label}: $${formatPrice(target.price)}`,
+                text: `🎯 ${target.label}`,
                 horzLabelsAlign: "right",
                 vertLabelsAlign: "middle",
                 textColor: "#FFFFFF",
