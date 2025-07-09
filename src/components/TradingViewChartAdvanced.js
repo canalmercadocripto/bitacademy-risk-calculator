@@ -19,6 +19,8 @@ const TradingViewChartAdvanced = ({
   const lineCounter = useRef(0); // Contador para IDs únicos
   const updateTimeoutRef = useRef(null); // Para debounce
   const lastValuesRef = useRef({}); // Cache dos últimos valores
+  const chartRef = useRef(null); // Referência direta do chart
+  const lastKnownPrices = useRef({}); // Cache dos últimos preços conhecidos
   const priceLineIds = useRef({
     entry: null,
     stop: null,
@@ -120,39 +122,34 @@ const TradingViewChartAdvanced = ({
           // Listener para capturar movimento das linhas
           const chart = widget.activeChart();
           
-          // Listener para mudanças nas shapes/linhas
-          chart.onDataLoaded().subscribe(null, () => {
-            if (onPriceChange) {
-              // Verificar se alguma linha foi movida
-              setTimeout(() => {
-                checkForLineMovement();
-              }, 100);
-            }
-          });
+          // Armazenar referência para uso posterior
+          chartRef.current = chart;
           
-          // Listener para atualizar linhas quando o range mudar
-          let rangeChangeTimeout;
-          chart.onVisibleRangeChanged().subscribe(null, () => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('📊 Visible range changed - checking existing lines');
-            }
-            
-            // Limpar timeout anterior
-            if (rangeChangeTimeout) {
-              clearTimeout(rangeChangeTimeout);
-            }
-            
-            // Debounce para evitar recriação excessiva
-            rangeChangeTimeout = setTimeout(() => {
+          // Listener para mudanças nas shapes/linhas - método direto
+          if (onPriceChange) {
+            // Método 1: Tentar usar eventos nativos do TradingView
+            try {
+              chart.onDataLoaded().subscribe(null, () => {
+                setTimeout(() => checkForLineMovement(), 100);
+              });
+            } catch (e) {
               if (process.env.NODE_ENV === 'development') {
-                console.log('📊 Range changed - lines remain persistent');
+                console.warn('⚠️ Native events not available, using polling');
               }
-              // Verificar se linhas foram movidas
-              if (onPriceChange) {
-                checkForLineMovement();
+            }
+            
+            // Método 2: Usar polling para detectar mudanças (fallback)
+            const pollInterval = setInterval(() => {
+              checkForLineMovement();
+            }, 500); // Verificar a cada 0.5 segundos para mais responsividade
+            
+            // Cleanup
+            return () => {
+              if (pollInterval) {
+                clearInterval(pollInterval);
               }
-            }, 500);
-          });
+            };
+          }
         });
 
       } catch (error) {
@@ -193,44 +190,109 @@ const TradingViewChartAdvanced = ({
 
   // Função para verificar se linhas foram movidas e sincronizar com calculadora
   const checkForLineMovement = () => {
-    if (!chartReady || !widgetRef.current || !onPriceChange) return;
+    if (!chartReady || !chartRef.current || !onPriceChange) return;
     
     try {
-      const chart = widgetRef.current.activeChart();
-      const allShapes = chart.getAllShapes();
+      const chart = chartRef.current;
       
-      // Procurar por nossas linhas e verificar se foram movidas
-      allShapes.forEach(shape => {
-        if (shape.points && shape.points.length >= 2) {
-          const price = shape.points[0].price;
-          const shapeId = shape.id;
+      // Método alternativo: verificar usando API de estudos
+      const checkLineById = (lineId, lineType) => {
+        if (!lineId) return;
+        
+        try {
+          // Tentar usar getShapeById se disponível
+          const shape = chart.getShapeById ? chart.getShapeById(lineId) : null;
           
-          // Verificar se é uma das nossas linhas
-          Object.keys(priceLineIds.current).forEach(lineType => {
-            if (priceLineIds.current[lineType] === shapeId) {
-              const currentFormattedPrice = formatPrice(price);
+          if (shape && shape.points && shape.points.length >= 2) {
+            const price = shape.points[0].price;
+            const lastKnownPrice = lastKnownPrices.current[lineType];
+            
+            // Verificar se o preço mudou significativamente
+            if (lastKnownPrice && Math.abs(price - lastKnownPrice) > 0.0001) {
+              lastKnownPrices.current[lineType] = price;
               
-              // Verificar se o preço mudou e notificar a calculadora
-              if (lineType === 'entry' && price !== parseFloat(entryPrice)) {
+              // Verificar qual linha foi movida e notificar a calculadora
+              if (lineType === 'entry') {
                 onPriceChange('entryPrice', price.toString());
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Entry price moved to: ${currentFormattedPrice}`);
+                  console.log(`🔄 Entry price moved to: ${formatPrice(price)}`);
                 }
-              } else if (lineType === 'stop' && price !== parseFloat(stopLoss)) {
+              } else if (lineType === 'stop') {
                 onPriceChange('stopLoss', price.toString());
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Stop loss moved to: ${currentFormattedPrice}`);
+                  console.log(`🔄 Stop loss moved to: ${formatPrice(price)}`);
                 }
-              } else if (lineType === 'target' && price !== parseFloat(targetPrice)) {
+              } else if (lineType === 'target') {
                 onPriceChange('targetPrice', price.toString());
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Target price moved to: ${currentFormattedPrice}`);
+                  console.log(`🔄 Target price moved to: ${formatPrice(price)}`);
                 }
               }
             }
-          });
+          }
+        } catch (shapeError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`⚠️ Error checking shape ${lineType}:`, shapeError);
+          }
         }
-      });
+      };
+      
+      // Verificar linhas individuais
+      checkLineById(priceLineIds.current.entry, 'entry');
+      checkLineById(priceLineIds.current.stop, 'stop');
+      checkLineById(priceLineIds.current.target, 'target');
+      
+      // Método de fallback: usar getAllShapes
+      try {
+        const allShapes = chart.getAllShapes();
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔍 Checking ${allShapes.length} shapes for movement`);
+        }
+        
+        // Procurar por nossas linhas e verificar se foram movidas
+        allShapes.forEach(shape => {
+          if (shape.points && shape.points.length >= 2) {
+            const price = shape.points[0].price;
+            const shapeId = shape.id;
+            
+            // Verificar se é uma das nossas linhas
+            Object.keys(priceLineIds.current).forEach(lineType => {
+              if (priceLineIds.current[lineType] === shapeId) {
+                const lastKnownPrice = lastKnownPrices.current[lineType];
+                
+                // Verificar se o preço mudou significativamente
+                if (lastKnownPrice && Math.abs(price - lastKnownPrice) > 0.0001) {
+                  lastKnownPrices.current[lineType] = price;
+                  
+                  // Verificar qual linha foi movida e notificar a calculadora
+                  if (lineType === 'entry') {
+                    onPriceChange('entryPrice', price.toString());
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`🔄 Entry price moved to: ${formatPrice(price)}`);
+                    }
+                  } else if (lineType === 'stop') {
+                    onPriceChange('stopLoss', price.toString());
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`🔄 Stop loss moved to: ${formatPrice(price)}`);
+                    }
+                  } else if (lineType === 'target') {
+                    onPriceChange('targetPrice', price.toString());
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`🔄 Target price moved to: ${formatPrice(price)}`);
+                    }
+                  }
+                }
+              }
+            });
+          }
+        });
+      } catch (getAllError) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ getAllShapes failed:', getAllError);
+        }
+      }
+      
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('❌ Error checking line movement:', error);
@@ -477,6 +539,16 @@ const TradingViewChartAdvanced = ({
         smartTarget3: null
       };
       
+      // Reset dos preços conhecidos
+      lastKnownPrices.current = {
+        entry: null,
+        stop: null,
+        target: null,
+        smartTarget1: null,
+        smartTarget2: null,
+        smartTarget3: null
+      };
+      
       // PASSO 2: Delay para garantir limpeza completa
       await new Promise(resolve => setTimeout(resolve, 200));
       
@@ -535,6 +607,7 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.entry = entryLineId;
+        lastKnownPrices.current.entry = parseFloat(entryPrice);
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Entry line created:', entryPrice);
         }
@@ -575,6 +648,7 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.stop = stopLineId;
+        lastKnownPrices.current.stop = parseFloat(stopLoss);
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Stop loss line created:', stopLoss);
         }
@@ -618,6 +692,7 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.target = targetLineId;
+        lastKnownPrices.current.target = parseFloat(targetPrice);
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Manual target line created:', targetPrice);
         }
