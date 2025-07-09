@@ -23,12 +23,6 @@ const TradingViewChartAdvanced = ({
     smartTarget2: null,
     smartTarget3: null
   });
-  const createdPrices = useRef({
-    entryPrice: null,
-    stopLoss: null,
-    targetPrice: null,
-    smartTargets: null
-  });
 
   useEffect(() => {
 
@@ -278,13 +272,6 @@ const TradingViewChartAdvanced = ({
         removeLine(lineType);
       });
       
-      // Resetar cache de preços criados
-      createdPrices.current = {
-        entryPrice: null,
-        stopLoss: null,
-        targetPrice: null,
-        smartTargets: null
-      };
       
       console.log('🗑️ All lines cleared');
     } catch (error) {
@@ -292,7 +279,7 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // Função para criar/atualizar linhas horizontais - cria apenas uma vez
+  // Função para criar/atualizar linhas horizontais - SOLUÇÃO DEFINITIVA
   const createOrUpdateLines = () => {
     if (!chartReady || !widgetRef.current) {
       console.log('❌ createOrUpdateLines called but chart not ready');
@@ -304,34 +291,25 @@ const TradingViewChartAdvanced = ({
       stopLoss,
       targetPrice,
       currentPrice,
-      existingLines: {
-        entry: !!priceLineIds.current.entry,
-        stop: !!priceLineIds.current.stop,
-        target: !!priceLineIds.current.target,
-        smartTarget1: !!priceLineIds.current.smartTarget1,
-        smartTarget2: !!priceLineIds.current.smartTarget2,
-        smartTarget3: !!priceLineIds.current.smartTarget3
-      }
+      hasResults: !!results
     });
 
     try {
       const chart = widgetRef.current.activeChart();
       
-      // Obter range de tempo para as linhas horizontais
+      // PASSO 1: SEMPRE LIMPAR TODAS AS LINHAS PRIMEIRO
+      console.log('🗑️ Clearing ALL existing lines...');
+      clearAllLines();
+      
+      // PASSO 2: Obter range de tempo para as linhas horizontais
       const visibleRange = chart.getVisibleRange();
       const currentTime = Math.floor(Date.now() / 1000);
       const startTime = visibleRange.from || (currentTime - 86400 * 30); // 30 dias atrás
       const endTime = visibleRange.to || currentTime;
 
-      // Criar linha de entrada (verde) - sempre recriar para garantir valor atual
-      console.log('🔍 Entry line check:', { entryPrice, hasEntry: !!priceLineIds.current.entry });
+      // PASSO 3: Criar linha de entrada (verde) se válida
       if (entryPrice && entryPrice.toString().trim() !== '') {
-        // Sempre remover linha existente para garantir valor atual
-        if (priceLineIds.current.entry) {
-          removeLine('entry');
-        }
-        
-        // Criar nova linha com valor atual
+        console.log('🟢 Creating entry line:', entryPrice);
         const entryLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(entryPrice) },
@@ -355,19 +333,12 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.entry = entryLineId;
-        createdPrices.current.entryPrice = entryPrice;
         console.log('✅ Entry line created:', entryPrice);
       }
 
-      // Criar linha de stop loss (vermelho) - sempre recriar para garantir valor atual
-      console.log('🔍 Stop line check:', { stopLoss, hasStop: !!priceLineIds.current.stop });
+      // PASSO 4: Criar linha de stop loss (vermelho) se válida
       if (stopLoss && stopLoss.toString().trim() !== '') {
-        // Sempre remover linha existente para garantir valor atual
-        if (priceLineIds.current.stop) {
-          removeLine('stop');
-        }
-        
-        // Criar nova linha com valor atual
+        console.log('🔴 Creating stop loss line:', stopLoss);
         const stopLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(stopLoss) },
@@ -391,19 +362,12 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.stop = stopLineId;
-        createdPrices.current.stopLoss = stopLoss;
         console.log('✅ Stop loss line created:', stopLoss);
       }
 
-      // Criar linha de target (azul) - sempre recriar para garantir valor atual
-      console.log('🔍 Target line check:', { targetPrice, hasTarget: !!priceLineIds.current.target });
+      // PASSO 5: Criar linha de target (azul) se válida
       if (targetPrice && targetPrice.toString().trim() !== '') {
-        // Sempre remover linha existente para garantir valor atual
-        if (priceLineIds.current.target) {
-          removeLine('target');
-        }
-        
-        // Criar nova linha com valor atual
+        console.log('🔵 Creating target line:', targetPrice);
         const targetLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(targetPrice) },
@@ -427,21 +391,13 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.target = targetLineId;
-        createdPrices.current.targetPrice = targetPrice;
         console.log('✅ Target line created:', targetPrice);
       }
 
-      // Criar alvos inteligentes se existirem resultados
+      // PASSO 6: Criar alvos inteligentes se há resultados
       const smartTargets = calculateSmartTargets();
       if (smartTargets && results) {
-        // Sempre remover linhas existentes dos alvos inteligentes
-        ['smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
-          if (priceLineIds.current[lineType]) {
-            removeLine(lineType);
-          }
-        });
-        
-        // Criar novas linhas para os alvos inteligentes
+        console.log('🟠 Creating smart targets:', smartTargets.length);
         smartTargets.forEach((target, index) => {
           const lineType = `smartTarget${index + 1}`;
           const colors = ['#FFA500', '#FF8C00', '#FF6347']; // Laranja, laranja escuro, vermelho coral
@@ -470,38 +426,6 @@ const TradingViewChartAdvanced = ({
           );
           priceLineIds.current[lineType] = targetLineId;
           console.log(`✅ Smart target ${index + 1} line created:`, target.price);
-        });
-        
-        // Atualizar cache
-        const smartTargetsString = JSON.stringify(smartTargets);
-        createdPrices.current.smartTargets = smartTargetsString;
-      }
-
-      // Limpar linhas quando campos ficam vazios
-      if (!entryPrice || entryPrice.toString().trim() === '') {
-        if (priceLineIds.current.entry) {
-          removeLine('entry');
-        }
-      }
-      
-      if (!stopLoss || stopLoss.toString().trim() === '') {
-        if (priceLineIds.current.stop) {
-          removeLine('stop');
-        }
-      }
-      
-      if (!targetPrice || targetPrice.toString().trim() === '') {
-        if (priceLineIds.current.target) {
-          removeLine('target');
-        }
-      }
-      
-      // Limpar alvos inteligentes quando não há resultados
-      if (!results || !smartTargets) {
-        ['smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
-          if (priceLineIds.current[lineType]) {
-            removeLine(lineType);
-          }
         });
       }
 
