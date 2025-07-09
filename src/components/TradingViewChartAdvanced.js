@@ -325,8 +325,8 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // Função para criar/atualizar linhas horizontais - SOLUÇÃO DEFINITIVA
-  const createOrUpdateLines = useCallback(async () => {
+  // Função para criar/atualizar linhas horizontais - VERSÃO ROBUSTA
+  const createOrUpdateLines = async () => {
     if (!chartReady || !widgetRef.current) {
       console.log('❌ createOrUpdateLines called but chart not ready');
       return;
@@ -343,12 +343,49 @@ const TradingViewChartAdvanced = ({
     try {
       const chart = widgetRef.current.activeChart();
       
-      // PASSO 1: SEMPRE LIMPAR TODAS AS LINHAS PRIMEIRO
-      console.log('🗑️ Clearing ALL existing lines...');
-      clearAllLines();
+      // PASSO 1: LIMPEZA RADICAL E FORÇADA
+      console.log('🗑️ FORCE CLEARING ALL LINES...');
       
-      // PASSO 2: Delay otimizado para limpeza
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Método 1: Limpar linhas rastreadas
+      Object.keys(priceLineIds.current).forEach(lineType => {
+        const lineId = priceLineIds.current[lineType];
+        if (lineId) {
+          try {
+            chart.removeEntity(lineId);
+            console.log(`🗑️ Force removed ${lineType}`);
+          } catch (e) {
+            console.warn(`Failed to remove ${lineType}`);
+          }
+        }
+      });
+      
+      // Método 2: Limpar TODAS as entidades
+      try {
+        const allEntities = chart.getAllShapes();
+        allEntities.forEach(entity => {
+          try {
+            chart.removeEntity(entity.id);
+          } catch (e) {
+            // Silenciar erros individuais
+          }
+        });
+        console.log(`🧹 Removed ${allEntities.length} total entities`);
+      } catch (e) {
+        console.warn('getAllShapes failed');
+      }
+      
+      // Método 3: Reset completo dos refs
+      priceLineIds.current = {
+        entry: null,
+        stop: null,
+        target: null,
+        smartTarget1: null,
+        smartTarget2: null,
+        smartTarget3: null
+      };
+      
+      // PASSO 2: Delay para garantir limpeza completa
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // PASSO 2.5: Verificação leve de limpeza (opcional)
       if (process.env.NODE_ENV === 'development') {
@@ -516,7 +553,7 @@ const TradingViewChartAdvanced = ({
     } catch (error) {
       console.error('❌ Error creating/updating horizontal lines:', error);
     }
-  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
+  };
 
   // useEffect simplificado com debounce inline
   useEffect(() => {
@@ -557,7 +594,7 @@ const TradingViewChartAdvanced = ({
         clearTimeout(updateTimeoutRef.current);
       }
     };
-  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection, createOrUpdateLines]);
+  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
   return (
     <div className="tradingview-chart-container">
