@@ -694,6 +694,7 @@ const TradingViewChartAdvanced = ({
           if (process.env.NODE_ENV === 'development') {
             console.warn('⚠️ Shape change events not available for target line');
           }
+        }
         
         priceLineIds.current.target = targetLineId;
         lastKnownPrices.current.target = parseFloat(targetPrice);
@@ -741,8 +742,7 @@ const TradingViewChartAdvanced = ({
       }
 
       // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
-      const smartTargets = calculateSmartTargets();
-      const hasSmartTargets = smartTargets && results;
+      // (smartTargets já foi calculado acima)
       
       if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
         lineCounter.current++;
