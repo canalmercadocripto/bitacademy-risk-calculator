@@ -16,6 +16,8 @@ const TradingViewChartAdvanced = ({
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const lineCounter = useRef(0); // Contador para IDs únicos
+  const updateTimeoutRef = useRef(null); // Para debounce
+  const lastValuesRef = useRef({}); // Cache dos últimos valores
   const priceLineIds = useRef({
     entry: null,
     stop: null,
@@ -170,6 +172,19 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
+  // Função otimizada com debounce para atualizar linhas
+  const debouncedUpdateLines = useCallback(() => {
+    // Limpar timeout anterior
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    
+    // Definir novo timeout
+    updateTimeoutRef.current = setTimeout(() => {
+      createOrUpdateLines();
+    }, 300); // 300ms de debounce
+  }, []);
+
   // Função para calcular alvos inteligentes baseados nos resultados
   const calculateSmartTargets = () => {
     if (!results || !entryPrice || !targetPrice) return null;
@@ -264,59 +279,53 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // Função para remover todas as linhas - VERSÃO RADICAL
+  // Função otimizada para remover linhas - menos agressiva
   const clearAllLines = () => {
     if (!chartReady || !widgetRef.current) return;
     
     try {
       const chart = widgetRef.current.activeChart();
+      let removedCount = 0;
       
-      // MÉTODO 1: Tentar remoção individual primeiro
+      // MÉTODO 1: Remoção individual das linhas rastreadas
       ['entry', 'stop', 'target', 'smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
         const lineId = priceLineIds.current[lineType];
         if (lineId) {
           try {
             chart.removeEntity(lineId);
-            console.log(`🗑️ ${lineType} removed via removeEntity`);
+            removedCount++;
+            console.log(`🗑️ ${lineType} removed`);
           } catch (e) {
-            console.warn(`⚠️ removeEntity failed for ${lineType}:`, e);
+            console.warn(`⚠️ removeEntity failed for ${lineType}`);
           }
           priceLineIds.current[lineType] = null;
         }
       });
       
-      // MÉTODO 2: Limpeza radical - remover TODAS as entidades do gráfico
-      try {
-        const allEntities = chart.getAllShapes();
-        console.log(`🧹 Found ${allEntities.length} entities to remove`);
-        
-        allEntities.forEach(entity => {
-          try {
-            chart.removeEntity(entity.id);
-            console.log(`🗑️ Entity ${entity.id} removed`);
-          } catch (e) {
-            console.warn(`⚠️ Failed to remove entity:`, e);
+      // MÉTODO 2: Limpeza adicional apenas se necessário
+      if (removedCount === 0) {
+        try {
+          const allEntities = chart.getAllShapes();
+          if (allEntities.length > 0) {
+            console.log(`🧹 Fallback: removing ${allEntities.length} orphaned entities`);
+            allEntities.forEach(entity => {
+              try {
+                chart.removeEntity(entity.id);
+              } catch (e) {
+                // Silenciar erros de fallback
+              }
+            });
           }
-        });
-      } catch (getAllError) {
-        console.warn('⚠️ getAllShapes failed:', getAllError);
+        } catch (getAllError) {
+          // Silenciar erro de getAllShapes se não disponível
+        }
       }
       
-      // MÉTODO 3: Reset forçado dos refs
-      priceLineIds.current = {
-        entry: null,
-        stop: null,
-        target: null,
-        smartTarget1: null,
-        smartTarget2: null,
-        smartTarget3: null
-      };
-      
-      console.log('🧹 RADICAL CLEANUP COMPLETED');
+      console.log(`🧹 Cleanup completed: ${removedCount} lines removed`);
       
     } catch (error) {
-      console.error('❌ Error in radical cleanup:', error);
-      // Reset forçado final
+      console.error('❌ Error in cleanup:', error);
+      // Reset forçado apenas em caso de erro
       priceLineIds.current = {
         entry: null,
         stop: null,
@@ -350,28 +359,21 @@ const TradingViewChartAdvanced = ({
       console.log('🗑️ Clearing ALL existing lines...');
       clearAllLines();
       
-      // PASSO 2: Delay maior para garantir limpeza completa  
-      await new Promise(resolve => setTimeout(resolve, 150));
+      // PASSO 2: Delay otimizado para limpeza
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      // PASSO 2.5: Verificar se limpeza foi efetiva
-      try {
-        const remainingEntities = chart.getAllShapes();
-        if (remainingEntities.length > 0) {
-          console.warn(`⚠️ ${remainingEntities.length} entities still remain after cleanup`);
-          // Tentar remover novamente
-          remainingEntities.forEach(entity => {
-            try {
-              chart.removeEntity(entity.id);
-              console.log(`🗑️ Force removed remaining entity: ${entity.id}`);
-            } catch (e) {
-              console.warn('⚠️ Failed to force remove entity:', e);
-            }
-          });
-        } else {
-          console.log('✅ Chart is completely clean');
+      // PASSO 2.5: Verificação leve de limpeza (opcional)
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const remainingEntities = chart.getAllShapes();
+          if (remainingEntities.length > 0) {
+            console.warn(`⚠️ ${remainingEntities.length} entities remain after cleanup`);
+          } else {
+            console.log('✅ Chart is clean');
+          }
+        } catch (e) {
+          // Silenciar erros de verificação
         }
-      } catch (e) {
-        console.warn('⚠️ Could not verify cleanup:', e);
       }
       
       // PASSO 3: Obter range de tempo para as linhas horizontais
@@ -528,19 +530,39 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // useEffect para criar/atualizar linhas quando preços mudarem - cria apenas uma vez
+  // useEffect otimizado com debounce e cache para criar/atualizar linhas
   useEffect(() => {
     if (!chartReady || !widgetRef.current) return;
 
-    console.log('💡 Checking for new lines to create...');
+    // Verificar se os valores realmente mudaram
+    const currentValues = {
+      entryPrice,
+      stopLoss,
+      targetPrice,
+      hasResults: !!results,
+      tradeDirection
+    };
+    
+    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
+    
+    if (!valuesChanged) {
+      console.log('💡 Values unchanged, skipping update');
+      return;
+    }
+    
+    console.log('💡 Price values changed, debouncing update...');
+    lastValuesRef.current = currentValues;
+    
+    // Usar debounce para evitar updates excessivos
+    debouncedUpdateLines();
 
-    // Pequeno delay para garantir que o chart esteja completamente pronto
-    const timeoutId = setTimeout(() => {
-      createOrUpdateLines();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
+    // Cleanup do timeout quando componente desmonta ou deps mudam
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection, debouncedUpdateLines]);
 
   return (
     <div className="tradingview-chart-container">
