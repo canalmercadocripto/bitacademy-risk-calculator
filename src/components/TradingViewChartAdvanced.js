@@ -53,6 +53,35 @@ const TradingViewChartAdvanced = ({
   const chartRef = useRef(null); // Referência direta do chart
   const lastKnownPrices = useRef({}); // Cache dos últimos preços conhecidos
   const isUpdatingFromCalculator = useRef(false); // Flag para evitar loops de sincronização
+  
+  // Função helper para sincronizar preços de forma centralizada
+  const syncPriceChange = (fieldName, currentPrice, lineType) => {
+    const lastPrice = lastKnownPrices.current[lineType];
+    
+    // Forçar log sempre para debug
+    console.log(`🔍 ${lineType} line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - (lastPrice || 0))}`);
+    
+    if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
+      lastKnownPrices.current[lineType] = currentPrice;
+      
+      // Log sempre
+      console.log(`🔄 ${lineType} syncing: ${currentPrice} -> calling onPriceChange('${fieldName}', '${currentPrice}')`);
+      window.tradingViewLogs.push(`🔄 ${lineType} synced: ${currentPrice} at ${new Date().toLocaleTimeString()}`);
+      addToLocalStorage(`🔄 ${lineType} synced: ${currentPrice}`);
+      
+      // Temporariamente bloquear recriação
+      isUpdatingFromCalculator.current = true;
+      try {
+        onPriceChange(fieldName, currentPrice.toString());
+        console.log(`✅ onPriceChange called successfully for ${lineType}`);
+      } catch (e) {
+        console.error(`❌ Error calling onPriceChange for ${lineType}:`, e);
+      }
+      setTimeout(() => {
+        isUpdatingFromCalculator.current = false;
+      }, 100);
+    }
+  };
   const priceLineIds = useRef({
     entry: null,
     stop: null,
@@ -149,8 +178,21 @@ const TradingViewChartAdvanced = ({
           console.log('📊 Chart methods available:', {
             getAllShapes: typeof chart?.getAllShapes,
             createShape: typeof chart?.createShape,
-            removeEntity: typeof chart?.removeEntity
+            removeEntity: typeof chart?.removeEntity,
+            createPriceLine: typeof chart?.createPriceLine,
+            removePriceLine: typeof chart?.removePriceLine,
+            getPriceLine: typeof chart?.getPriceLine,
+            getAllPriceLines: typeof chart?.getAllPriceLines,
+            createHorizontalLine: typeof chart?.createHorizontalLine,
+            createOrderLine: typeof chart?.createOrderLine,
+            createPositionLine: typeof chart?.createPositionLine
           });
+          
+          // Listar todas as funções do chart
+          const chartMethods = Object.getOwnPropertyNames(chart)
+            .filter(name => typeof chart[name] === 'function')
+            .filter(name => name.toLowerCase().includes('line') || name.toLowerCase().includes('price'));
+          console.log('📊 Chart line/price methods:', chartMethods);
           
           // Armazenar referência para uso posterior
           chartRef.current = chart;
@@ -230,6 +272,26 @@ const TradingViewChartAdvanced = ({
         console.log('⚠️ onPriceChange not available, skipping sync');
       }
       return;
+    }
+    
+    const chart = chartRef.current;
+    
+    // Tentar usar getAllPriceLines se disponível (mais preciso)
+    if (typeof chart.getAllPriceLines === 'function') {
+      try {
+        const priceLines = chart.getAllPriceLines();
+        console.log('📊 PriceLines found:', priceLines.length);
+        addToLocalStorage(`📊 PriceLines check: ${priceLines.length} lines`);
+        
+        priceLines.forEach(line => {
+          console.log('📊 PriceLine:', line);
+          // Implementar sincronização com PriceLines
+        });
+        
+        return; // Usar PriceLines se disponível
+      } catch (e) {
+        console.log('⚠️ getAllPriceLines failed:', e);
+      }
     }
     
     try {
@@ -667,39 +729,55 @@ const TradingViewChartAdvanced = ({
         }
         let entryLineId;
         try {
-          entryLineId = chart.createShape(
-            { time: startTime, price: parseFloat(entryPrice) },
-            {
-              shape: "horizontal_line",
-              lock: false,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                showLabel: true,
-                fontSize: 10,
-                linewidth: 2,
-                linecolor: "#00FF00",
-                extendLeft: false,
-                extendRight: true,
-                text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
-                horzLabelsAlign: "right",
-                vertLabelsAlign: "middle",
-                textColor: "#FFFFFF",
-                backgroundColor: "#00AA00",
-                borderColor: "#00FF00",
-                borderWidth: 1
+          // Tentar usar createPriceLine (função nativa) primeiro
+          if (typeof chart.createPriceLine === 'function') {
+            entryLineId = chart.createPriceLine({
+              price: parseFloat(entryPrice),
+              color: '#00FF00',
+              lineWidth: 2,
+              lineStyle: 0, // solid
+              axisLabelVisible: true,
+              title: `🟢 Entrada: $${formatPrice(entryPrice)}`
+            });
+            addToLocalStorage(`🟢 Entry PriceLine created: ID=${entryLineId}, Price=${entryPrice}`);
+          } else {
+            // Fallback para createShape
+            entryLineId = chart.createShape(
+              { time: startTime, price: parseFloat(entryPrice) },
+              {
+                shape: "horizontal_line",
+                lock: false,
+                disableSelection: false,
+                disableSave: false,
+                disableUndo: false,
+                overrides: {
+                  showLabel: true,
+                  fontSize: 10,
+                  linewidth: 2,
+                  linecolor: "#00FF00",
+                  extendLeft: false,
+                  extendRight: true,
+                  text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
+                  horzLabelsAlign: "right",
+                  vertLabelsAlign: "middle",
+                  textColor: "#FFFFFF",
+                  backgroundColor: "#00AA00",
+                  borderColor: "#00FF00",
+                  borderWidth: 1
+                }
               }
-            }
-          );
+            );
+            addToLocalStorage(`🟢 Entry Shape created: ID=${entryLineId}, Price=${entryPrice}`);
+          }
+          
           if (process.env.NODE_ENV === 'development') {
             console.log('🟢 Entry line created successfully:', entryLineId);
           }
-          addToLocalStorage(`🟢 Entry line created: ID=${entryLineId}, Price=${entryPrice}`);
         } catch (createError) {
           if (process.env.NODE_ENV === 'development') {
             console.error('❌ Error creating entry line:', createError);
           }
+          addToLocalStorage(`❌ Error creating entry line: ${createError.message}`);
           return;
         }
         
