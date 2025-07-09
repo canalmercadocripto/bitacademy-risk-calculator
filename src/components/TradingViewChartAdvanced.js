@@ -264,33 +264,59 @@ const TradingViewChartAdvanced = ({
     }
   };
 
-  // Função para remover todas as linhas - VERSÃO ROBUSTA
+  // Função para remover todas as linhas - VERSÃO RADICAL
   const clearAllLines = () => {
     if (!chartReady || !widgetRef.current) return;
     
     try {
       const chart = widgetRef.current.activeChart();
       
-      // Remover cada linha individualmente
+      // MÉTODO 1: Tentar remoção individual primeiro
       ['entry', 'stop', 'target', 'smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
         const lineId = priceLineIds.current[lineType];
         if (lineId) {
           try {
             chart.removeEntity(lineId);
-            priceLineIds.current[lineType] = null;
-            console.log(`🗑️ ${lineType} line forcefully removed`);
+            console.log(`🗑️ ${lineType} removed via removeEntity`);
           } catch (e) {
-            console.warn(`⚠️ Error removing ${lineType}:`, e);
-            // Força reset mesmo com erro
-            priceLineIds.current[lineType] = null;
+            console.warn(`⚠️ removeEntity failed for ${lineType}:`, e);
           }
+          priceLineIds.current[lineType] = null;
         }
       });
       
-      console.log('🗑️ All lines forcefully cleared');
+      // MÉTODO 2: Limpeza radical - remover TODAS as entidades do gráfico
+      try {
+        const allEntities = chart.getAllShapes();
+        console.log(`🧹 Found ${allEntities.length} entities to remove`);
+        
+        allEntities.forEach(entity => {
+          try {
+            chart.removeEntity(entity.id);
+            console.log(`🗑️ Entity ${entity.id} removed`);
+          } catch (e) {
+            console.warn(`⚠️ Failed to remove entity:`, e);
+          }
+        });
+      } catch (getAllError) {
+        console.warn('⚠️ getAllShapes failed:', getAllError);
+      }
+      
+      // MÉTODO 3: Reset forçado dos refs
+      priceLineIds.current = {
+        entry: null,
+        stop: null,
+        target: null,
+        smartTarget1: null,
+        smartTarget2: null,
+        smartTarget3: null
+      };
+      
+      console.log('🧹 RADICAL CLEANUP COMPLETED');
+      
     } catch (error) {
-      console.error('❌ Error clearing lines:', error);
-      // Reset forçado em caso de erro
+      console.error('❌ Error in radical cleanup:', error);
+      // Reset forçado final
       priceLineIds.current = {
         entry: null,
         stop: null,
@@ -324,8 +350,29 @@ const TradingViewChartAdvanced = ({
       console.log('🗑️ Clearing ALL existing lines...');
       clearAllLines();
       
-      // PASSO 2: Pequeno delay para garantir limpeza completa
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // PASSO 2: Delay maior para garantir limpeza completa  
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // PASSO 2.5: Verificar se limpeza foi efetiva
+      try {
+        const remainingEntities = chart.getAllShapes();
+        if (remainingEntities.length > 0) {
+          console.warn(`⚠️ ${remainingEntities.length} entities still remain after cleanup`);
+          // Tentar remover novamente
+          remainingEntities.forEach(entity => {
+            try {
+              chart.removeEntity(entity.id);
+              console.log(`🗑️ Force removed remaining entity: ${entity.id}`);
+            } catch (e) {
+              console.warn('⚠️ Failed to force remove entity:', e);
+            }
+          });
+        } else {
+          console.log('✅ Chart is completely clean');
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not verify cleanup:', e);
+      }
       
       // PASSO 3: Obter range de tempo para as linhas horizontais
       const visibleRange = chart.getVisibleRange();
