@@ -179,7 +179,7 @@ const TradingViewChartAdvanced = ({
 
   // Função para sincronizar coordenadas de preço das linhas com calculadora
   const syncLinePriceCoordinates = () => {
-    if (!chartReady || !chartRef.current || !onPriceChange || isUpdatingFromCalculator.current) return;
+    if (!chartReady || !chartRef.current || !onPriceChange) return;
     
     try {
       const chart = chartRef.current;
@@ -199,27 +199,48 @@ const TradingViewChartAdvanced = ({
         // Verificar se é uma das nossas linhas
         if (priceLineIds.current.entry === shapeId) {
           const lastPrice = lastKnownPrices.current.entry;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
             lastKnownPrices.current.entry = currentPrice;
+            
+            // Temporariamente bloquear recriação
+            isUpdatingFromCalculator.current = true;
             onPriceChange('entryPrice', currentPrice.toString());
+            setTimeout(() => {
+              isUpdatingFromCalculator.current = false;
+            }, 100);
+            
             if (process.env.NODE_ENV === 'development') {
               console.log(`🟢 Entry synced: ${currentPrice}`);
             }
           }
         } else if (priceLineIds.current.stop === shapeId) {
           const lastPrice = lastKnownPrices.current.stop;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
             lastKnownPrices.current.stop = currentPrice;
+            
+            // Temporariamente bloquear recriação
+            isUpdatingFromCalculator.current = true;
             onPriceChange('stopLoss', currentPrice.toString());
+            setTimeout(() => {
+              isUpdatingFromCalculator.current = false;
+            }, 100);
+            
             if (process.env.NODE_ENV === 'development') {
               console.log(`🔴 Stop synced: ${currentPrice}`);
             }
           }
         } else if (priceLineIds.current.target === shapeId) {
           const lastPrice = lastKnownPrices.current.target;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.001) {
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
             lastKnownPrices.current.target = currentPrice;
+            
+            // Temporariamente bloquear recriação
+            isUpdatingFromCalculator.current = true;
             onPriceChange('targetPrice', currentPrice.toString());
+            setTimeout(() => {
+              isUpdatingFromCalculator.current = false;
+            }, 100);
+            
             if (process.env.NODE_ENV === 'development') {
               console.log(`🔵 Target synced: ${currentPrice}`);
             }
@@ -629,86 +650,6 @@ const TradingViewChartAdvanced = ({
         }
       }
 
-      // PASSO 5: Criar linha de stop loss (vermelho) se válida
-      if (stopLoss && stopLoss.toString().trim() !== '') {
-        lineCounter.current++;
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔴 Creating stop loss line:', stopLoss);
-        }
-        const stopLineId = chart.createShape(
-          { time: startTime, price: parseFloat(stopLoss) },
-          {
-            shape: "horizontal_line",
-            lock: false,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 10,
-              linewidth: 2,
-              linecolor: "#FF0000",
-              extendLeft: false,
-              extendRight: true,
-              text: `🛑 Stop: $${formatPrice(stopLoss)}`,
-              horzLabelsAlign: "right",
-              vertLabelsAlign: "middle",
-              textColor: "#FFFFFF",
-              backgroundColor: "#CC0000",
-              borderColor: "#FF0000",
-              borderWidth: 1
-            }
-          }
-        );
-        priceLineIds.current.stop = stopLineId;
-        lastKnownPrices.current.stop = parseFloat(stopLoss);
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Stop loss line created:', stopLoss);
-        }
-      }
-
-      // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
-      // (smartTargets já foi calculado acima)
-      
-      if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
-        lineCounter.current++;
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔵 Creating manual target line:', targetPrice);
-        }
-        const targetLineId = chart.createShape(
-          { time: startTime, price: parseFloat(targetPrice) },
-          {
-            shape: "horizontal_line",
-            lock: false,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 10,
-              linewidth: 2,
-              linecolor: "#0000FF",
-              extendLeft: false,
-              extendRight: true,
-              text: `🎯 Alvo: $${formatPrice(targetPrice)}`,
-              horzLabelsAlign: "right",
-              vertLabelsAlign: "middle",
-              textColor: "#FFFFFF",
-              backgroundColor: "#0000CC",
-              borderColor: "#0000FF",
-              borderWidth: 1
-            }
-          }
-        );
-        priceLineIds.current.target = targetLineId;
-        lastKnownPrices.current.target = parseFloat(targetPrice);
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Manual target line created:', targetPrice);
-        }
-      } else if (hasSmartTargets && process.env.NODE_ENV === 'development') {
-        console.log('🚫 Skipping manual target - smart targets will be shown instead');
-      }
-
       // PASSO 7: Criar alvos inteligentes se há resultados
       if (hasSmartTargets) {
         if (process.env.NODE_ENV === 'development') {
@@ -776,9 +717,9 @@ const TradingViewChartAdvanced = ({
   };
 
 
-  // useEffect para mudanças nos valores - mais conservador
+  // useEffect para mudanças nos valores - ignorar se sincronizando
   useEffect(() => {
-    if (!chartReady || !widgetRef.current) return;
+    if (!chartReady || !widgetRef.current || isUpdatingFromCalculator.current) return;
 
     // Verificar apenas se mudanças estruturais realmente necessárias
     const currentValues = {
@@ -802,9 +743,6 @@ const TradingViewChartAdvanced = ({
       console.log('💡 Structural changes detected, recreating lines...');
     }
     
-    // Definir flag para evitar sincronização durante recriação
-    isUpdatingFromCalculator.current = true;
-    
     lastValuesRef.current = currentValues;
     
     // Limpar timeout anterior
@@ -815,11 +753,7 @@ const TradingViewChartAdvanced = ({
     // Debounce para recriação completa
     updateTimeoutRef.current = setTimeout(() => {
       createOrUpdateLines();
-      // Liberar flag após recriação
-      setTimeout(() => {
-        isUpdatingFromCalculator.current = false;
-      }, 1500);
-    }, 500);
+    }, 300);
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {
