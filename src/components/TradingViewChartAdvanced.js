@@ -243,16 +243,48 @@ const TradingViewChartAdvanced = ({
       window.tradingViewLogs.push(`📊 Sync check: ${allShapes.length} shapes - ${new Date().toLocaleTimeString()}`);
       
       if (allShapes.length > 0) {
-        console.log('📊 Shape details:', allShapes.map(s => ({ id: s.id, price: s.points?.[0]?.price })));
-        window.tradingViewLogs.push(`📊 Shapes: ${allShapes.map(s => `${s.id}:${s.points?.[0]?.price}`).join(', ')}`);
+        console.log('📊 Shape details:', allShapes.map(s => ({ 
+          id: s.id, 
+          price: s.points?.[0]?.price,
+          hasPoints: !!s.points,
+          pointsLength: s.points?.length,
+          fullPoints: s.points
+        })));
+        window.tradingViewLogs.push(`📊 Shapes: ${allShapes.map(s => `${s.id}:${s.points?.[0]?.price || 'NO_PRICE'}`).join(', ')}`);
+        
+        // Debug adicional
+        console.log('📊 Our stored IDs:', priceLineIds.current);
+        addToLocalStorage(`📊 Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
       }
       
       // Verificar cada linha individualmente
       allShapes.forEach(shape => {
-        if (!shape || !shape.points || shape.points.length === 0) return;
+        if (!shape) return;
         
         const shapeId = shape.id;
-        const currentPrice = shape.points[0].price;
+        
+        // Tentar diferentes formas de acessar o preço
+        let currentPrice = null;
+        if (shape.points && shape.points.length > 0) {
+          currentPrice = shape.points[0].price || shape.points[0].value || shape.points[0].y;
+        } else if (shape.price !== undefined) {
+          currentPrice = shape.price;
+        } else if (shape.value !== undefined) {
+          currentPrice = shape.value;
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔍 Shape ${shapeId}:`, {
+            hasPoints: !!shape.points,
+            pointsLength: shape.points?.length,
+            price: currentPrice,
+            fullShape: shape
+          });
+        }
+        
+        if (currentPrice === null || currentPrice === undefined) {
+          return; // Pular shapes sem preço
+        }
         
         // Verificar se é uma das nossas linhas
         if (priceLineIds.current.entry === shapeId) {
@@ -663,6 +695,7 @@ const TradingViewChartAdvanced = ({
           if (process.env.NODE_ENV === 'development') {
             console.log('🟢 Entry line created successfully:', entryLineId);
           }
+          addToLocalStorage(`🟢 Entry line created: ID=${entryLineId}, Price=${entryPrice}`);
         } catch (createError) {
           if (process.env.NODE_ENV === 'development') {
             console.error('❌ Error creating entry line:', createError);
@@ -828,31 +861,28 @@ const TradingViewChartAdvanced = ({
   };
 
 
-  // useEffect para mudanças nos valores - ignorar se sincronizando
+  // useEffect para mudanças nos valores - MUITO mais conservador
   useEffect(() => {
     if (!chartReady || !widgetRef.current || isUpdatingFromCalculator.current) return;
 
-    // Verificar apenas se mudanças estruturais realmente necessárias
+    // Verificar apenas mudanças REAIS nos valores, não existência
     const currentValues = {
-      hasEntryPrice: !!entryPrice && entryPrice.trim() !== '',
-      hasStopLoss: !!stopLoss && stopLoss.trim() !== '',
-      hasTargetPrice: !!targetPrice && targetPrice.trim() !== '',
+      entryPrice: entryPrice || '',
+      stopLoss: stopLoss || '',
+      targetPrice: targetPrice || '',
       hasResults: !!results,
-      tradeDirection
+      tradeDirection: tradeDirection || ''
     };
     
-    const structuralChange = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
+    // Comparar valores exatos, não apenas existência
+    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
     
-    if (!structuralChange) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('💡 No structural changes, skipping recreation');
-      }
-      return;
+    if (!valuesChanged) {
+      return; // Não fazer nada se valores não mudaram
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('💡 Structural changes detected, recreating lines...');
-    }
+    console.log('💡 Values changed, recreating lines...');
+    addToLocalStorage(`💡 Values changed: ${JSON.stringify(currentValues)}`);
     
     lastValuesRef.current = currentValues;
     
@@ -861,10 +891,10 @@ const TradingViewChartAdvanced = ({
       clearTimeout(updateTimeoutRef.current);
     }
     
-    // Debounce para recriação completa
+    // Debounce maior para reduzir recriações
     updateTimeoutRef.current = setTimeout(() => {
       createOrUpdateLines();
-    }, 300);
+    }, 1000); // Aumentado para 1 segundo
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {
