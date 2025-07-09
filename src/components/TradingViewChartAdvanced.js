@@ -215,7 +215,23 @@ const TradingViewChartAdvanced = ({
 
   // Função para criar/atualizar linhas horizontais - cria apenas uma vez
   const createOrUpdateLines = () => {
-    if (!chartReady || !widgetRef.current) return;
+    if (!chartReady || !widgetRef.current) {
+      console.log('❌ createOrUpdateLines called but chart not ready');
+      return;
+    }
+
+    console.log('🔍 createOrUpdateLines called with:', {
+      entryPrice,
+      stopLoss,
+      targetPrice,
+      currentPrice,
+      existingLines: {
+        entry: !!priceLineIds.current.entry,
+        stop: !!priceLineIds.current.stop,
+        target: !!priceLineIds.current.target,
+        current: !!priceLineIds.current.current
+      }
+    });
 
     try {
       const chart = widgetRef.current.activeChart();
@@ -227,119 +243,154 @@ const TradingViewChartAdvanced = ({
       const endTime = visibleRange.to || currentTime;
 
       // Criar linha de entrada (verde) - apenas se não existir e preço for válido
-      if (entryPrice && !priceLineIds.current.entry && createdPrices.current.entryPrice !== entryPrice) {
-        const entryLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(entryPrice) },
-            { time: endTime, price: parseFloat(entryPrice) }
-          ],
-          {
-            shape: "trend_line",
-            lock: true,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 12,
-              linewidth: 2,
-              linecolor: "#00FF00",
-              extendLeft: true,
-              extendRight: true,
-              text: `🟢 Entrada: $${parseFloat(entryPrice).toFixed(4)}`
+      console.log('🔍 Entry line check:', { entryPrice, hasEntry: !!priceLineIds.current.entry });
+      if (entryPrice && entryPrice.toString().trim() !== '') {
+        // Se preço mudou, remover linha existente primeiro
+        if (priceLineIds.current.entry && createdPrices.current.entryPrice !== entryPrice) {
+          removeLine('entry');
+        }
+        
+        // Criar nova linha se não existe
+        if (!priceLineIds.current.entry) {
+          const entryLineId = chart.createMultipointShape(
+            [
+              { time: startTime, price: parseFloat(entryPrice) },
+              { time: endTime, price: parseFloat(entryPrice) }
+            ],
+            {
+              shape: "trend_line",
+              lock: true,
+              disableSelection: false,
+              disableSave: false,
+              disableUndo: false,
+              overrides: {
+                showLabel: true,
+                fontSize: 12,
+                linewidth: 2,
+                linecolor: "#00FF00",
+                extendLeft: true,
+                extendRight: true,
+                text: `🟢 Entrada: $${parseFloat(entryPrice).toFixed(4)}`
+              }
             }
-          }
-        );
-        priceLineIds.current.entry = entryLineId;
-        createdPrices.current.entryPrice = entryPrice;
-        console.log('✅ Entry line created:', entryPrice);
+          );
+          priceLineIds.current.entry = entryLineId;
+          createdPrices.current.entryPrice = entryPrice;
+          console.log('✅ Entry line created:', entryPrice);
+        }
       }
 
       // Criar linha de stop loss (vermelho) - apenas se não existir e preço for válido
-      if (stopLoss && !priceLineIds.current.stop && createdPrices.current.stopLoss !== stopLoss) {
-        const stopLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(stopLoss) },
-            { time: endTime, price: parseFloat(stopLoss) }
-          ],
-          {
-            shape: "trend_line",
-            lock: true,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 12,
-              linewidth: 2,
-              linecolor: "#FF0000",
-              extendLeft: true,
-              extendRight: true,
-              text: `🛑 Stop: $${parseFloat(stopLoss).toFixed(4)}`
+      console.log('🔍 Stop line check:', { stopLoss, hasStop: !!priceLineIds.current.stop });
+      if (stopLoss && stopLoss.toString().trim() !== '') {
+        // Se preço mudou, remover linha existente primeiro
+        if (priceLineIds.current.stop && createdPrices.current.stopLoss !== stopLoss) {
+          removeLine('stop');
+        }
+        
+        // Criar nova linha se não existe
+        if (!priceLineIds.current.stop) {
+          const stopLineId = chart.createMultipointShape(
+            [
+              { time: startTime, price: parseFloat(stopLoss) },
+              { time: endTime, price: parseFloat(stopLoss) }
+            ],
+            {
+              shape: "trend_line",
+              lock: true,
+              disableSelection: false,
+              disableSave: false,
+              disableUndo: false,
+              overrides: {
+                showLabel: true,
+                fontSize: 12,
+                linewidth: 2,
+                linecolor: "#FF0000",
+                extendLeft: true,
+                extendRight: true,
+                text: `🛑 Stop: $${parseFloat(stopLoss).toFixed(4)}`
+              }
             }
-          }
-        );
-        priceLineIds.current.stop = stopLineId;
-        createdPrices.current.stopLoss = stopLoss;
-        console.log('✅ Stop loss line created:', stopLoss);
+          );
+          priceLineIds.current.stop = stopLineId;
+          createdPrices.current.stopLoss = stopLoss;
+          console.log('✅ Stop loss line created:', stopLoss);
+        }
       }
 
       // Criar linha de target (azul) - apenas se não existir e preço for válido
-      if (targetPrice && !priceLineIds.current.target && createdPrices.current.targetPrice !== targetPrice) {
-        const targetLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(targetPrice) },
-            { time: endTime, price: parseFloat(targetPrice) }
-          ],
-          {
-            shape: "trend_line",
-            lock: true,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 12,
-              linewidth: 2,
-              linecolor: "#0000FF",
-              extendLeft: true,
-              extendRight: true,
-              text: `🎯 Alvo: $${parseFloat(targetPrice).toFixed(4)}`
+      console.log('🔍 Target line check:', { targetPrice, hasTarget: !!priceLineIds.current.target });
+      if (targetPrice && targetPrice.toString().trim() !== '') {
+        // Se preço mudou, remover linha existente primeiro
+        if (priceLineIds.current.target && createdPrices.current.targetPrice !== targetPrice) {
+          removeLine('target');
+        }
+        
+        // Criar nova linha se não existe
+        if (!priceLineIds.current.target) {
+          const targetLineId = chart.createMultipointShape(
+            [
+              { time: startTime, price: parseFloat(targetPrice) },
+              { time: endTime, price: parseFloat(targetPrice) }
+            ],
+            {
+              shape: "trend_line",
+              lock: true,
+              disableSelection: false,
+              disableSave: false,
+              disableUndo: false,
+              overrides: {
+                showLabel: true,
+                fontSize: 12,
+                linewidth: 2,
+                linecolor: "#0000FF",
+                extendLeft: true,
+                extendRight: true,
+                text: `🎯 Alvo: $${parseFloat(targetPrice).toFixed(4)}`
+              }
             }
-          }
-        );
-        priceLineIds.current.target = targetLineId;
-        createdPrices.current.targetPrice = targetPrice;
-        console.log('✅ Target line created:', targetPrice);
+          );
+          priceLineIds.current.target = targetLineId;
+          createdPrices.current.targetPrice = targetPrice;
+          console.log('✅ Target line created:', targetPrice);
+        }
       }
 
       // Criar linha de preço atual (amarelo) - apenas se diferente da entrada e não existir
-      if (currentPrice && currentPrice !== entryPrice && !priceLineIds.current.current && createdPrices.current.currentPrice !== currentPrice) {
-        const currentLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(currentPrice) },
-            { time: endTime, price: parseFloat(currentPrice) }
-          ],
-          {
-            shape: "trend_line",
-            lock: true,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 12,
-              linewidth: 2,
-              linecolor: "#FFFF00",
-              extendLeft: true,
-              extendRight: true,
-              text: `📊 Atual: $${parseFloat(currentPrice).toFixed(4)}`
+      if (currentPrice && currentPrice !== entryPrice) {
+        // Se preço mudou, remover linha existente primeiro
+        if (priceLineIds.current.current && createdPrices.current.currentPrice !== currentPrice) {
+          removeLine('current');
+        }
+        
+        // Criar nova linha se não existe
+        if (!priceLineIds.current.current) {
+          const currentLineId = chart.createMultipointShape(
+            [
+              { time: startTime, price: parseFloat(currentPrice) },
+              { time: endTime, price: parseFloat(currentPrice) }
+            ],
+            {
+              shape: "trend_line",
+              lock: true,
+              disableSelection: false,
+              disableSave: false,
+              disableUndo: false,
+              overrides: {
+                showLabel: true,
+                fontSize: 12,
+                linewidth: 2,
+                linecolor: "#FFFF00",
+                extendLeft: true,
+                extendRight: true,
+                text: `📊 Atual: $${parseFloat(currentPrice).toFixed(4)}`
+              }
             }
-          }
-        );
-        priceLineIds.current.current = currentLineId;
-        createdPrices.current.currentPrice = currentPrice;
-        console.log('✅ Current price line created:', currentPrice);
+          );
+          priceLineIds.current.current = currentLineId;
+          createdPrices.current.currentPrice = currentPrice;
+          console.log('✅ Current price line created:', currentPrice);
+        }
       }
 
       const totalLines = Object.values(priceLineIds.current).filter(Boolean).length;
