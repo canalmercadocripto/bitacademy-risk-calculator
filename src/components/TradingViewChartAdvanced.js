@@ -23,6 +23,23 @@ const TradingViewChartAdvanced = ({
     tradeDirection,
     onPriceChange: !!onPriceChange
   });
+  
+  // Capturar logs em variável global para debug
+  if (!window.tradingViewLogs) {
+    window.tradingViewLogs = [];
+  }
+  window.tradingViewLogs.push(`🚀 Component mounted: ${new Date().toLocaleTimeString()}`);
+  
+  // Enviar logs para localStorage também
+  const addToLocalStorage = (log) => {
+    const logs = JSON.parse(localStorage.getItem('tradingViewLogs') || '[]');
+    logs.push(`${new Date().toISOString()}: ${log}`);
+    // Manter apenas últimos 50 logs
+    if (logs.length > 50) logs.shift();
+    localStorage.setItem('tradingViewLogs', JSON.stringify(logs));
+  };
+  
+  addToLocalStorage('🚀 Component mounted');
   const chartContainerRef = useRef(null);
   const widgetRef = useRef(null);
   const [chartReady, setChartReady] = useState(false);
@@ -217,8 +234,13 @@ const TradingViewChartAdvanced = ({
       
       // Força logs sempre (temporário para debug)
       console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
+      
+      // Capturar no log global
+      window.tradingViewLogs.push(`📊 Sync check: ${allShapes.length} shapes - ${new Date().toLocaleTimeString()}`);
+      
       if (allShapes.length > 0) {
         console.log('📊 Shape details:', allShapes.map(s => ({ id: s.id, price: s.points?.[0]?.price })));
+        window.tradingViewLogs.push(`📊 Shapes: ${allShapes.map(s => `${s.id}:${s.points?.[0]?.price}`).join(', ')}`);
       }
       
       // Verificar cada linha individualmente
@@ -240,6 +262,7 @@ const TradingViewChartAdvanced = ({
             
             // Força log sempre
             console.log(`🟢 Entry syncing: ${currentPrice} -> calling onPriceChange('entryPrice', '${currentPrice}')`);
+            window.tradingViewLogs.push(`🟢 Entry synced: ${currentPrice} at ${new Date().toLocaleTimeString()}`);
             
             
             // Temporariamente bloquear recriação
@@ -848,26 +871,29 @@ const TradingViewChartAdvanced = ({
 
   // Função de teste para debug
   const testSyncFunction = () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Testing sync function manually...');
-      console.log('🔧 Chart ready:', chartReady);
-      console.log('🔧 Chart ref:', !!chartRef.current);
-      console.log('🔧 onPriceChange:', !!onPriceChange);
-      console.log('🔧 isUpdatingFromCalculator:', isUpdatingFromCalculator.current);
-      console.log('🔧 priceLineIds:', priceLineIds.current);
-      console.log('🔧 lastKnownPrices:', lastKnownPrices.current);
-      
-      if (chartRef.current) {
-        try {
-          const allShapes = chartRef.current.getAllShapes();
-          console.log('🔧 All shapes:', allShapes.length, allShapes);
-        } catch (e) {
-          console.error('🔧 Error getting shapes:', e);
-        }
+    console.log('🔧 Testing sync function manually...');
+    console.log('🔧 Chart ready:', chartReady);
+    console.log('🔧 Chart ref:', !!chartRef.current);
+    console.log('🔧 onPriceChange:', !!onPriceChange);
+    console.log('🔧 isUpdatingFromCalculator:', isUpdatingFromCalculator.current);
+    console.log('🔧 priceLineIds:', priceLineIds.current);
+    console.log('🔧 lastKnownPrices:', lastKnownPrices.current);
+    
+    // Capturar no log global
+    window.tradingViewLogs.push(`🔧 Test sync: chartReady=${chartReady}, chartRef=${!!chartRef.current}, onPriceChange=${!!onPriceChange}`);
+    
+    if (chartRef.current) {
+      try {
+        const allShapes = chartRef.current.getAllShapes();
+        console.log('🔧 All shapes:', allShapes.length, allShapes);
+        window.tradingViewLogs.push(`🔧 Shapes found: ${allShapes.length}`);
+      } catch (e) {
+        console.error('🔧 Error getting shapes:', e);
+        window.tradingViewLogs.push(`🔧 Error getting shapes: ${e.message}`);
       }
-      
-      syncLinePriceCoordinates();
     }
+    
+    syncLinePriceCoordinates();
   };
 
   return (
@@ -882,8 +908,8 @@ const TradingViewChartAdvanced = ({
         }}
       />
       
-      {process.env.NODE_ENV === 'development' && chartReady && (
-        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
+      {chartReady && (
+        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, display: 'flex', gap: '5px' }}>
           <button 
             onClick={testSyncFunction}
             style={{
@@ -897,6 +923,23 @@ const TradingViewChartAdvanced = ({
             }}
           >
             Test Sync
+          </button>
+          <button 
+            onClick={() => {
+              console.log('📋 TradingView Logs:', window.tradingViewLogs);
+              alert('Logs mostrados no console. Veja o console (F12)');
+            }}
+            style={{
+              padding: '5px 10px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Show Logs
           </button>
         </div>
       )}
