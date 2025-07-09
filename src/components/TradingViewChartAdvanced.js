@@ -12,6 +12,17 @@ const TradingViewChartAdvanced = ({
   results = null,  // Adicionar resultados para alvos inteligentes
   onPriceChange = null  // Callback para sincronizar com calculadora
 }) => {
+  
+  // Debug inicial - forçar sempre
+  console.log('🚀 TradingViewChartAdvanced mounted with props:', {
+    symbol,
+    theme,
+    entryPrice,
+    stopLoss,
+    targetPrice,
+    tradeDirection,
+    onPriceChange: !!onPriceChange
+  });
   const chartContainerRef = useRef(null);
   const widgetRef = useRef(null);
   const [chartReady, setChartReady] = useState(false);
@@ -159,8 +170,14 @@ const TradingViewChartAdvanced = ({
     const checkScripts = (retryCount = 0) => {
       const maxRetries = 50;
       
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔍 Checking TradingView script... attempt ${retryCount + 1}/${maxRetries}`);
+        console.log('🔍 window.TradingView available:', typeof window.TradingView);
+      }
+      
       if (typeof window.TradingView !== 'undefined') {
         console.log('✅ TradingView script loaded, initializing chart');
+        console.log('🔧 About to call initTradingViewChart()');
         initTradingViewChart();
       } else if (retryCount < maxRetries) {
         console.log(`⏳ Waiting for TradingView script... (${retryCount + 1}/${maxRetries})`);
@@ -198,11 +215,10 @@ const TradingViewChartAdvanced = ({
       const chart = chartRef.current;
       const allShapes = chart.getAllShapes();
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
-        if (allShapes.length > 0) {
-          console.log('📊 Shape details:', allShapes.map(s => ({ id: s.id, price: s.points?.[0]?.price })));
-        }
+      // Força logs sempre (temporário para debug)
+      console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
+      if (allShapes.length > 0) {
+        console.log('📊 Shape details:', allShapes.map(s => ({ id: s.id, price: s.points?.[0]?.price })));
       }
       
       // Verificar cada linha individualmente
@@ -215,27 +231,28 @@ const TradingViewChartAdvanced = ({
         // Verificar se é uma das nossas linhas
         if (priceLineIds.current.entry === shapeId) {
           const lastPrice = lastKnownPrices.current.entry;
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`🔍 Entry line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - lastPrice)}`);
-          }
+          // Força log sempre
+          console.log(`🔍 Entry line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - lastPrice)}`);
+          console.log(`🔍 Entry condition check: lastPrice=${lastPrice}, diffThreshold=${Math.abs(currentPrice - lastPrice) > 0.01}`);
+          
           if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
             lastKnownPrices.current.entry = currentPrice;
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🟢 Entry syncing: ${currentPrice} -> calling onPriceChange('entryPrice', '${currentPrice}')`);
-            }
+            // Força log sempre
+            console.log(`🟢 Entry syncing: ${currentPrice} -> calling onPriceChange('entryPrice', '${currentPrice}')`);
+            
             
             // Temporariamente bloquear recriação
             isUpdatingFromCalculator.current = true;
             try {
               onPriceChange('entryPrice', currentPrice.toString());
-              if (process.env.NODE_ENV === 'development') {
-                console.log(`✅ onPriceChange called successfully for entry`);
-              }
+              // Força log sempre
+              console.log(`✅ onPriceChange called successfully for entry`);
+              
             } catch (e) {
-              if (process.env.NODE_ENV === 'development') {
-                console.error(`❌ Error calling onPriceChange for entry:`, e);
-              }
+              // Força log sempre
+              console.error(`❌ Error calling onPriceChange for entry:`, e);
+              
             }
             setTimeout(() => {
               isUpdatingFromCalculator.current = false;
