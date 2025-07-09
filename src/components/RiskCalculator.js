@@ -168,6 +168,9 @@ const RiskCalculator = () => {
   }, [currentPrice]);
 
   const handleInputChange = (field, value) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📝 handleInputChange called: ${field} = ${value}`);
+    }
     setFormData(prev => ({
       ...prev,
       [field]: value

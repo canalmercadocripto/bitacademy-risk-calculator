@@ -187,7 +187,12 @@ const TradingViewChartAdvanced = ({
 
   // Função para sincronizar coordenadas de preço das linhas com calculadora
   const syncLinePriceCoordinates = () => {
-    if (!chartReady || !chartRef.current || !onPriceChange) return;
+    if (!chartReady || !chartRef.current || !onPriceChange) {
+      if (process.env.NODE_ENV === 'development' && !onPriceChange) {
+        console.log('⚠️ onPriceChange not available, skipping sync');
+      }
+      return;
+    }
     
     try {
       const chart = chartRef.current;
@@ -195,6 +200,9 @@ const TradingViewChartAdvanced = ({
       
       if (process.env.NODE_ENV === 'development') {
         console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
+        if (allShapes.length > 0) {
+          console.log('📊 Shape details:', allShapes.map(s => ({ id: s.id, price: s.points?.[0]?.price })));
+        }
       }
       
       // Verificar cada linha individualmente
@@ -207,51 +215,87 @@ const TradingViewChartAdvanced = ({
         // Verificar se é uma das nossas linhas
         if (priceLineIds.current.entry === shapeId) {
           const lastPrice = lastKnownPrices.current.entry;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🔍 Entry line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - lastPrice)}`);
+          }
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
             lastKnownPrices.current.entry = currentPrice;
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🟢 Entry syncing: ${currentPrice} -> calling onPriceChange('entryPrice', '${currentPrice}')`);
+            }
             
             // Temporariamente bloquear recriação
             isUpdatingFromCalculator.current = true;
-            onPriceChange('entryPrice', currentPrice.toString());
+            try {
+              onPriceChange('entryPrice', currentPrice.toString());
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`✅ onPriceChange called successfully for entry`);
+              }
+            } catch (e) {
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`❌ Error calling onPriceChange for entry:`, e);
+              }
+            }
             setTimeout(() => {
               isUpdatingFromCalculator.current = false;
             }, 100);
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🟢 Entry synced: ${currentPrice}`);
-            }
           }
         } else if (priceLineIds.current.stop === shapeId) {
           const lastPrice = lastKnownPrices.current.stop;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🔍 Stop line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - lastPrice)}`);
+          }
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
             lastKnownPrices.current.stop = currentPrice;
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔴 Stop syncing: ${currentPrice} -> calling onPriceChange('stopLoss', '${currentPrice}')`);
+            }
             
             // Temporariamente bloquear recriação
             isUpdatingFromCalculator.current = true;
-            onPriceChange('stopLoss', currentPrice.toString());
+            try {
+              onPriceChange('stopLoss', currentPrice.toString());
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`✅ onPriceChange called successfully for stop`);
+              }
+            } catch (e) {
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`❌ Error calling onPriceChange for stop:`, e);
+              }
+            }
             setTimeout(() => {
               isUpdatingFromCalculator.current = false;
             }, 100);
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🔴 Stop synced: ${currentPrice}`);
-            }
           }
         } else if (priceLineIds.current.target === shapeId) {
           const lastPrice = lastKnownPrices.current.target;
-          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.1) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🔍 Target line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - lastPrice)}`);
+          }
+          if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
             lastKnownPrices.current.target = currentPrice;
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔵 Target syncing: ${currentPrice} -> calling onPriceChange('targetPrice', '${currentPrice}')`);
+            }
             
             // Temporariamente bloquear recriação
             isUpdatingFromCalculator.current = true;
-            onPriceChange('targetPrice', currentPrice.toString());
+            try {
+              onPriceChange('targetPrice', currentPrice.toString());
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`✅ onPriceChange called successfully for target`);
+              }
+            } catch (e) {
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`❌ Error calling onPriceChange for target:`, e);
+              }
+            }
             setTimeout(() => {
               isUpdatingFromCalculator.current = false;
             }, 100);
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🔵 Target synced: ${currentPrice}`);
-            }
           }
         }
       });
