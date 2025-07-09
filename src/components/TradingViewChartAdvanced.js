@@ -37,6 +37,9 @@ const TradingViewChartAdvanced = ({
     // Manter apenas últimos 50 logs
     if (logs.length > 50) logs.shift();
     localStorage.setItem('tradingViewLogs', JSON.stringify(logs));
+    
+    // Também enviar para console com timestamp
+    console.log(`[${new Date().toLocaleTimeString()}] ${log}`);
   };
   
   addToLocalStorage('🚀 Component mounted');
@@ -195,6 +198,7 @@ const TradingViewChartAdvanced = ({
       if (typeof window.TradingView !== 'undefined') {
         console.log('✅ TradingView script loaded, initializing chart');
         console.log('🔧 About to call initTradingViewChart()');
+        addToLocalStorage('✅ TradingView script loaded, initializing chart');
         initTradingViewChart();
       } else if (retryCount < maxRetries) {
         console.log(`⏳ Waiting for TradingView script... (${retryCount + 1}/${maxRetries})`);
@@ -263,6 +267,7 @@ const TradingViewChartAdvanced = ({
             // Força log sempre
             console.log(`🟢 Entry syncing: ${currentPrice} -> calling onPriceChange('entryPrice', '${currentPrice}')`);
             window.tradingViewLogs.push(`🟢 Entry synced: ${currentPrice} at ${new Date().toLocaleTimeString()}`);
+            addToLocalStorage(`🟢 Entry synced: ${currentPrice}`);
             
             
             // Temporariamente bloquear recriação
