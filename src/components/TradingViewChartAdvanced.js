@@ -433,7 +433,10 @@ const TradingViewChartAdvanced = ({
   const createOrUpdateLines = async () => {
     if (!chartReady || !widgetRef.current) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('❌ createOrUpdateLines called but chart not ready');
+        console.log('❌ createOrUpdateLines called but chart not ready', {
+          chartReady,
+          widgetRef: !!widgetRef.current
+        });
       }
       return;
     }
@@ -541,31 +544,42 @@ const TradingViewChartAdvanced = ({
         if (process.env.NODE_ENV === 'development') {
           console.log('🟢 Creating entry line:', entryPrice);
         }
-        const entryLineId = chart.createShape(
-          { time: startTime, price: parseFloat(entryPrice) },
-          {
-            shape: "horizontal_line",
-            lock: false,
-            disableSelection: false,
-            disableSave: false,
-            disableUndo: false,
-            overrides: {
-              showLabel: true,
-              fontSize: 10,
-              linewidth: 2,
-              linecolor: "#00FF00",
-              extendLeft: false,
-              extendRight: true,
-              text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
-              horzLabelsAlign: "right",
-              vertLabelsAlign: "middle",
-              textColor: "#FFFFFF",
-              backgroundColor: "#00AA00",
-              borderColor: "#00FF00",
-              borderWidth: 1
+        let entryLineId;
+        try {
+          entryLineId = chart.createShape(
+            { time: startTime, price: parseFloat(entryPrice) },
+            {
+              shape: "horizontal_line",
+              lock: false,
+              disableSelection: false,
+              disableSave: false,
+              disableUndo: false,
+              overrides: {
+                showLabel: true,
+                fontSize: 10,
+                linewidth: 2,
+                linecolor: "#00FF00",
+                extendLeft: false,
+                extendRight: true,
+                text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
+                horzLabelsAlign: "right",
+                vertLabelsAlign: "middle",
+                textColor: "#FFFFFF",
+                backgroundColor: "#00AA00",
+                borderColor: "#00FF00",
+                borderWidth: 1
+              }
             }
+          );
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🟢 Entry line created successfully:', entryLineId);
           }
-        );
+        } catch (createError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('❌ Error creating entry line:', createError);
+          }
+          return;
+        }
         
         
         priceLineIds.current.entry = entryLineId;
