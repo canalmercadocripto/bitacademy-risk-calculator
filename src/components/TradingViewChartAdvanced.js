@@ -9,7 +9,8 @@ const TradingViewChartAdvanced = ({
   targetPrice = null,
   tradeDirection = null,
   currentPrice = null,
-  results = null  // Adicionar resultados para alvos inteligentes
+  results = null,  // Adicionar resultados para alvos inteligentes
+  onPriceChange = null  // Callback para sincronizar com calculadora
 }) => {
   const chartContainerRef = useRef(null);
   const widgetRef = useRef(null);
@@ -116,12 +117,25 @@ const TradingViewChartAdvanced = ({
             createOrUpdateLines();
           }, 1000);
           
-          // Listener para atualizar linhas quando o range mudar (apenas recriar se necessário)
+          // Listener para capturar movimento das linhas
           const chart = widget.activeChart();
-          let rangeChangeTimeout;
           
+          // Listener para mudanças nas shapes/linhas
+          chart.onDataLoaded().subscribe(null, () => {
+            if (onPriceChange) {
+              // Verificar se alguma linha foi movida
+              setTimeout(() => {
+                checkForLineMovement();
+              }, 100);
+            }
+          });
+          
+          // Listener para atualizar linhas quando o range mudar
+          let rangeChangeTimeout;
           chart.onVisibleRangeChanged().subscribe(null, () => {
-            console.log('📊 Visible range changed - checking existing lines');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('📊 Visible range changed - checking existing lines');
+            }
             
             // Limpar timeout anterior
             if (rangeChangeTimeout) {
@@ -130,8 +144,13 @@ const TradingViewChartAdvanced = ({
             
             // Debounce para evitar recriação excessiva
             rangeChangeTimeout = setTimeout(() => {
-              console.log('📊 Range changed - lines remain persistent');
-              // Não fazer nada - as linhas são persistentes
+              if (process.env.NODE_ENV === 'development') {
+                console.log('📊 Range changed - lines remain persistent');
+              }
+              // Verificar se linhas foram movidas
+              if (onPriceChange) {
+                checkForLineMovement();
+              }
             }, 500);
           });
         });
@@ -171,6 +190,53 @@ const TradingViewChartAdvanced = ({
       }
     };
   }, [symbol, theme]);
+
+  // Função para verificar se linhas foram movidas e sincronizar com calculadora
+  const checkForLineMovement = () => {
+    if (!chartReady || !widgetRef.current || !onPriceChange) return;
+    
+    try {
+      const chart = widgetRef.current.activeChart();
+      const allShapes = chart.getAllShapes();
+      
+      // Procurar por nossas linhas e verificar se foram movidas
+      allShapes.forEach(shape => {
+        if (shape.points && shape.points.length >= 2) {
+          const price = shape.points[0].price;
+          const shapeId = shape.id;
+          
+          // Verificar se é uma das nossas linhas
+          Object.keys(priceLineIds.current).forEach(lineType => {
+            if (priceLineIds.current[lineType] === shapeId) {
+              const currentFormattedPrice = formatPrice(price);
+              
+              // Verificar se o preço mudou e notificar a calculadora
+              if (lineType === 'entry' && price !== parseFloat(entryPrice)) {
+                onPriceChange('entryPrice', price.toString());
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`🔄 Entry price moved to: ${currentFormattedPrice}`);
+                }
+              } else if (lineType === 'stop' && price !== parseFloat(stopLoss)) {
+                onPriceChange('stopLoss', price.toString());
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`🔄 Stop loss moved to: ${currentFormattedPrice}`);
+                }
+              } else if (lineType === 'target' && price !== parseFloat(targetPrice)) {
+                onPriceChange('targetPrice', price.toString());
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`🔄 Target price moved to: ${currentFormattedPrice}`);
+                }
+              }
+            }
+          });
+        }
+      });
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Error checking line movement:', error);
+      }
+    }
+  };
 
   // Função para formatar preço com casas decimais adequadas
   const formatPrice = (price) => {
@@ -453,14 +519,18 @@ const TradingViewChartAdvanced = ({
             disableUndo: false,
             overrides: {
               showLabel: true,
-              fontSize: 12,
+              fontSize: 10,
               linewidth: 2,
               linecolor: "#00FF00",
               extendLeft: false,
               extendRight: true,
               text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
               horzLabelsAlign: "right",
-              vertLabelsAlign: "middle"
+              vertLabelsAlign: "middle",
+              textColor: "#FFFFFF",
+              backgroundColor: "#00AA00",
+              borderColor: "#00FF00",
+              borderWidth: 1
             }
           }
         );
@@ -489,14 +559,18 @@ const TradingViewChartAdvanced = ({
             disableUndo: false,
             overrides: {
               showLabel: true,
-              fontSize: 12,
+              fontSize: 10,
               linewidth: 2,
               linecolor: "#FF0000",
               extendLeft: false,
               extendRight: true,
               text: `🛑 Stop: $${formatPrice(stopLoss)}`,
               horzLabelsAlign: "right",
-              vertLabelsAlign: "middle"
+              vertLabelsAlign: "middle",
+              textColor: "#FFFFFF",
+              backgroundColor: "#CC0000",
+              borderColor: "#FF0000",
+              borderWidth: 1
             }
           }
         );
@@ -528,14 +602,18 @@ const TradingViewChartAdvanced = ({
             disableUndo: false,
             overrides: {
               showLabel: true,
-              fontSize: 12,
+              fontSize: 10,
               linewidth: 2,
               linecolor: "#0000FF",
               extendLeft: false,
               extendRight: true,
               text: `🎯 Alvo: $${formatPrice(targetPrice)}`,
               horzLabelsAlign: "right",
-              vertLabelsAlign: "middle"
+              vertLabelsAlign: "middle",
+              textColor: "#FFFFFF",
+              backgroundColor: "#0000CC",
+              borderColor: "#0000FF",
+              borderWidth: 1
             }
           }
         );
@@ -569,7 +647,7 @@ const TradingViewChartAdvanced = ({
               disableUndo: false,
               overrides: {
                 showLabel: true,
-                fontSize: 11,
+                fontSize: 9,
                 linewidth: 1,
                 linecolor: colors[index],
                 linestyle: 2, // Linha pontilhada
@@ -577,7 +655,11 @@ const TradingViewChartAdvanced = ({
                 extendRight: true,
                 text: `🎯 ${target.label}: $${formatPrice(target.price)}`,
                 horzLabelsAlign: "right",
-                vertLabelsAlign: "middle"
+                vertLabelsAlign: "middle",
+                textColor: "#FFFFFF",
+                backgroundColor: colors[index],
+                borderColor: colors[index],
+                borderWidth: 1
               }
             }
           );
