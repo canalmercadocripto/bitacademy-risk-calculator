@@ -172,6 +172,19 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
+  // Função para formatar preço com casas decimais adequadas
+  const formatPrice = (price) => {
+    const numPrice = parseFloat(price);
+    if (numPrice >= 1000) {
+      return numPrice.toFixed(2);
+    } else if (numPrice >= 100) {
+      return numPrice.toFixed(3);
+    } else if (numPrice >= 10) {
+      return numPrice.toFixed(4);
+    } else {
+      return numPrice.toFixed(6);
+    }
+  };
 
   // Função para calcular alvos inteligentes baseados nos resultados
   const calculateSmartTargets = () => {
@@ -328,23 +341,29 @@ const TradingViewChartAdvanced = ({
   // Função para criar/atualizar linhas horizontais - VERSÃO ROBUSTA
   const createOrUpdateLines = async () => {
     if (!chartReady || !widgetRef.current) {
-      console.log('❌ createOrUpdateLines called but chart not ready');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ createOrUpdateLines called but chart not ready');
+      }
       return;
     }
 
-    console.log('🔍 createOrUpdateLines called with:', {
-      entryPrice,
-      stopLoss,
-      targetPrice,
-      currentPrice,
-      hasResults: !!results
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 createOrUpdateLines called with:', {
+        entryPrice,
+        stopLoss,
+        targetPrice,
+        currentPrice,
+        hasResults: !!results
+      });
+    }
 
     try {
       const chart = widgetRef.current.activeChart();
       
       // PASSO 1: LIMPEZA RADICAL E FORÇADA
-      console.log('🗑️ FORCE CLEARING ALL LINES...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🗑️ FORCE CLEARING ALL LINES...');
+      }
       
       // Método 1: Limpar linhas rastreadas
       Object.keys(priceLineIds.current).forEach(lineType => {
@@ -352,9 +371,13 @@ const TradingViewChartAdvanced = ({
         if (lineId) {
           try {
             chart.removeEntity(lineId);
-            console.log(`🗑️ Force removed ${lineType}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🗑️ Force removed ${lineType}`);
+            }
           } catch (e) {
-            console.warn(`Failed to remove ${lineType}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`Failed to remove ${lineType}`);
+            }
           }
         }
       });
@@ -369,9 +392,13 @@ const TradingViewChartAdvanced = ({
             // Silenciar erros individuais
           }
         });
-        console.log(`🧹 Removed ${allEntities.length} total entities`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🧹 Removed ${allEntities.length} total entities`);
+        }
       } catch (e) {
-        console.warn('getAllShapes failed');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('getAllShapes failed');
+        }
       }
       
       // Método 3: Reset completo dos refs
@@ -410,7 +437,9 @@ const TradingViewChartAdvanced = ({
       // PASSO 4: Criar linha de entrada (verde) se válida
       if (entryPrice && entryPrice.toString().trim() !== '') {
         lineCounter.current++;
-        console.log('🟢 Creating entry line:', entryPrice, 'ID:', lineCounter.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🟢 Creating entry line:', entryPrice);
+        }
         const entryLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(entryPrice) },
@@ -418,7 +447,7 @@ const TradingViewChartAdvanced = ({
           ],
           {
             shape: "trend_line",
-            lock: true,
+            lock: false,
             disableSelection: false,
             disableSave: false,
             disableUndo: false,
@@ -427,20 +456,26 @@ const TradingViewChartAdvanced = ({
               fontSize: 12,
               linewidth: 2,
               linecolor: "#00FF00",
-              extendLeft: true,
+              extendLeft: false,
               extendRight: true,
-              text: `🟢 Entrada: $${parseFloat(entryPrice).toFixed(4)} [${lineCounter.current}]`
+              text: `🟢 Entrada: $${formatPrice(entryPrice)}`,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "middle"
             }
           }
         );
         priceLineIds.current.entry = entryLineId;
-        console.log('✅ Entry line created:', entryPrice, 'with ID:', lineCounter.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Entry line created:', entryPrice);
+        }
       }
 
       // PASSO 5: Criar linha de stop loss (vermelho) se válida
       if (stopLoss && stopLoss.toString().trim() !== '') {
         lineCounter.current++;
-        console.log('🔴 Creating stop loss line:', stopLoss, 'ID:', lineCounter.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔴 Creating stop loss line:', stopLoss);
+        }
         const stopLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(stopLoss) },
@@ -448,7 +483,7 @@ const TradingViewChartAdvanced = ({
           ],
           {
             shape: "trend_line",
-            lock: true,
+            lock: false,
             disableSelection: false,
             disableSave: false,
             disableUndo: false,
@@ -457,14 +492,18 @@ const TradingViewChartAdvanced = ({
               fontSize: 12,
               linewidth: 2,
               linecolor: "#FF0000",
-              extendLeft: true,
+              extendLeft: false,
               extendRight: true,
-              text: `🛑 Stop: $${parseFloat(stopLoss).toFixed(4)} [${lineCounter.current}]`
+              text: `🛑 Stop: $${formatPrice(stopLoss)}`,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "middle"
             }
           }
         );
         priceLineIds.current.stop = stopLineId;
-        console.log('✅ Stop loss line created:', stopLoss, 'with ID:', lineCounter.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Stop loss line created:', stopLoss);
+        }
       }
 
       // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
@@ -473,7 +512,9 @@ const TradingViewChartAdvanced = ({
       
       if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
         lineCounter.current++;
-        console.log('🔵 Creating manual target line:', targetPrice, 'ID:', lineCounter.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔵 Creating manual target line:', targetPrice);
+        }
         const targetLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(targetPrice) },
@@ -481,7 +522,7 @@ const TradingViewChartAdvanced = ({
           ],
           {
             shape: "trend_line",
-            lock: true,
+            lock: false,
             disableSelection: false,
             disableSave: false,
             disableUndo: false,
@@ -490,21 +531,27 @@ const TradingViewChartAdvanced = ({
               fontSize: 12,
               linewidth: 2,
               linecolor: "#0000FF",
-              extendLeft: true,
+              extendLeft: false,
               extendRight: true,
-              text: `🎯 Alvo: $${parseFloat(targetPrice).toFixed(4)} [${lineCounter.current}]`
+              text: `🎯 Alvo: $${formatPrice(targetPrice)}`,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "middle"
             }
           }
         );
         priceLineIds.current.target = targetLineId;
-        console.log('✅ Manual target line created:', targetPrice, 'with ID:', lineCounter.current);
-      } else if (hasSmartTargets) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Manual target line created:', targetPrice);
+        }
+      } else if (hasSmartTargets && process.env.NODE_ENV === 'development') {
         console.log('🚫 Skipping manual target - smart targets will be shown instead');
       }
 
       // PASSO 7: Criar alvos inteligentes se há resultados
       if (hasSmartTargets) {
-        console.log('🟠 Creating smart targets:', smartTargets.length);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🟠 Creating smart targets:', smartTargets.length);
+        }
         smartTargets.forEach((target, index) => {
           lineCounter.current++;
           const lineType = `smartTarget${index + 1}`;
@@ -516,7 +563,7 @@ const TradingViewChartAdvanced = ({
             ],
             {
               shape: "trend_line",
-              lock: true,
+              lock: false,
               disableSelection: false,
               disableSave: false,
               disableUndo: false,
@@ -526,28 +573,38 @@ const TradingViewChartAdvanced = ({
                 linewidth: 1,
                 linecolor: colors[index],
                 linestyle: 2, // Linha pontilhada
-                extendLeft: true,
+                extendLeft: false,
                 extendRight: true,
-                text: `🎯 ${target.label}: $${target.price.toFixed(4)} [${lineCounter.current}]`
+                text: `🎯 ${target.label}: $${formatPrice(target.price)}`,
+                horzLabelsAlign: "right",
+                vertLabelsAlign: "middle"
               }
             }
           );
           priceLineIds.current[lineType] = targetLineId;
-          console.log(`✅ Smart target ${index + 1} line created:`, target.price, 'with ID:', lineCounter.current);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Smart target ${index + 1} line created:`, target.price);
+          }
         });
       }
 
       const totalLines = Object.values(priceLineIds.current).filter(Boolean).length;
-      console.log(`✅ Lines status: ${totalLines} active lines`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Lines status: ${totalLines} active lines`);
+      }
       
       // PASSO FINAL: Forçar refresh visual
       try {
         // Força uma pequena atualização visual
         const visibleRange = chart.getVisibleRange();
         chart.setVisibleRange(visibleRange);
-        console.log('🔄 Chart visual refresh forced');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Chart visual refresh forced');
+        }
       } catch (refreshError) {
-        console.warn('⚠️ Chart refresh failed:', refreshError);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Chart refresh failed:', refreshError);
+        }
       }
 
     } catch (error) {
@@ -571,11 +628,15 @@ const TradingViewChartAdvanced = ({
     const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(lastValuesRef.current);
     
     if (!valuesChanged) {
-      console.log('💡 Values unchanged, skipping update');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💡 Values unchanged, skipping update');
+      }
       return;
     }
     
-    console.log('💡 Price values changed, debouncing update...');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('💡 Price values changed, debouncing update...');
+    }
     lastValuesRef.current = currentValues;
     
     // Limpar timeout anterior
