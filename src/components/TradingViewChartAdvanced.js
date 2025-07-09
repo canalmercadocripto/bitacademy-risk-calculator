@@ -17,14 +17,12 @@ const TradingViewChartAdvanced = ({
   const priceLineIds = useRef({
     entry: null,
     stop: null,
-    target: null,
-    current: null
+    target: null
   });
   const createdPrices = useRef({
     entryPrice: null,
     stopLoss: null,
-    targetPrice: null,
-    currentPrice: null
+    targetPrice: null
   });
 
   useEffect(() => {
@@ -195,7 +193,7 @@ const TradingViewChartAdvanced = ({
     if (!chartReady || !widgetRef.current) return;
     
     try {
-      ['entry', 'stop', 'target', 'current'].forEach(lineType => {
+      ['entry', 'stop', 'target'].forEach(lineType => {
         removeLine(lineType);
       });
       
@@ -203,8 +201,7 @@ const TradingViewChartAdvanced = ({
       createdPrices.current = {
         entryPrice: null,
         stopLoss: null,
-        targetPrice: null,
-        currentPrice: null
+        targetPrice: null
       };
       
       console.log('🗑️ All lines cleared');
@@ -228,8 +225,7 @@ const TradingViewChartAdvanced = ({
       existingLines: {
         entry: !!priceLineIds.current.entry,
         stop: !!priceLineIds.current.stop,
-        target: !!priceLineIds.current.target,
-        current: !!priceLineIds.current.current
+        target: !!priceLineIds.current.target
       }
     });
 
@@ -356,42 +352,6 @@ const TradingViewChartAdvanced = ({
         }
       }
 
-      // Criar linha de preço atual (amarelo) - apenas se diferente da entrada e não existir
-      if (currentPrice && currentPrice !== entryPrice) {
-        // Se preço mudou, remover linha existente primeiro
-        if (priceLineIds.current.current && createdPrices.current.currentPrice !== currentPrice) {
-          removeLine('current');
-        }
-        
-        // Criar nova linha se não existe
-        if (!priceLineIds.current.current) {
-          const currentLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: parseFloat(currentPrice) },
-              { time: endTime, price: parseFloat(currentPrice) }
-            ],
-            {
-              shape: "trend_line",
-              lock: true,
-              disableSelection: false,
-              disableSave: false,
-              disableUndo: false,
-              overrides: {
-                showLabel: true,
-                fontSize: 12,
-                linewidth: 2,
-                linecolor: "#FFFF00",
-                extendLeft: true,
-                extendRight: true,
-                text: `📊 Atual: $${parseFloat(currentPrice).toFixed(4)}`
-              }
-            }
-          );
-          priceLineIds.current.current = currentLineId;
-          createdPrices.current.currentPrice = currentPrice;
-          console.log('✅ Current price line created:', currentPrice);
-        }
-      }
 
       const totalLines = Object.values(priceLineIds.current).filter(Boolean).length;
       console.log(`✅ Lines status: ${totalLines} active lines`);
@@ -413,7 +373,7 @@ const TradingViewChartAdvanced = ({
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
+  }, [chartReady, entryPrice, stopLoss, targetPrice]);
 
   return (
     <div className="tradingview-chart-container">
