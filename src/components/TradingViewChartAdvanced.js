@@ -578,13 +578,10 @@ const TradingViewChartAdvanced = ({
         if (process.env.NODE_ENV === 'development') {
           console.log('🟢 Creating entry line:', entryPrice);
         }
-        const entryLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(entryPrice) },
-            { time: endTime, price: parseFloat(entryPrice) }
-          ],
+        const entryLineId = chart.createShape(
+          { time: startTime, price: parseFloat(entryPrice) },
           {
-            shape: "trend_line",
+            shape: "horizontal_line",
             lock: false,
             disableSelection: false,
             disableSave: false,
@@ -619,13 +616,10 @@ const TradingViewChartAdvanced = ({
         if (process.env.NODE_ENV === 'development') {
           console.log('🔴 Creating stop loss line:', stopLoss);
         }
-        const stopLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(stopLoss) },
-            { time: endTime, price: parseFloat(stopLoss) }
-          ],
+        const stopLineId = chart.createShape(
+          { time: startTime, price: parseFloat(stopLoss) },
           {
-            shape: "trend_line",
+            shape: "horizontal_line",
             lock: false,
             disableSelection: false,
             disableSave: false,
@@ -663,13 +657,10 @@ const TradingViewChartAdvanced = ({
         if (process.env.NODE_ENV === 'development') {
           console.log('🔵 Creating manual target line:', targetPrice);
         }
-        const targetLineId = chart.createMultipointShape(
-          [
-            { time: startTime, price: parseFloat(targetPrice) },
-            { time: endTime, price: parseFloat(targetPrice) }
-          ],
+        const targetLineId = chart.createShape(
+          { time: startTime, price: parseFloat(targetPrice) },
           {
-            shape: "trend_line",
+            shape: "horizontal_line",
             lock: false,
             disableSelection: false,
             disableSave: false,
@@ -709,13 +700,10 @@ const TradingViewChartAdvanced = ({
           lineCounter.current++;
           const lineType = `smartTarget${index + 1}`;
           const colors = ['#FFA500', '#FF8C00', '#FF6347']; // Laranja, laranja escuro, vermelho coral
-          const targetLineId = chart.createMultipointShape(
-            [
-              { time: startTime, price: target.price },
-              { time: endTime, price: target.price }
-            ],
+          const targetLineId = chart.createShape(
+            { time: startTime, price: target.price },
             {
-              shape: "trend_line",
+              shape: "horizontal_line",
               lock: false,
               disableSelection: false,
               disableSave: false,
