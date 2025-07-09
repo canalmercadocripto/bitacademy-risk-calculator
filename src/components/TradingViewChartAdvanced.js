@@ -112,22 +112,30 @@ const TradingViewChartAdvanced = ({
         // Quando o chart estiver pronto
         widget.onChartReady(() => {
           console.log('✅ TradingView Advanced Charts ready');
+          const chart = widget.activeChart();
+          
+          console.log('📊 Chart object:', !!chart);
+          console.log('📊 Chart methods available:', {
+            getAllShapes: typeof chart?.getAllShapes,
+            createShape: typeof chart?.createShape,
+            removeEntity: typeof chart?.removeEntity
+          });
+          
+          // Armazenar referência para uso posterior
+          chartRef.current = chart;
+          
           setChartReady(true);
           setHasError(false);
           
           // Criar linhas horizontais iniciais
           setTimeout(() => {
+            console.log('🏗️ Creating initial lines...');
             createOrUpdateLines();
           }, 1000);
           
-          // Listener para capturar movimento das linhas
-          const chart = widget.activeChart();
-          
-          // Armazenar referência para uso posterior
-          chartRef.current = chart;
-          
           // Listener para mudanças nas shapes/linhas - polling mais frequente
           if (onPriceChange) {
+            console.log('🔄 Starting price sync polling...');
             const pollInterval = setInterval(() => {
               syncLinePriceCoordinates();
             }, 200); // Verificar a cada 0.2 segundos para maior responsividade
@@ -767,6 +775,22 @@ const TradingViewChartAdvanced = ({
   const testSyncFunction = () => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 Testing sync function manually...');
+      console.log('🔧 Chart ready:', chartReady);
+      console.log('🔧 Chart ref:', !!chartRef.current);
+      console.log('🔧 onPriceChange:', !!onPriceChange);
+      console.log('🔧 isUpdatingFromCalculator:', isUpdatingFromCalculator.current);
+      console.log('🔧 priceLineIds:', priceLineIds.current);
+      console.log('🔧 lastKnownPrices:', lastKnownPrices.current);
+      
+      if (chartRef.current) {
+        try {
+          const allShapes = chartRef.current.getAllShapes();
+          console.log('🔧 All shapes:', allShapes.length, allShapes);
+        } catch (e) {
+          console.error('🔧 Error getting shapes:', e);
+        }
+      }
+      
       syncLinePriceCoordinates();
     }
   };
