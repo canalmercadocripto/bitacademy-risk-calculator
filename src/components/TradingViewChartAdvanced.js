@@ -58,24 +58,29 @@ const TradingViewChartAdvanced = ({
   const syncPriceChange = (fieldName, currentPrice, lineType) => {
     const lastPrice = lastKnownPrices.current[lineType];
     
-    // Forçar log sempre para debug
-    console.log(`🔍 ${lineType} line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - (lastPrice || 0))}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 ${lineType} line found - Current: ${currentPrice}, Last: ${lastPrice}, Diff: ${Math.abs(currentPrice - (lastPrice || 0))}`);
+    }
     
     if (lastPrice && Math.abs(currentPrice - lastPrice) > 0.01) {
       lastKnownPrices.current[lineType] = currentPrice;
       
-      // Log sempre
-      console.log(`🔄 ${lineType} syncing: ${currentPrice} -> calling onPriceChange('${fieldName}', '${currentPrice}')`);
-      window.tradingViewLogs.push(`🔄 ${lineType} synced: ${currentPrice} at ${new Date().toLocaleTimeString()}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 ${lineType} syncing: ${currentPrice} -> calling onPriceChange('${fieldName}', '${currentPrice}')`);
+      }
       addToLocalStorage(`🔄 ${lineType} synced: ${currentPrice}`);
       
       // Temporariamente bloquear recriação
       isUpdatingFromCalculator.current = true;
       try {
         onPriceChange(fieldName, currentPrice.toString());
-        console.log(`✅ onPriceChange called successfully for ${lineType}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ onPriceChange called successfully for ${lineType}`);
+        }
       } catch (e) {
-        console.error(`❌ Error calling onPriceChange for ${lineType}:`, e);
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`❌ Error calling onPriceChange for ${lineType}:`, e);
+        }
       }
       setTimeout(() => {
         isUpdatingFromCalculator.current = false;
@@ -206,19 +211,55 @@ const TradingViewChartAdvanced = ({
             createOrUpdateLines();
           }, 1000);
           
-          // Listener para mudanças nas shapes/linhas - polling mais frequente
+          // Configurar eventos nativos do TradingView (sem polling)
           if (onPriceChange) {
-            console.log('🔄 Starting price sync polling...');
-            const pollInterval = setInterval(() => {
-              syncLinePriceCoordinates();
-            }, 200); // Verificar a cada 0.2 segundos para maior responsividade
+            console.log('🔄 Setting up native TradingView events...');
             
-            // Cleanup
-            return () => {
-              if (pollInterval) {
-                clearInterval(pollInterval);
+            // Tentar usar eventos nativos primeiro
+            try {
+              // Evento de mudança em shapes/linhas
+              if (typeof chart.onChartDataChanged === 'function') {
+                chart.onChartDataChanged().subscribe(null, () => {
+                  console.log('📊 Chart data changed event');
+                  syncLinePriceCoordinates();
+                });
               }
-            };
+              
+              // Evento de mudança em estudos/overlays
+              if (typeof chart.onDataChanged === 'function') {
+                chart.onDataChanged().subscribe(null, () => {
+                  console.log('📊 Data changed event');
+                  syncLinePriceCoordinates();
+                });
+              }
+              
+              // Fallback: polling reduzido apenas se eventos não estiverem disponíveis
+              const pollInterval = setInterval(() => {
+                syncLinePriceCoordinates();
+              }, 2000); // Reduzido para 2 segundos (era 200ms)
+              
+              console.log('✅ Event listeners configured (with 2s fallback polling)');
+              
+              // Cleanup
+              return () => {
+                if (pollInterval) {
+                  clearInterval(pollInterval);
+                }
+              };
+            } catch (e) {
+              console.warn('⚠️ Could not set up native events, using reduced polling');
+              
+              // Fallback com polling muito reduzido
+              const pollInterval = setInterval(() => {
+                syncLinePriceCoordinates();
+              }, 3000); // 3 segundos apenas
+              
+              return () => {
+                if (pollInterval) {
+                  clearInterval(pollInterval);
+                }
+              };
+            }
           }
         });
 
@@ -265,12 +306,9 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
-  // Função para sincronizar coordenadas de preço das linhas com calculadora
+  // Função para sincronizar coordenadas de preço das linhas com calculadora (otimizada)
   const syncLinePriceCoordinates = () => {
-    if (!chartReady || !chartRef.current || !onPriceChange) {
-      if (process.env.NODE_ENV === 'development' && !onPriceChange) {
-        console.log('⚠️ onPriceChange not available, skipping sync');
-      }
+    if (!chartReady || !chartRef.current || !onPriceChange || isUpdatingFromCalculator.current) {
       return;
     }
     
@@ -298,25 +336,9 @@ const TradingViewChartAdvanced = ({
       const chart = chartRef.current;
       const allShapes = chart.getAllShapes();
       
-      // Força logs sempre (temporário para debug)
-      console.log(`📊 Checking ${allShapes.length} shapes. Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
-      
-      // Capturar no log global
-      window.tradingViewLogs.push(`📊 Sync check: ${allShapes.length} shapes - ${new Date().toLocaleTimeString()}`);
-      
-      if (allShapes.length > 0) {
-        console.log('📊 Shape details:', allShapes.map(s => ({ 
-          id: s.id, 
-          price: s.points?.[0]?.price,
-          hasPoints: !!s.points,
-          pointsLength: s.points?.length,
-          fullPoints: s.points
-        })));
-        window.tradingViewLogs.push(`📊 Shapes: ${allShapes.map(s => `${s.id}:${s.points?.[0]?.price || 'NO_PRICE'}`).join(', ')}`);
-        
-        // Debug adicional
-        console.log('📊 Our stored IDs:', priceLineIds.current);
-        addToLocalStorage(`📊 Our IDs: Entry=${priceLineIds.current.entry}, Stop=${priceLineIds.current.stop}, Target=${priceLineIds.current.target}`);
+      // Log apenas se shapes mudaram significativamente
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Checking ${allShapes.length} shapes`);
       }
       
       // Verificar cada linha individualmente
