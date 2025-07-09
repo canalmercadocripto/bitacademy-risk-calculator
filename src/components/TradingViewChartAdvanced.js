@@ -130,7 +130,7 @@ const TradingViewChartAdvanced = ({
             // Método 1: Tentar usar eventos nativos do TradingView
             try {
               chart.onDataLoaded().subscribe(null, () => {
-                setTimeout(() => checkForLineMovement(), 100);
+                setTimeout(() => syncLinePriceCoordinates(), 100);
               });
             } catch (e) {
               if (process.env.NODE_ENV === 'development') {
@@ -138,10 +138,10 @@ const TradingViewChartAdvanced = ({
               }
             }
             
-            // Método 2: Usar polling para detectar mudanças (fallback)
+            // Método 2: Usar polling para sincronizar coordenadas (fallback)
             const pollInterval = setInterval(() => {
-              checkForLineMovement();
-            }, 500); // Verificar a cada 0.5 segundos para mais responsividade
+              syncLinePriceCoordinates();
+            }, 300); // Verificar a cada 0.3 segundos para máxima responsividade
             
             // Cleanup
             return () => {
@@ -188,114 +188,86 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
-  // Função para verificar se linhas foram movidas e sincronizar com calculadora
-  const checkForLineMovement = () => {
+  // Função para sincronizar coordenadas de preço das linhas com calculadora
+  const syncLinePriceCoordinates = () => {
     if (!chartReady || !chartRef.current || !onPriceChange) return;
     
     try {
       const chart = chartRef.current;
       
-      // Método alternativo: verificar usando API de estudos
-      const checkLineById = (lineId, lineType) => {
+      // Função para extrair coordenadas de preço de uma linha
+      const extractPriceCoordinate = (lineId, lineType) => {
         if (!lineId) return;
         
         try {
-          // Tentar usar getShapeById se disponível
-          const shape = chart.getShapeById ? chart.getShapeById(lineId) : null;
+          // Método 1: Usar getShapeById se disponível
+          let shape = null;
+          try {
+            shape = chart.getShapeById ? chart.getShapeById(lineId) : null;
+          } catch (e) {
+            // Fallback para getAllShapes
+          }
           
-          if (shape && shape.points && shape.points.length >= 2) {
-            const price = shape.points[0].price;
+          // Método 2: Buscar na lista de todas as shapes
+          if (!shape) {
+            try {
+              const allShapes = chart.getAllShapes();
+              shape = allShapes.find(s => s.id === lineId);
+            } catch (e) {
+              return;
+            }
+          }
+          
+          if (shape && shape.points && shape.points.length > 0) {
+            const currentPrice = shape.points[0].price;
             const lastKnownPrice = lastKnownPrices.current[lineType];
             
-            // Verificar se o preço mudou significativamente
-            if (lastKnownPrice && Math.abs(price - lastKnownPrice) > 0.0001) {
-              lastKnownPrices.current[lineType] = price;
+            // Verificar se a coordenada de preço mudou significativamente
+            if (lastKnownPrice && Math.abs(currentPrice - lastKnownPrice) > 0.0001) {
+              lastKnownPrices.current[lineType] = currentPrice;
               
-              // Verificar qual linha foi movida e notificar a calculadora
+              // Sincronizar coordenada com campo da calculadora
               if (lineType === 'entry') {
-                onPriceChange('entryPrice', price.toString());
+                onPriceChange('entryPrice', currentPrice.toFixed(6));
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Entry price moved to: ${formatPrice(price)}`);
+                  console.log(`🔄 Entry price coordinate synced: ${formatPrice(currentPrice)}`);
                 }
               } else if (lineType === 'stop') {
-                onPriceChange('stopLoss', price.toString());
+                onPriceChange('stopLoss', currentPrice.toFixed(6));
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Stop loss moved to: ${formatPrice(price)}`);
+                  console.log(`🔄 Stop loss coordinate synced: ${formatPrice(currentPrice)}`);
                 }
               } else if (lineType === 'target') {
-                onPriceChange('targetPrice', price.toString());
+                onPriceChange('targetPrice', currentPrice.toFixed(6));
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Target price moved to: ${formatPrice(price)}`);
+                  console.log(`🔄 Target price coordinate synced: ${formatPrice(currentPrice)}`);
                 }
               }
             }
           }
         } catch (shapeError) {
           if (process.env.NODE_ENV === 'development') {
-            console.warn(`⚠️ Error checking shape ${lineType}:`, shapeError);
+            console.warn(`⚠️ Error extracting price coordinate for ${lineType}:`, shapeError);
           }
         }
       };
       
-      // Verificar linhas individuais
-      checkLineById(priceLineIds.current.entry, 'entry');
-      checkLineById(priceLineIds.current.stop, 'stop');
-      checkLineById(priceLineIds.current.target, 'target');
+      // Sincronizar coordenadas das linhas principais
+      extractPriceCoordinate(priceLineIds.current.entry, 'entry');
+      extractPriceCoordinate(priceLineIds.current.stop, 'stop');
+      extractPriceCoordinate(priceLineIds.current.target, 'target');
       
-      // Método de fallback: usar getAllShapes
-      try {
-        const allShapes = chart.getAllShapes();
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔍 Checking ${allShapes.length} shapes for movement`);
-        }
-        
-        // Procurar por nossas linhas e verificar se foram movidas
-        allShapes.forEach(shape => {
-          if (shape.points && shape.points.length >= 2) {
-            const price = shape.points[0].price;
-            const shapeId = shape.id;
-            
-            // Verificar se é uma das nossas linhas
-            Object.keys(priceLineIds.current).forEach(lineType => {
-              if (priceLineIds.current[lineType] === shapeId) {
-                const lastKnownPrice = lastKnownPrices.current[lineType];
-                
-                // Verificar se o preço mudou significativamente
-                if (lastKnownPrice && Math.abs(price - lastKnownPrice) > 0.0001) {
-                  lastKnownPrices.current[lineType] = price;
-                  
-                  // Verificar qual linha foi movida e notificar a calculadora
-                  if (lineType === 'entry') {
-                    onPriceChange('entryPrice', price.toString());
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log(`🔄 Entry price moved to: ${formatPrice(price)}`);
-                    }
-                  } else if (lineType === 'stop') {
-                    onPriceChange('stopLoss', price.toString());
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log(`🔄 Stop loss moved to: ${formatPrice(price)}`);
-                    }
-                  } else if (lineType === 'target') {
-                    onPriceChange('targetPrice', price.toString());
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log(`🔄 Target price moved to: ${formatPrice(price)}`);
-                    }
-                  }
-                }
-              }
-            });
-          }
-        });
-      } catch (getAllError) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('⚠️ getAllShapes failed:', getAllError);
-        }
+      // Debug: Mostrar status das coordenadas
+      if (process.env.NODE_ENV === 'development') {
+        const activeLines = Object.keys(priceLineIds.current)
+          .filter(key => priceLineIds.current[key] !== null)
+          .length;
+        console.log(`📍 Coordenadas sendo monitoradas: ${activeLines} linhas ativas`);
       }
       
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Error checking line movement:', error);
+        console.error('❌ Error syncing price coordinates:', error);
       }
     }
   };
@@ -603,10 +575,130 @@ const TradingViewChartAdvanced = ({
             }
           }
         );
+        
+        // Adicionar listener para mudanças na linha de entrada
+        try {
+          chart.onShapeChanged().subscribe(null, (shapeId) => {
+            if (shapeId === entryLineId && onPriceChange) {
+              setTimeout(() => syncLinePriceCoordinates(), 50);
+            }
+          });
+        } catch (e) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Shape change events not available for entry line');
+          }
+        }
+        
         priceLineIds.current.entry = entryLineId;
         lastKnownPrices.current.entry = parseFloat(entryPrice);
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Entry line created:', entryPrice);
+          console.log('✅ Entry line created with coordinate sync:', entryPrice);
+        }
+      }
+
+      // PASSO 5: Criar linha de stop loss (vermelho) se válida
+      if (stopLoss && stopLoss.toString().trim() !== '') {
+        lineCounter.current++;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔴 Creating stop loss line:', stopLoss);
+        }
+        const stopLineId = chart.createShape(
+          { time: startTime, price: parseFloat(stopLoss) },
+          {
+            shape: "horizontal_line",
+            lock: false,
+            disableSelection: false,
+            disableSave: false,
+            disableUndo: false,
+            overrides: {
+              showLabel: true,
+              fontSize: 10,
+              linewidth: 2,
+              linecolor: "#FF0000",
+              extendLeft: false,
+              extendRight: true,
+              text: `🛑 Stop: $${formatPrice(stopLoss)}`,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "middle",
+              textColor: "#FFFFFF",
+              backgroundColor: "#CC0000",
+              borderColor: "#FF0000",
+              borderWidth: 1
+            }
+          }
+        );
+        
+        // Adicionar listener para mudanças na linha de stop loss
+        try {
+          chart.onShapeChanged().subscribe(null, (shapeId) => {
+            if (shapeId === stopLineId && onPriceChange) {
+              setTimeout(() => syncLinePriceCoordinates(), 50);
+            }
+          });
+        } catch (e) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Shape change events not available for stop line');
+          }
+        }
+        
+        priceLineIds.current.stop = stopLineId;
+        lastKnownPrices.current.stop = parseFloat(stopLoss);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Stop loss line created with coordinate sync:', stopLoss);
+        }
+      }
+
+      // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
+      const smartTargets = calculateSmartTargets();
+      const hasSmartTargets = smartTargets && results;
+      
+      if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
+        lineCounter.current++;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔵 Creating manual target line:', targetPrice);
+        }
+        const targetLineId = chart.createShape(
+          { time: startTime, price: parseFloat(targetPrice) },
+          {
+            shape: "horizontal_line",
+            lock: false,
+            disableSelection: false,
+            disableSave: false,
+            disableUndo: false,
+            overrides: {
+              showLabel: true,
+              fontSize: 10,
+              linewidth: 2,
+              linecolor: "#0000FF",
+              extendLeft: false,
+              extendRight: true,
+              text: `🎯 Alvo: $${formatPrice(targetPrice)}`,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "middle",
+              textColor: "#FFFFFF",
+              backgroundColor: "#0000CC",
+              borderColor: "#0000FF",
+              borderWidth: 1
+            }
+          }
+        );
+        
+        // Adicionar listener para mudanças na linha de target
+        try {
+          chart.onShapeChanged().subscribe(null, (shapeId) => {
+            if (shapeId === targetLineId && onPriceChange) {
+              setTimeout(() => syncLinePriceCoordinates(), 50);
+            }
+          });
+        } catch (e) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Shape change events not available for target line');
+          }
+        
+        priceLineIds.current.target = targetLineId;
+        lastKnownPrices.current.target = parseFloat(targetPrice);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Target line created with coordinate sync:', targetPrice);
         }
       }
 
@@ -757,6 +849,121 @@ const TradingViewChartAdvanced = ({
     }
   };
 
+  // Função para atualizar coordenadas das linhas existentes
+  const updateLineCoordinates = (lineType, newPrice) => {
+    if (!chartReady || !widgetRef.current) return;
+    
+    try {
+      const chart = widgetRef.current.activeChart();
+      const lineId = priceLineIds.current[lineType];
+      
+      if (lineId && newPrice && newPrice.toString().trim() !== '') {
+        const numericPrice = parseFloat(newPrice);
+        
+        // Atualizar a coordenada da linha
+        try {
+          chart.removeEntity(lineId);
+          
+          // Recriar a linha na nova coordenada
+          const visibleRange = chart.getVisibleRange();
+          const currentTime = Math.floor(Date.now() / 1000);
+          const startTime = visibleRange.from || (currentTime - 86400 * 30);
+          
+          let newLineId = null;
+          
+          if (lineType === 'entry') {
+            newLineId = chart.createShape(
+              { time: startTime, price: numericPrice },
+              {
+                shape: "horizontal_line",
+                lock: false,
+                overrides: {
+                  showLabel: true,
+                  fontSize: 10,
+                  linewidth: 2,
+                  linecolor: "#00FF00",
+                  extendLeft: false,
+                  extendRight: true,
+                  text: `🟢 Entrada: $${formatPrice(numericPrice)}`,
+                  horzLabelsAlign: "right",
+                  vertLabelsAlign: "middle",
+                  textColor: "#FFFFFF",
+                  backgroundColor: "#00AA00",
+                  borderColor: "#00FF00",
+                  borderWidth: 1
+                }
+              }
+            );
+          } else if (lineType === 'stop') {
+            newLineId = chart.createShape(
+              { time: startTime, price: numericPrice },
+              {
+                shape: "horizontal_line",
+                lock: false,
+                overrides: {
+                  showLabel: true,
+                  fontSize: 10,
+                  linewidth: 2,
+                  linecolor: "#FF0000",
+                  extendLeft: false,
+                  extendRight: true,
+                  text: `🛑 Stop: $${formatPrice(numericPrice)}`,
+                  horzLabelsAlign: "right",
+                  vertLabelsAlign: "middle",
+                  textColor: "#FFFFFF",
+                  backgroundColor: "#CC0000",
+                  borderColor: "#FF0000",
+                  borderWidth: 1
+                }
+              }
+            );
+          } else if (lineType === 'target') {
+            newLineId = chart.createShape(
+              { time: startTime, price: numericPrice },
+              {
+                shape: "horizontal_line",
+                lock: false,
+                overrides: {
+                  showLabel: true,
+                  fontSize: 10,
+                  linewidth: 2,
+                  linecolor: "#0000FF",
+                  extendLeft: false,
+                  extendRight: true,
+                  text: `🎯 Alvo: $${formatPrice(numericPrice)}`,
+                  horzLabelsAlign: "right",
+                  vertLabelsAlign: "middle",
+                  textColor: "#FFFFFF",
+                  backgroundColor: "#0000CC",
+                  borderColor: "#0000FF",
+                  borderWidth: 1
+                }
+              }
+            );
+          }
+          
+          if (newLineId) {
+            priceLineIds.current[lineType] = newLineId;
+            lastKnownPrices.current[lineType] = numericPrice;
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`📍 ${lineType} line coordinate updated to: ${formatPrice(numericPrice)}`);
+            }
+          }
+          
+        } catch (updateError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`❌ Error updating ${lineType} line coordinate:`, updateError);
+          }
+        }
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Error updating line coordinates:', error);
+      }
+    }
+  };
+
   // useEffect simplificado com debounce inline
   useEffect(() => {
     if (!chartReady || !widgetRef.current) return;
@@ -780,8 +987,20 @@ const TradingViewChartAdvanced = ({
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('💡 Price values changed, debouncing update...');
+      console.log('💡 Price values changed, updating coordinates...');
     }
+    
+    // Atualizar coordenadas individualmente se as linhas já existem
+    if (priceLineIds.current.entry && entryPrice !== lastValuesRef.current.entryPrice) {
+      updateLineCoordinates('entry', entryPrice);
+    }
+    if (priceLineIds.current.stop && stopLoss !== lastValuesRef.current.stopLoss) {
+      updateLineCoordinates('stop', stopLoss);
+    }
+    if (priceLineIds.current.target && targetPrice !== lastValuesRef.current.targetPrice) {
+      updateLineCoordinates('target', targetPrice);
+    }
+    
     lastValuesRef.current = currentValues;
     
     // Limpar timeout anterior
@@ -789,10 +1008,10 @@ const TradingViewChartAdvanced = ({
       clearTimeout(updateTimeoutRef.current);
     }
     
-    // Debounce inline
+    // Debounce inline para recriação completa se necessário
     updateTimeoutRef.current = setTimeout(() => {
       createOrUpdateLines();
-    }, 300);
+    }, 500);
 
     // Cleanup do timeout quando componente desmonta ou deps mudam
     return () => {
