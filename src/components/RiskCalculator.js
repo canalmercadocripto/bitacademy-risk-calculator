@@ -429,6 +429,7 @@ const RiskCalculator = () => {
                   targetPrice={formData.targetPrice}
                   tradeDirection={formData.direction}
                   currentPrice={liveCurrentPrice}
+                  results={results}
                 />
               ) : useNativeChart ? (
                 <TradingViewChartNative

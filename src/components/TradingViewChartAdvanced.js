@@ -8,7 +8,8 @@ const TradingViewChartAdvanced = ({
   stopLoss = null,
   targetPrice = null,
   tradeDirection = null,
-  currentPrice = null
+  currentPrice = null,
+  results = null  // Adicionar resultados para alvos inteligentes
 }) => {
   const chartContainerRef = useRef(null);
   const widgetRef = useRef(null);
@@ -17,12 +18,16 @@ const TradingViewChartAdvanced = ({
   const priceLineIds = useRef({
     entry: null,
     stop: null,
-    target: null
+    target: null,
+    smartTarget1: null,
+    smartTarget2: null,
+    smartTarget3: null
   });
   const createdPrices = useRef({
     entryPrice: null,
     stopLoss: null,
-    targetPrice: null
+    targetPrice: null,
+    smartTargets: null
   });
 
   useEffect(() => {
@@ -170,6 +175,63 @@ const TradingViewChartAdvanced = ({
     };
   }, [symbol, theme]);
 
+  // Função para calcular alvos inteligentes baseados nos resultados
+  const calculateSmartTargets = () => {
+    if (!results || !entryPrice || !targetPrice) return null;
+    
+    const entry = parseFloat(entryPrice);
+    const target = parseFloat(targetPrice);
+    const isLong = tradeDirection === 'LONG';
+    
+    // Calcular a diferença total
+    const totalDistance = Math.abs(target - entry);
+    
+    // Alvos inteligentes: 33%, 66%, 100%
+    const targets = [];
+    
+    if (isLong) {
+      targets.push({
+        level: 1,
+        percentage: 33,
+        price: entry + (totalDistance * 0.33),
+        label: "TP1 - 33%"
+      });
+      targets.push({
+        level: 2,
+        percentage: 66,
+        price: entry + (totalDistance * 0.66),
+        label: "TP2 - 66%"
+      });
+      targets.push({
+        level: 3,
+        percentage: 100,
+        price: target,
+        label: "TP3 - 100%"
+      });
+    } else {
+      targets.push({
+        level: 1,
+        percentage: 33,
+        price: entry - (totalDistance * 0.33),
+        label: "TP1 - 33%"
+      });
+      targets.push({
+        level: 2,
+        percentage: 66,
+        price: entry - (totalDistance * 0.66),
+        label: "TP2 - 66%"
+      });
+      targets.push({
+        level: 3,
+        percentage: 100,
+        price: target,
+        label: "TP3 - 100%"
+      });
+    }
+    
+    return targets;
+  };
+
   // Função para remover uma linha específica
   const removeLine = (lineType) => {
     if (!chartReady || !widgetRef.current) return;
@@ -188,12 +250,31 @@ const TradingViewChartAdvanced = ({
     }
   };
 
+  // Função para remover múltiplas linhas de uma vez
+  const removeMultipleLines = (lineTypes) => {
+    if (!chartReady || !widgetRef.current) return;
+    
+    try {
+      const chart = widgetRef.current.activeChart();
+      lineTypes.forEach(lineType => {
+        const lineId = priceLineIds.current[lineType];
+        if (lineId) {
+          chart.removeEntity(lineId);
+          priceLineIds.current[lineType] = null;
+          console.log(`🗑️ ${lineType} line removed`);
+        }
+      });
+    } catch (error) {
+      console.error(`❌ Error removing multiple lines:`, error);
+    }
+  };
+
   // Função para remover todas as linhas
   const clearAllLines = () => {
     if (!chartReady || !widgetRef.current) return;
     
     try {
-      ['entry', 'stop', 'target'].forEach(lineType => {
+      ['entry', 'stop', 'target', 'smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
         removeLine(lineType);
       });
       
@@ -201,7 +282,8 @@ const TradingViewChartAdvanced = ({
       createdPrices.current = {
         entryPrice: null,
         stopLoss: null,
-        targetPrice: null
+        targetPrice: null,
+        smartTargets: null
       };
       
       console.log('🗑️ All lines cleared');
@@ -225,7 +307,10 @@ const TradingViewChartAdvanced = ({
       existingLines: {
         entry: !!priceLineIds.current.entry,
         stop: !!priceLineIds.current.stop,
-        target: !!priceLineIds.current.target
+        target: !!priceLineIds.current.target,
+        smartTarget1: !!priceLineIds.current.smartTarget1,
+        smartTarget2: !!priceLineIds.current.smartTarget2,
+        smartTarget3: !!priceLineIds.current.smartTarget3
       }
     });
 
@@ -352,6 +437,57 @@ const TradingViewChartAdvanced = ({
         }
       }
 
+      // Criar alvos inteligentes se existirem resultados
+      const smartTargets = calculateSmartTargets();
+      if (smartTargets && results) {
+        const smartTargetsString = JSON.stringify(smartTargets);
+        
+        // Se alvos mudaram, remover linhas existentes
+        if (createdPrices.current.smartTargets !== smartTargetsString) {
+          ['smartTarget1', 'smartTarget2', 'smartTarget3'].forEach(lineType => {
+            if (priceLineIds.current[lineType]) {
+              removeLine(lineType);
+            }
+          });
+        }
+        
+        // Criar novas linhas para os alvos inteligentes
+        smartTargets.forEach((target, index) => {
+          const lineType = `smartTarget${index + 1}`;
+          
+          if (!priceLineIds.current[lineType]) {
+            const colors = ['#FFA500', '#FF8C00', '#FF6347']; // Laranja, laranja escuro, vermelho coral
+            const targetLineId = chart.createMultipointShape(
+              [
+                { time: startTime, price: target.price },
+                { time: endTime, price: target.price }
+              ],
+              {
+                shape: "trend_line",
+                lock: true,
+                disableSelection: false,
+                disableSave: false,
+                disableUndo: false,
+                overrides: {
+                  showLabel: true,
+                  fontSize: 11,
+                  linewidth: 1,
+                  linecolor: colors[index],
+                  linestyle: 2, // Linha pontilhada
+                  extendLeft: true,
+                  extendRight: true,
+                  text: `🎯 ${target.label}: $${target.price.toFixed(4)}`
+                }
+              }
+            );
+            priceLineIds.current[lineType] = targetLineId;
+            console.log(`✅ Smart target ${index + 1} line created:`, target.price);
+          }
+        });
+        
+        // Atualizar cache
+        createdPrices.current.smartTargets = smartTargetsString;
+      }
 
       const totalLines = Object.values(priceLineIds.current).filter(Boolean).length;
       console.log(`✅ Lines status: ${totalLines} active lines`);
@@ -373,7 +509,7 @@ const TradingViewChartAdvanced = ({
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [chartReady, entryPrice, stopLoss, targetPrice]);
+  }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
   return (
     <div className="tradingview-chart-container">
