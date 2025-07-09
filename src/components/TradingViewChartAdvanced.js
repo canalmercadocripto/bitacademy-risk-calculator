@@ -440,10 +440,13 @@ const TradingViewChartAdvanced = ({
         console.log('✅ Stop loss line created:', stopLoss, 'with ID:', lineCounter.current);
       }
 
-      // PASSO 6: Criar linha de target (azul) se válida
-      if (targetPrice && targetPrice.toString().trim() !== '') {
+      // PASSO 6: Criar linha de target (azul) apenas se não há alvos inteligentes
+      const smartTargets = calculateSmartTargets();
+      const hasSmartTargets = smartTargets && results;
+      
+      if (targetPrice && targetPrice.toString().trim() !== '' && !hasSmartTargets) {
         lineCounter.current++;
-        console.log('🔵 Creating target line:', targetPrice, 'ID:', lineCounter.current);
+        console.log('🔵 Creating manual target line:', targetPrice, 'ID:', lineCounter.current);
         const targetLineId = chart.createMultipointShape(
           [
             { time: startTime, price: parseFloat(targetPrice) },
@@ -467,12 +470,13 @@ const TradingViewChartAdvanced = ({
           }
         );
         priceLineIds.current.target = targetLineId;
-        console.log('✅ Target line created:', targetPrice, 'with ID:', lineCounter.current);
+        console.log('✅ Manual target line created:', targetPrice, 'with ID:', lineCounter.current);
+      } else if (hasSmartTargets) {
+        console.log('🚫 Skipping manual target - smart targets will be shown instead');
       }
 
       // PASSO 7: Criar alvos inteligentes se há resultados
-      const smartTargets = calculateSmartTargets();
-      if (smartTargets && results) {
+      if (hasSmartTargets) {
         console.log('🟠 Creating smart targets:', smartTargets.length);
         smartTargets.forEach((target, index) => {
           lineCounter.current++;
