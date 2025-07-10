@@ -72,7 +72,7 @@ class UniversalDatafeed {
         baseUrl: 'https://open-api.bingx.com',
         wsUrl: 'wss://open-api-ws.bingx.com/market',
         intervals: {
-          '1': '1m', '5': '5m', '15': '15m', '30': '30m',
+          '1': '1min', '5': '5min', '15': '15min', '30': '30min',
           '60': '1h', '240': '4h', '1D': '1d'
         },
         endpoints: {
@@ -413,10 +413,11 @@ class UniversalDatafeed {
               symbol.replace('USDT', '-USDT') : 
               symbol.replace('/', '-');
             
+            // BingX WebSocket usa formato: market.kline.SYMBOL.INTERVAL
             const subscribeMessage = {
-              id: Date.now(),
+              id: Date.now().toString(),
               reqType: 'sub',
-              dataType: `${bingxSymbol}@kline_${this.exchanges.bingx.intervals[resolution]}`
+              dataType: `market.kline.${bingxSymbol}.${this.exchanges.bingx.intervals[resolution]}`
             };
             
             ws.send(JSON.stringify(subscribeMessage));
