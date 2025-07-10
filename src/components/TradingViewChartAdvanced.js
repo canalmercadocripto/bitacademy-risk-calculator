@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import BinanceDatafeed from '../utils/binanceDatafeed';
+import UniversalDatafeed from '../utils/UniversalDatafeed';
 
 const TradingViewChartAdvanced = ({ 
   symbol = "BINANCE:BTCUSDT", 
@@ -107,8 +107,8 @@ const TradingViewChartAdvanced = ({
 
         console.log('✅ Initializing TradingView Advanced Charts with Binance Real Data');
 
-        // Configurar datafeed com dados reais da Binance
-        const datafeed = new BinanceDatafeed();
+        // Configurar datafeed universal com múltiplas exchanges
+        const datafeed = new UniversalDatafeed();
 
         // Limpar widget anterior
         if (widgetRef.current) {

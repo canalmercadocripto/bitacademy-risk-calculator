@@ -95,16 +95,33 @@ const RiskCalculator = () => {
   // Hook para auto-atualização de preços - apenas para monitoramento
   usePriceUpdater(selectedExchange, selectedSymbol, handlePriceUpdate, priceUpdateEnabled);
 
-  // Função simples para atualizar símbolo do TradingView
+  // Função para atualizar símbolo do TradingView com exchange
   const updateChartSymbol = useCallback((exchange, symbol) => {
     if (!exchange || !symbol) return;
     
     const exchangeName = typeof exchange === 'object' ? exchange.id : exchange;
     const symbolName = typeof symbol === 'object' ? symbol.symbol : symbol;
     
-    // Usar apenas o símbolo sem exchange prefix para Advanced Charts
+    // Informar ao datafeed qual exchange está selecionada
+    window.selectedExchange = exchangeName;
+    
+    // Usar formato exchange:symbol para o Universal Datafeed
     const cleanSymbol = symbolName?.replace('/', '').toUpperCase() || 'BTCUSDT';
-    setChartSymbol(cleanSymbol);
+    const exchangeMap = {
+      'binance': 'BINANCE',
+      'bybit': 'BYBIT', 
+      'bitget': 'BITGET',
+      'bingx': 'BINGX'
+    };
+    
+    const tvExchange = exchangeMap[exchangeName?.toLowerCase()] || 'BINANCE';
+    const chartSymbol = `${tvExchange}:${cleanSymbol}`;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Chart symbol updated:', { exchange: exchangeName, symbol: cleanSymbol, chartSymbol });
+    }
+    
+    setChartSymbol(chartSymbol);
   }, []);
 
   // Atualizar símbolos quando exchange muda
