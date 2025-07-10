@@ -13,8 +13,6 @@ import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
-import TradingViewChart from './TradingViewChart';
-import TradingViewChartNative from './TradingViewChartNative';
 import TradingViewChartAdvanced from './TradingViewChartAdvanced';
 import '../styles/TradingViewChart.css';
 
@@ -82,8 +80,6 @@ const RiskCalculator = () => {
   // States do TradingView
   const [showChart, setShowChart] = useState(true);
   const [chartSymbol, setChartSymbol] = useState("BTCUSDT");
-  const [useNativeChart, setUseNativeChart] = useState(false);
-  const [useAdvancedChart, setUseAdvancedChart] = useState(true);
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -107,26 +103,10 @@ const RiskCalculator = () => {
     const exchangeName = typeof exchange === 'object' ? exchange.id : exchange;
     const symbolName = typeof symbol === 'object' ? symbol.symbol : symbol;
     
-    // Para Advanced Charts, usar apenas o símbolo sem exchange prefix
+    // Usar apenas o símbolo sem exchange prefix para Advanced Charts
     const cleanSymbol = symbolName?.replace('/', '').toUpperCase() || 'BTCUSDT';
-    
-    if (useAdvancedChart) {
-      // Advanced Charts usa apenas o símbolo (ex: BTCUSDT)
-      setChartSymbol(cleanSymbol);
-    } else {
-      // Widget/Native usam formato com exchange (ex: BINANCE:BTCUSDT)
-      const exchangeMap = {
-        'binance': 'BINANCE',
-        'bybit': 'BYBIT',
-        'bitget': 'BITGET',
-        'bingx': 'BINGX'
-      };
-      
-      const tvExchange = exchangeMap[exchangeName?.toLowerCase()] || 'BINANCE';
-      const newChartSymbol = `${tvExchange}:${cleanSymbol}`;
-      setChartSymbol(newChartSymbol);
-    }
-  }, [useAdvancedChart]);
+    setChartSymbol(cleanSymbol);
+  }, []);
 
   // Atualizar símbolos quando exchange muda
   useEffect(() => {
@@ -142,7 +122,7 @@ const RiskCalculator = () => {
     if (selectedExchange && selectedSymbol) {
       updateChartSymbol(selectedExchange, selectedSymbol);
     }
-  }, [selectedExchange, selectedSymbol, updateChartSymbol, useAdvancedChart]);
+  }, [selectedExchange, selectedSymbol, updateChartSymbol]);
 
   // Buscar preço quando símbolo muda - ATUALIZAR cotação atual, NÃO entrada
   useEffect(() => {
@@ -369,7 +349,7 @@ const RiskCalculator = () => {
           onToggleTheme={toggleTheme}
         />
         
-        {/* Professional Chart Toggle */}
+        {/* Chart Toggle */}
         <div className="chart-toggle-container" style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -379,38 +359,10 @@ const RiskCalculator = () => {
         }}>
           <div className="chart-toggle-status">
             <div className="status-dot"></div>
-            <span>TradingView {showChart ? (useAdvancedChart ? 'Advanced Charts' : useNativeChart ? 'Nativo' : 'Widget') : 'Inativo'}</span>
+            <span>TradingView {showChart ? 'Ativo' : 'Inativo'}</span>
           </div>
           
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className={`chart-toggle-btn ${useAdvancedChart ? 'active' : ''}`}
-              onClick={() => {
-                setUseAdvancedChart(!useAdvancedChart);
-                if (!useAdvancedChart) {
-                  setUseNativeChart(false);
-                }
-              }}
-              style={{ fontSize: '12px', padding: '8px 12px' }}
-              title="TradingView Advanced Charts com linhas nativas"
-            >
-              🚀 Advanced Charts
-            </button>
-            
-            <button
-              className={`chart-toggle-btn ${useNativeChart ? 'active' : ''}`}
-              onClick={() => {
-                setUseNativeChart(!useNativeChart);
-                if (!useNativeChart) {
-                  setUseAdvancedChart(false);
-                }
-              }}
-              style={{ fontSize: '12px', padding: '8px 12px' }}
-              title="TradingView Native API"
-            >
-              📊 Nativo
-            </button>
-            
             <button
               className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
               onClick={() => setShowChart(!showChart)}
@@ -425,39 +377,17 @@ const RiskCalculator = () => {
           {/* Chart Section - ESQUERDA */}
           {showChart && (
             <div className="chart-section">
-              {useAdvancedChart ? (
-                <TradingViewChartAdvanced
-                  symbol={chartSymbol}
-                  theme={theme}
-                  entryPrice={formData.entryPrice}
-                  stopLoss={formData.stopLoss}
-                  targetPrice={formData.targetPrice}
-                  tradeDirection={formData.direction}
-                  currentPrice={liveCurrentPrice}
-                  results={results}
-                  onPriceChange={handleInputChange}
-                />
-              ) : useNativeChart ? (
-                <TradingViewChartNative
-                  symbol={chartSymbol}
-                  theme={theme}
-                  entryPrice={formData.entryPrice}
-                  stopLoss={formData.stopLoss}
-                  targetPrice={formData.targetPrice}
-                  tradeDirection={formData.direction}
-                  currentPrice={liveCurrentPrice}
-                />
-              ) : (
-                <TradingViewChart
-                  symbol={chartSymbol}
-                  theme={theme}
-                  entryPrice={formData.entryPrice}
-                  stopLoss={formData.stopLoss}
-                  targetPrice={formData.targetPrice}
-                  tradeDirection={formData.direction}
-                  currentPrice={liveCurrentPrice}
-                />
-              )}
+              <TradingViewChartAdvanced
+                symbol={chartSymbol}
+                theme={theme}
+                entryPrice={formData.entryPrice}
+                stopLoss={formData.stopLoss}
+                targetPrice={formData.targetPrice}
+                tradeDirection={formData.direction}
+                currentPrice={liveCurrentPrice}
+                results={results}
+                onPriceChange={handleInputChange}
+              />
             </div>
           )}
 
