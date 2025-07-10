@@ -424,29 +424,41 @@ class UniversalDatafeed {
           }
         };
         
-        ws.onmessage = (event) => {
+        ws.onmessage = async (event) => {
           try {
-            const data = JSON.parse(event.data);
+            let data;
             
-            if (wsExchange === 'binance') {
-              // Formato Binance
-              if (data.k) {
-                const bar = {
-                  time: data.k.t,
-                  open: parseFloat(data.k.o),
-                  high: parseFloat(data.k.h),
-                  low: parseFloat(data.k.l),
-                  close: parseFloat(data.k.c),
-                  volume: parseFloat(data.k.v)
-                };
-                onRealtimeCallback(bar);
+            if (wsExchange === 'bingx') {
+              // BingX usa compressão GZIP - dados vêm como Blob
+              if (event.data instanceof Blob) {
+                const arrayBuffer = await event.data.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // Descomprimir GZIP usando pako ou DecompressionStream
+                if (typeof DecompressionStream !== 'undefined') {
+                  const stream = new DecompressionStream('gzip');
+                  const writer = stream.writable.getWriter();
+                  const reader = stream.readable.getReader();
+                  
+                  writer.write(uint8Array);
+                  writer.close();
+                  
+                  const result = await reader.read();
+                  const decompressed = new TextDecoder().decode(result.value);
+                  data = JSON.parse(decompressed);
+                } else {
+                  // Fallback: tentar interpretar diretamente
+                  const text = new TextDecoder().decode(uint8Array);
+                  data = JSON.parse(text);
+                }
+              } else {
+                // Dados já em texto
+                data = JSON.parse(event.data);
               }
-            } else if (wsExchange === 'bybit') {
-              // Formato Bybit - implementar quando necessário
-              console.log('📊 Bybit WebSocket data:', data);
-            } else if (wsExchange === 'bingx') {
-              // Formato BingX WebSocket
+              
               console.log('📊 BingX WebSocket data:', data);
+              
+              // Processar dados do kline BingX
               if (data.data && data.data.K) {
                 const kline = data.data.K;
                 const bar = {
@@ -458,10 +470,48 @@ class UniversalDatafeed {
                   volume: parseFloat(kline.v)
                 };
                 onRealtimeCallback(bar);
+              } else if (data.dataType && data.dataType.includes('kline')) {
+                // Formato alternativo BingX
+                const kline = data.data;
+                if (kline && kline.length >= 6) {
+                  const bar = {
+                    time: parseInt(kline[0]),
+                    open: parseFloat(kline[1]),
+                    high: parseFloat(kline[2]),
+                    low: parseFloat(kline[3]),
+                    close: parseFloat(kline[4]),
+                    volume: parseFloat(kline[5])
+                  };
+                  onRealtimeCallback(bar);
+                }
+              }
+            } else {
+              // Binance e outros exchanges (dados em texto)
+              data = JSON.parse(event.data);
+              
+              if (wsExchange === 'binance') {
+                // Formato Binance
+                if (data.k) {
+                  const bar = {
+                    time: data.k.t,
+                    open: parseFloat(data.k.o),
+                    high: parseFloat(data.k.h),
+                    low: parseFloat(data.k.l),
+                    close: parseFloat(data.k.c),
+                    volume: parseFloat(data.k.v)
+                  };
+                  onRealtimeCallback(bar);
+                }
+              } else if (wsExchange === 'bybit') {
+                // Formato Bybit - implementar quando necessário
+                console.log('📊 Bybit WebSocket data:', data);
               }
             }
           } catch (error) {
             console.error(`❌ WebSocket message parse error (${wsExchange}):`, error);
+            if (wsExchange === 'bingx') {
+              console.warn('⚠️ BingX WebSocket: Dados podem estar comprimidos em GZIP');
+            }
           }
         };
         
