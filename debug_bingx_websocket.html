@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug BingX WebSocket</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .log { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+        .error { background: #ffe6e6; }
+        .success { background: #e6ffe6; }
+        .warning { background: #fff3cd; }
+        .info { background: #e6f3ff; }
+        button { padding: 10px 20px; margin: 5px; }
+        #logs { max-height: 500px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug BingX WebSocket</h1>
+    <button onclick="testBingXWebSocket()">Test BingX WebSocket</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logDiv);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function testBingXWebSocket() {
+            log('🚀 Testing BingX WebSocket...', 'info');
+            
+            const wsUrl = 'wss://open-api-ws.bingx.com/market';
+            log(`🌐 Connecting to: ${wsUrl}`, 'info');
+            
+            try {
+                const ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    log('✅ WebSocket connected successfully', 'success');
+                    
+                    // Enviar mensagem de subscrição
+                    const subscribeMessage = {
+                        id: Date.now(),
+                        reqType: 'sub',
+                        dataType: 'BTC-USDT@kline_1m'
+                    };
+                    
+                    ws.send(JSON.stringify(subscribeMessage));
+                    log(`📡 Subscription sent: ${JSON.stringify(subscribeMessage)}`, 'info');
+                };
+                
+                ws.onmessage = async (event) => {
+                    log(`📥 Message received (type: ${typeof event.data})`, 'info');
+                    
+                    if (event.data instanceof Blob) {
+                        log(`📦 Blob data received (size: ${event.data.size} bytes)`, 'warning');
+                        
+                        try {
+                            // Tentar converter Blob para ArrayBuffer
+                            const arrayBuffer = await event.data.arrayBuffer();
+                            const uint8Array = new Uint8Array(arrayBuffer);
+                            
+                            log(`📊 ArrayBuffer size: ${arrayBuffer.byteLength} bytes`, 'info');
+                            log(`📊 First 20 bytes: ${Array.from(uint8Array.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+                            
+                            // Verificar se é GZIP (magic bytes: 1f 8b)
+                            if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
+                                log('🗜️ GZIP compression detected', 'warning');
+                                
+                                // Tentar descomprimir com DecompressionStream
+                                if (typeof DecompressionStream !== 'undefined') {
+                                    try {
+                                        const stream = new DecompressionStream('gzip');
+                                        const writer = stream.writable.getWriter();
+                                        const reader = stream.readable.getReader();
+                                        
+                                        writer.write(uint8Array);
+                                        writer.close();
+                                        
+                                        const result = await reader.read();
+                                        const decompressed = new TextDecoder().decode(result.value);
+                                        log(`✅ Decompressed: ${decompressed}`, 'success');
+                                        
+                                        const data = JSON.parse(decompressed);
+                                        log(`📊 Parsed data: ${JSON.stringify(data, null, 2)}`, 'success');
+                                    } catch (error) {
+                                        log(`❌ GZIP decompression failed: ${error.message}`, 'error');
+                                    }
+                                } else {
+                                    log('❌ DecompressionStream not available', 'error');
+                                }
+                            } else {
+                                // Tentar interpretar como texto direto
+                                const text = new TextDecoder().decode(uint8Array);
+                                log(`📝 Raw text: ${text}`, 'info');
+                                
+                                try {
+                                    const data = JSON.parse(text);
+                                    log(`📊 Parsed JSON: ${JSON.stringify(data, null, 2)}`, 'success');
+                                } catch (error) {
+                                    log(`❌ JSON parse failed: ${error.message}`, 'error');
+                                }
+                            }
+                            
+                        } catch (error) {
+                            log(`❌ Error processing Blob: ${error.message}`, 'error');
+                        }
+                    } else {
+                        log(`📝 Text data: ${event.data}`, 'info');
+                        try {
+                            const data = JSON.parse(event.data);
+                            log(`📊 Parsed JSON: ${JSON.stringify(data, null, 2)}`, 'success');
+                        } catch (error) {
+                            log(`❌ JSON parse failed: ${error.message}`, 'error');
+                        }
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    log(`❌ WebSocket error: ${error}`, 'error');
+                };
+                
+                ws.onclose = (event) => {
+                    log(`🔕 WebSocket closed: ${event.code} - ${event.reason}`, 'warning');
+                };
+                
+                // Fechar conexão após 30 segundos
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.close();
+                        log('⏰ Connection closed after 30 seconds', 'info');
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                log(`💥 WebSocket creation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-start test
+        window.onload = () => {
+            log('🔧 BingX WebSocket Debug Tool Ready', 'info');
+            log('Click "Test BingX WebSocket" to start testing...', 'info');
+        };
+    </script>
+</body>
+</html>

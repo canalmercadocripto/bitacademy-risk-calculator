@@ -431,23 +431,47 @@ class UniversalDatafeed {
             if (wsExchange === 'bingx') {
               // BingX usa compressão GZIP - dados vêm como Blob
               if (event.data instanceof Blob) {
+                console.log(`📦 BingX Blob received (size: ${event.data.size} bytes)`);
+                
                 const arrayBuffer = await event.data.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
                 
-                // Descomprimir GZIP usando pako ou DecompressionStream
-                if (typeof DecompressionStream !== 'undefined') {
-                  const stream = new DecompressionStream('gzip');
-                  const writer = stream.writable.getWriter();
-                  const reader = stream.readable.getReader();
+                // Verificar se é GZIP (magic bytes: 1f 8b)
+                if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
+                  console.log('🗜️ GZIP compression detected');
                   
-                  writer.write(uint8Array);
-                  writer.close();
-                  
-                  const result = await reader.read();
-                  const decompressed = new TextDecoder().decode(result.value);
-                  data = JSON.parse(decompressed);
+                  // Descomprimir GZIP usando DecompressionStream
+                  if (typeof DecompressionStream !== 'undefined') {
+                    try {
+                      const stream = new DecompressionStream('gzip');
+                      const writer = stream.writable.getWriter();
+                      const reader = stream.readable.getReader();
+                      
+                      writer.write(uint8Array);
+                      writer.close();
+                      
+                      const result = await reader.read();
+                      const decompressed = new TextDecoder().decode(result.value);
+                      data = JSON.parse(decompressed);
+                      console.log('✅ GZIP decompression successful');
+                    } catch (error) {
+                      console.error('❌ GZIP decompression failed:', error);
+                      // Fallback: tentar interpretar diretamente
+                      const text = new TextDecoder().decode(uint8Array);
+                      data = JSON.parse(text);
+                    }
+                  } else {
+                    console.warn('⚠️ DecompressionStream not available - using fallback');
+                    // Importar pako dinamicamente se disponível
+                    if (typeof pako !== 'undefined') {
+                      const decompressed = pako.inflate(uint8Array, { to: 'string' });
+                      data = JSON.parse(decompressed);
+                    } else {
+                      throw new Error('GZIP decompression not available');
+                    }
+                  }
                 } else {
-                  // Fallback: tentar interpretar diretamente
+                  // Não é GZIP - tentar interpretar diretamente
                   const text = new TextDecoder().decode(uint8Array);
                   data = JSON.parse(text);
                 }
@@ -458,22 +482,25 @@ class UniversalDatafeed {
               
               console.log('📊 BingX WebSocket data:', data);
               
-              // Processar dados do kline BingX
-              if (data.data && data.data.K) {
-                const kline = data.data.K;
-                const bar = {
-                  time: kline.t,
-                  open: parseFloat(kline.o),
-                  high: parseFloat(kline.h),
-                  low: parseFloat(kline.l),
-                  close: parseFloat(kline.c),
-                  volume: parseFloat(kline.v)
-                };
-                onRealtimeCallback(bar);
-              } else if (data.dataType && data.dataType.includes('kline')) {
-                // Formato alternativo BingX
-                const kline = data.data;
-                if (kline && kline.length >= 6) {
+              // Processar dados do kline BingX - múltiplos formatos possíveis
+              if (data && data.data) {
+                // Formato 1: { data: { K: {...} } }
+                if (data.data.K) {
+                  const kline = data.data.K;
+                  const bar = {
+                    time: parseInt(kline.t),
+                    open: parseFloat(kline.o),
+                    high: parseFloat(kline.h),
+                    low: parseFloat(kline.l),
+                    close: parseFloat(kline.c),
+                    volume: parseFloat(kline.v)
+                  };
+                  onRealtimeCallback(bar);
+                  console.log('✅ BingX kline processed (format K)');
+                }
+                // Formato 2: { data: [...] } - array format
+                else if (Array.isArray(data.data) && data.data.length >= 6) {
+                  const kline = data.data;
                   const bar = {
                     time: parseInt(kline[0]),
                     open: parseFloat(kline[1]),
@@ -483,7 +510,37 @@ class UniversalDatafeed {
                     volume: parseFloat(kline[5])
                   };
                   onRealtimeCallback(bar);
+                  console.log('✅ BingX kline processed (array format)');
                 }
+                // Formato 3: { dataType: "...", data: {...} }
+                else if (data.dataType && data.dataType.includes('kline')) {
+                  if (Array.isArray(data.data) && data.data.length >= 6) {
+                    const kline = data.data;
+                    const bar = {
+                      time: parseInt(kline[0]),
+                      open: parseFloat(kline[1]),
+                      high: parseFloat(kline[2]),
+                      low: parseFloat(kline[3]),
+                      close: parseFloat(kline[4]),
+                      volume: parseFloat(kline[5])
+                    };
+                    onRealtimeCallback(bar);
+                    console.log('✅ BingX kline processed (dataType format)');
+                  }
+                }
+              }
+              // Formato direto sem wrapper
+              else if (data.k) {
+                const bar = {
+                  time: parseInt(data.k.t),
+                  open: parseFloat(data.k.o),
+                  high: parseFloat(data.k.h),
+                  low: parseFloat(data.k.l),
+                  close: parseFloat(data.k.c),
+                  volume: parseFloat(data.k.v)
+                };
+                onRealtimeCallback(bar);
+                console.log('✅ BingX kline processed (direct format)');
               }
             } else {
               // Binance e outros exchanges (dados em texto)
@@ -510,7 +567,7 @@ class UniversalDatafeed {
           } catch (error) {
             console.error(`❌ WebSocket message parse error (${wsExchange}):`, error);
             if (wsExchange === 'bingx') {
-              console.warn('⚠️ BingX WebSocket: Dados podem estar comprimidos em GZIP');
+              console.warn('⚠️ BingX WebSocket: Error processing data - raw event:', event);
             }
           }
         };
