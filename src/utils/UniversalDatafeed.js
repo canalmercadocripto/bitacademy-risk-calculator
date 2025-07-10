@@ -285,32 +285,75 @@ class UniversalDatafeed {
           break;
           
         case 'bingx':
-          // BingX API - implementação completa
-          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
-          console.log(`🌐 BingX URL: ${url}`);
-          response = await this.rateLimitedRequest(exchange, url);
+          // BingX API - testar diferentes formatos de símbolo
+          let bingxSymbol = symbol;
           
-          if (response.ok) {
-            const data = await response.json();
-            console.log('🔍 BingX API Response:', data);
+          // BingX usa formato BTC-USDT ao invés de BTCUSDT
+          if (!symbol.includes('-') && symbol.includes('USDT')) {
+            bingxSymbol = symbol.replace('USDT', '-USDT');
+          } else if (!symbol.includes('-') && symbol.includes('BTC')) {
+            bingxSymbol = symbol.replace('BTC', '-BTC');
+          }
+          
+          // Testar múltiplos endpoints possíveis
+          const possibleUrls = [
+            // Endpoint padrão
+            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`,
+            // Endpoint alternativo
+            `${exchangeConfig.baseUrl}/openApi/spot/v1/market/kline?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=100`,
+            // Formato sem timestamps
+            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&limit=100`,
+            // Símbolo original sem conversão
+            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`
+          ];
+          
+          console.log(`🔧 BingX Symbol conversion: ${symbol} → ${bingxSymbol}`);
+          
+          let success = false;
+          for (let i = 0; i < possibleUrls.length && !success; i++) {
+            url = possibleUrls[i];
+            console.log(`🌐 BingX URL attempt ${i + 1}: ${url}`);
             
-            if (data.code === 0 && data.data) {
-              console.log(`✅ BingX data received: ${data.data.length} candles`);
-              bars = data.data.map(kline => ({
-                time: parseInt(kline[0]),
-                open: parseFloat(kline[1]),
-                high: parseFloat(kline[2]),
-                low: parseFloat(kline[3]),
-                close: parseFloat(kline[4]),
-                volume: parseFloat(kline[5])
-              }));
-            } else {
-              console.warn(`⚠️ BingX: Unexpected response format or error code: ${data.code}`, data);
+            try {
+              response = await this.rateLimitedRequest(exchange, url);
+              
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`🔍 BingX API Response attempt ${i + 1}:`, data);
+                
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                  console.log(`✅ BingX SUCCESS on attempt ${i + 1}: ${data.data.length} candles`);
+                  bars = data.data.map(kline => ({
+                    time: parseInt(kline[0]),
+                    open: parseFloat(kline[1]),
+                    high: parseFloat(kline[2]),
+                    low: parseFloat(kline[3]),
+                    close: parseFloat(kline[4]),
+                    volume: parseFloat(kline[5])
+                  }));
+                  success = true;
+                } else if (data.code !== 0) {
+                  console.warn(`⚠️ BingX Error Code ${data.code}: ${data.msg || 'Unknown error'} (attempt ${i + 1})`);
+                } else {
+                  console.warn(`⚠️ BingX: No data returned (attempt ${i + 1})`, data);
+                }
+              } else {
+                console.error(`❌ BingX HTTP Error attempt ${i + 1}: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`❌ BingX Error Details attempt ${i + 1}:`, errorText);
+              }
+            } catch (error) {
+              console.error(`💥 BingX Network Error attempt ${i + 1}:`, error.message);
             }
-          } else {
-            console.error(`❌ BingX API Error: ${response.status} ${response.statusText}`);
-            const errorText = await response.text();
-            console.error(`❌ BingX Error Details:`, errorText);
+            
+            // Pequeno delay entre tentativas
+            if (!success && i < possibleUrls.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+          
+          if (!success) {
+            console.error(`❌ BingX: All ${possibleUrls.length} attempts failed for ${symbol}`);
           }
           break;
       }

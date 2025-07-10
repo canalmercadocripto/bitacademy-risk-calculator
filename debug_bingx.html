@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug BingX API</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .log { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+        .error { background: #ffe6e6; }
+        .success { background: #e6ffe6; }
+        .warning { background: #fff3cd; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug BingX API</h1>
+    <button onclick="testBingXAPI()">Test BingX API</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logDiv);
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        async function testBingXAPI() {
+            log('🚀 Testing BingX API...', 'info');
+            
+            // Testar diferentes símbolos e formatos
+            const symbols = ['BTC-USDT', 'BTCUSDT', 'ETH-USDT', 'ETHUSDT'];
+            const intervals = ['1m', '5m', '15m'];
+            
+            for (const symbol of symbols) {
+                for (const interval of intervals) {
+                    await testSingleRequest(symbol, interval);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
+                }
+            }
+        }
+        
+        async function testSingleRequest(symbol, interval) {
+            const baseUrl = 'https://open-api.bingx.com';
+            const endpoint = '/openApi/spot/v1/market/kline';
+            
+            // Usar timestamps recentes
+            const endTime = Date.now();
+            const startTime = endTime - (24 * 60 * 60 * 1000); // 24 horas atrás
+            
+            const url = `${baseUrl}${endpoint}?symbol=${symbol}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=100`;
+            
+            log(`📡 Testing: ${symbol} ${interval}`, 'info');
+            log(`🌐 URL: ${url}`, 'info');
+            
+            try {
+                const response = await fetch(url);
+                
+                log(`📊 Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`📦 Response: ${JSON.stringify(data, null, 2)}`, 'success');
+                    
+                    if (data.code === 0) {
+                        log(`✅ Success: ${data.data ? data.data.length : 0} candles for ${symbol} ${interval}`, 'success');
+                    } else {
+                        log(`❌ API Error Code: ${data.code} - ${data.msg || 'Unknown error'}`, 'error');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ HTTP Error: ${errorText}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`💥 Network Error: ${error.message}`, 'error');
+            }
+            
+            log('─'.repeat(80), 'info');
+        }
+        
+        // Testar automaticamente ao carregar
+        window.onload = () => {
+            log('🔧 BingX API Debug Tool Ready', 'info');
+            log('Click "Test BingX API" to start testing...', 'info');
+        };
+    </script>
+</body>
+</html>
