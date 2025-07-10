@@ -8,7 +8,8 @@ class UniversalDatafeed {
       exchanges: [
         { value: 'BINANCE', name: 'Binance', desc: 'Binance Spot' },
         { value: 'BYBIT', name: 'Bybit', desc: 'Bybit Spot' },
-        { value: 'BITGET', name: 'Bitget', desc: 'Bitget Spot' }
+        { value: 'BITGET', name: 'Bitget', desc: 'Bitget Spot' },
+        { value: 'BINGX', name: 'BingX', desc: 'BingX Spot' }
       ],
       symbols_types: [{ name: 'crypto', value: 'crypto' }],
       supports_marks: false,
@@ -69,6 +70,7 @@ class UniversalDatafeed {
       },
       bingx: {
         baseUrl: 'https://open-api.bingx.com',
+        wsUrl: 'wss://open-api-ws.bingx.com/market',
         intervals: {
           '1': '1m', '5': '5m', '15': '15m', '30': '30m',
           '60': '1h', '240': '4h', '1D': '1d'
@@ -285,75 +287,55 @@ class UniversalDatafeed {
           break;
           
         case 'bingx':
-          // BingX API - testar diferentes formatos de símbolo
-          let bingxSymbol = symbol;
+          // BingX API nativo - endpoint correto baseado na documentação
+          console.log(`🔄 BingX: Using native API for ${symbol}`);
           
-          // BingX usa formato BTC-USDT ao invés de BTCUSDT
-          if (!symbol.includes('-') && symbol.includes('USDT')) {
-            bingxSymbol = symbol.replace('USDT', '-USDT');
-          } else if (!symbol.includes('-') && symbol.includes('BTC')) {
-            bingxSymbol = symbol.replace('BTC', '-BTC');
-          }
+          // Converter símbolo para formato BingX (BTC-USDT)
+          const bingxSymbol = symbol.includes('USDT') ? 
+            symbol.replace('USDT', '-USDT') : 
+            symbol.replace('/', '-');
           
-          // Testar múltiplos endpoints possíveis
-          const possibleUrls = [
-            // Endpoint padrão
-            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`,
-            // Endpoint alternativo
-            `${exchangeConfig.baseUrl}/openApi/spot/v1/market/kline?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=100`,
-            // Formato sem timestamps
-            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&limit=100`,
-            // Símbolo original sem conversão
-            `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`
-          ];
+          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
+          console.log(`🌐 BingX URL: ${url}`);
           
-          console.log(`🔧 BingX Symbol conversion: ${symbol} → ${bingxSymbol}`);
-          
-          let success = false;
-          for (let i = 0; i < possibleUrls.length && !success; i++) {
-            url = possibleUrls[i];
-            console.log(`🌐 BingX URL attempt ${i + 1}: ${url}`);
+          try {
+            response = await this.rateLimitedRequest(exchange, url);
             
-            try {
-              response = await this.rateLimitedRequest(exchange, url);
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`🔍 BingX API Response:`, data);
               
-              if (response.ok) {
-                const data = await response.json();
-                console.log(`🔍 BingX API Response attempt ${i + 1}:`, data);
-                
-                if (data.code === 0 && data.data && data.data.length > 0) {
-                  console.log(`✅ BingX SUCCESS on attempt ${i + 1}: ${data.data.length} candles`);
-                  bars = data.data.map(kline => ({
-                    time: parseInt(kline[0]),
-                    open: parseFloat(kline[1]),
-                    high: parseFloat(kline[2]),
-                    low: parseFloat(kline[3]),
-                    close: parseFloat(kline[4]),
-                    volume: parseFloat(kline[5])
-                  }));
-                  success = true;
-                } else if (data.code !== 0) {
-                  console.warn(`⚠️ BingX Error Code ${data.code}: ${data.msg || 'Unknown error'} (attempt ${i + 1})`);
-                } else {
-                  console.warn(`⚠️ BingX: No data returned (attempt ${i + 1})`, data);
-                }
+              if (data.code === 0 && data.data && Array.isArray(data.data)) {
+                console.log(`✅ BingX data received: ${data.data.length} candles`);
+                bars = data.data.map(kline => ({
+                  time: parseInt(kline[0]),
+                  open: parseFloat(kline[1]),
+                  high: parseFloat(kline[2]),
+                  low: parseFloat(kline[3]),
+                  close: parseFloat(kline[4]),
+                  volume: parseFloat(kline[5])
+                }));
               } else {
-                console.error(`❌ BingX HTTP Error attempt ${i + 1}: ${response.status} ${response.statusText}`);
-                const errorText = await response.text();
-                console.error(`❌ BingX Error Details attempt ${i + 1}:`, errorText);
+                console.warn(`⚠️ BingX: Unexpected response format or error code: ${data.code}`, data);
+                if (data.msg) {
+                  console.warn(`⚠️ BingX Error Message: ${data.msg}`);
+                }
               }
-            } catch (error) {
-              console.error(`💥 BingX Network Error attempt ${i + 1}:`, error.message);
+            } else {
+              console.error(`❌ BingX API Error: ${response.status} ${response.statusText}`);
+              const errorText = await response.text();
+              console.error(`❌ BingX Error Details:`, errorText);
+              
+              // Se houver erro CORS, tentar com diferentes configurações
+              if (response.status === 0 || errorText.includes('CORS')) {
+                console.warn(`⚠️ BingX: Possível problema de CORS detectado`);
+              }
             }
-            
-            // Pequeno delay entre tentativas
-            if (!success && i < possibleUrls.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (error) {
+            console.error(`💥 BingX Network Error:`, error.message);
+            if (error.message.includes('CORS') || error.message.includes('fetch')) {
+              console.warn(`⚠️ BingX: CORS ou problema de rede detectado - ${error.message}`);
             }
-          }
-          
-          if (!success) {
-            console.error(`❌ BingX: All ${possibleUrls.length} attempts failed for ${symbol}`);
           }
           break;
       }
@@ -389,25 +371,113 @@ class UniversalDatafeed {
     console.log(`🔄 Subscribing to real-time data: ${symbol} on ${exchange}`);
     
     // Implementar WebSocket por exchange
-    if (exchange === 'binance' && !this.wsConnections.has(subscriberUID)) {
-      const ws = new WebSocket(`${this.exchanges.binance.wsUrl}/${symbol.toLowerCase()}@kline_${this.exchanges.binance.intervals[resolution]}`);
+    if (!this.wsConnections.has(subscriberUID)) {
+      let wsUrl, wsExchange;
       
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.k) {
-          const bar = {
-            time: data.k.t,
-            open: parseFloat(data.k.o),
-            high: parseFloat(data.k.h),
-            low: parseFloat(data.k.l),
-            close: parseFloat(data.k.c),
-            volume: parseFloat(data.k.v)
-          };
-          onRealtimeCallback(bar);
-        }
-      };
+      switch (exchange) {
+        case 'binance':
+          wsUrl = `${this.exchanges.binance.wsUrl}/${symbol.toLowerCase()}@kline_${this.exchanges.binance.intervals[resolution]}`;
+          wsExchange = 'binance';
+          break;
+          
+        case 'bybit':
+          wsUrl = `${this.exchanges.bybit.wsUrl}`;
+          wsExchange = 'bybit';
+          break;
+          
+        case 'bingx':
+          // BingX WebSocket nativo
+          console.log(`🔄 BingX: Using native WebSocket for ${symbol}`);
+          const bingxSymbol = symbol.includes('USDT') ? 
+            symbol.replace('USDT', '-USDT') : 
+            symbol.replace('/', '-');
+          wsUrl = `${this.exchanges.bingx.wsUrl}`;
+          wsExchange = 'bingx';
+          break;
+          
+        default:
+          // Fallback padrão para Binance
+          wsUrl = `${this.exchanges.binance.wsUrl}/${symbol.toLowerCase()}@kline_${this.exchanges.binance.intervals[resolution]}`;
+          wsExchange = 'binance';
+      }
       
-      this.wsConnections.set(subscriberUID, ws);
+      try {
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log(`✅ WebSocket connected: ${wsExchange} for ${symbol}`);
+          
+          // Enviar mensagem de subscrição específica por exchange
+          if (wsExchange === 'bingx') {
+            const bingxSymbol = symbol.includes('USDT') ? 
+              symbol.replace('USDT', '-USDT') : 
+              symbol.replace('/', '-');
+            
+            const subscribeMessage = {
+              id: Date.now(),
+              reqType: 'sub',
+              dataType: `${bingxSymbol}@kline_${this.exchanges.bingx.intervals[resolution]}`
+            };
+            
+            ws.send(JSON.stringify(subscribeMessage));
+            console.log(`📡 BingX WebSocket subscription sent:`, subscribeMessage);
+          }
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            if (wsExchange === 'binance') {
+              // Formato Binance
+              if (data.k) {
+                const bar = {
+                  time: data.k.t,
+                  open: parseFloat(data.k.o),
+                  high: parseFloat(data.k.h),
+                  low: parseFloat(data.k.l),
+                  close: parseFloat(data.k.c),
+                  volume: parseFloat(data.k.v)
+                };
+                onRealtimeCallback(bar);
+              }
+            } else if (wsExchange === 'bybit') {
+              // Formato Bybit - implementar quando necessário
+              console.log('📊 Bybit WebSocket data:', data);
+            } else if (wsExchange === 'bingx') {
+              // Formato BingX WebSocket
+              console.log('📊 BingX WebSocket data:', data);
+              if (data.data && data.data.K) {
+                const kline = data.data.K;
+                const bar = {
+                  time: kline.t,
+                  open: parseFloat(kline.o),
+                  high: parseFloat(kline.h),
+                  low: parseFloat(kline.l),
+                  close: parseFloat(kline.c),
+                  volume: parseFloat(kline.v)
+                };
+                onRealtimeCallback(bar);
+              }
+            }
+          } catch (error) {
+            console.error(`❌ WebSocket message parse error (${wsExchange}):`, error);
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error(`❌ WebSocket error (${wsExchange}):`, error);
+        };
+        
+        ws.onclose = () => {
+          console.log(`🔕 WebSocket closed (${wsExchange}) for ${symbol}`);
+        };
+        
+        this.wsConnections.set(subscriberUID, ws);
+        
+      } catch (error) {
+        console.error(`💥 WebSocket creation failed (${wsExchange}):`, error);
+      }
     }
   }
 
