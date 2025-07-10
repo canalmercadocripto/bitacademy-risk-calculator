@@ -188,90 +188,6 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     return profitLoss;
   };
 
-  const generateProfessionalRecommendations = () => {
-    if (!results || !fixedEntryPrice) return [];
-    
-    const isLong = (formData.tradeType === 'long') || (formData.direction === 'LONG');
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Debug direção do trade:', { direction: formData.direction, isLong });
-    }
-    const riskReward = results.riskRewardRatio;
-    const riskLevel = getRiskLevel(results.riskRewardRatio);
-    const riskPercentage = parseFloat(formData.riskPercent || 2);
-    const accountSize = parseFloat(formData.accountSize);
-    const positionSize = results.positionValue;
-    const winRateAnalysis = calculateWinRateNeeded(riskReward);
-    
-    // Validar risco
-    const maxRiskAmount = (accountSize * riskPercentage) / 100;
-    const currentRisk = Math.abs(results.riskAmount);
-    const riskExceeded = currentRisk > maxRiskAmount;
-    
-    const recommendations = [];
-    
-    // Recomendação 1: Gestão de Risco
-    recommendations.push({
-      category: "Gestão de Risco",
-      priority: riskExceeded ? "CRÍTICO" : "CRÍTICO",
-      title: "Controle de Exposição",
-      content: `Mantenha o stop loss rigorosamente em $${formData.stopLoss}. Esta operação expõe ${(currentRisk/accountSize*100).toFixed(2)}% da sua conta (limite: ${riskPercentage}%). ${riskExceeded ? 'ATENÇÃO: Risco EXCEDIDO! Reduza o tamanho da posição.' : 'Exposição dentro do limite para preservação de capital.'}`
-    });
-    
-    // Recomendação 2: Estratégia de Entrada Baseada na Direção
-    recommendations.push({
-      category: "Estratégia de Entrada",
-      priority: riskReward >= 3 ? "FAVORÁVEL" : "MODERADO",
-      title: `Execução ${isLong ? 'LONG' : 'SHORT'} - Entrada Manual`,
-      content: isLong ? 
-        `LONG: Aguarde confirmação de alta em $${fixedEntryPrice.toFixed(4)}. Procure por: rompimento de resistência, volume crescente, candles de reversão (hammer, engolfo). Entrada deve ser MANUAL após confirmação técnica.` :
-        `SHORT: Aguarde confirmação de baixa em $${fixedEntryPrice.toFixed(4)}. Procure por: rompimento de suporte, pressão vendedora, candles de reversão (shooting star, engolfo baixista). Entrada deve ser MANUAL após confirmação técnica.`
-    });
-    
-    // Recomendação 3: Realização de Lucros
-    const targets = calculateProfitTargets();
-    if (targets.length > 0) {
-      recommendations.push({
-        category: "Realização de Lucros",
-        priority: "ESTRATÉGICO",
-        title: "Saída Escalonada Inteligente",
-        content: `Execute saídas parciais: ${targets.map(t => `${t.percentage}% em $${t.price.toFixed(4)} (R/R ${t.riskReward}:1)`).join(', ')}. Esta estratégia maximiza lucros enquanto reduz risco progressivamente.`
-      });
-    }
-    
-    // Recomendação 4: Taxa de Acerto Necessária Detalhada
-    recommendations.push({
-      category: "Análise Estatística",
-      priority: "ESTRATÉGICO",
-      title: "Taxa de Acerto Necessária",
-      content: `BREAKEVEN: ${winRateAnalysis.breakeven.toFixed(1)}% | LUCRO: ${winRateAnalysis.profitable.toFixed(1)}% | CONSERVADOR: ${winRateAnalysis.conservative.toFixed(1)}%. Classificação: ${winRateAnalysis.classification.level} (${winRateAnalysis.classification.desc}). ${winRateAnalysis.recommendation}`
-    });
-    
-    // Recomendação 5: Monitoramento Baseado na Direção
-    recommendations.push({
-      category: "Monitoramento",
-      priority: "OPERACIONAL",
-      title: "Acompanhamento Direcionado",
-      content: isLong ? 
-        `LONG: Monitore resistências acima de $${fixedEntryPrice.toFixed(4)}, volume de compra crescente, e indicadores de força (RSI, MACD). Configure alertas para todos os alvos. Use trailing stop após 1º alvo.` :
-        `SHORT: Monitore suportes abaixo de $${fixedEntryPrice.toFixed(4)}, volume de venda crescente, e indicadores de fraqueza (RSI, MACD). Configure alertas para todos os alvos. Use trailing stop após 1º alvo.`
-    });
-    
-    // Recomendação 6: Específica para R/R
-    if (riskReward < 2) {
-      const idealTarget = isLong ? 
-        (fixedEntryPrice + (Math.abs(fixedEntryPrice - parseFloat(formData.stopLoss)) * 2)).toFixed(4) :
-        (fixedEntryPrice - (Math.abs(fixedEntryPrice - parseFloat(formData.stopLoss)) * 2)).toFixed(4);
-      
-      recommendations.push({
-        category: "Otimização",
-        priority: "ATENÇÃO",
-        title: "Risk/Reward Insuficiente",
-        content: `R/R atual de ${riskReward.toFixed(1)}:1 está abaixo do ideal (mínimo 2:1). Considere ajustar o alvo para $${idealTarget} para melhorar a relação. Alternativamente, reposicione o stop mais próximo da entrada.`
-      });
-    }
-    
-    return recommendations;
-  };
 
   const copyResult = async () => {
     if (!results) return;
@@ -322,8 +238,6 @@ ${targets.map(target =>
   `${target.level}: $${target.price.toFixed(4)} (${target.description})`
 ).join('\n')}
 
-💡 RECOMENDAÇÕES:
-${recommendations.join('\n')}
 
 📱 Generated by BitAcademy Risk Calculator
     `.trim();
@@ -364,15 +278,6 @@ ${recommendations.join('\n')}
     return calculated;
   }, [results, fixedEntryPrice, formData.stopLoss, formData.exitPrice, formData.targetPrice, formData.target]);
 
-  // Otimizar recomendações para evitar recálculos constantes
-  const recommendations = useMemo(() => generateProfessionalRecommendations(), [
-    results, 
-    fixedEntryPrice, 
-    formData.stopLoss, 
-    formData.riskPercent, 
-    formData.accountSize,
-    formData.direction
-  ]);
 
   return (
     <div className="results-section enhanced">
@@ -561,24 +466,6 @@ ${recommendations.join('\n')}
           </div>
         </div>
 
-        {/* 4. RECOMENDAÇÕES ESTRATÉGICAS PROFISSIONAIS - LADO A LADO */}
-        <div className="section-card recommendations-horizontal">
-          <h4 className="section-card-title">💡 Recomendações Estratégicas Profissionais</h4>
-          <div className="recommendations-grid">
-            {recommendations.map((rec, index) => (
-              <div key={index} className="recommendation-card">
-                <div className="rec-header">
-                  <div className="rec-category">{rec.category}</div>
-                  <div className={`rec-priority ${rec.priority.toLowerCase().replace('ç', 'c').replace('ã', 'a')}`}>
-                    {rec.priority}
-                  </div>
-                </div>
-                <div className="rec-title">{rec.title}</div>
-                <div className="rec-content">{rec.content}</div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Monitor de Trade - Separado */}
