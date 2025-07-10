@@ -78,7 +78,6 @@ const RiskCalculator = () => {
   const [authModalMode, setAuthModalMode] = useState('login');
   
   // States do TradingView
-  const [showChart, setShowChart] = useState(true);
   const [chartSymbol, setChartSymbol] = useState("BTCUSDT");
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
@@ -349,47 +348,23 @@ const RiskCalculator = () => {
           onToggleTheme={toggleTheme}
         />
         
-        {/* Chart Toggle */}
-        <div className="chart-toggle-container" style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '24px',
-          gap: '16px'
-        }}>
-          <div className="chart-toggle-status">
-            <div className="status-dot"></div>
-            <span>TradingView {showChart ? 'Ativo' : 'Inativo'}</span>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className={`chart-toggle-btn ${showChart ? 'active' : ''}`}
-              onClick={() => setShowChart(!showChart)}
-            >
-              📈 {showChart ? 'Ocultar' : 'Mostrar'} Gráfico
-            </button>
-          </div>
-        </div>
 
         {/* Container 1: Gráfico + Calculadora */}
-        <div className={`trading-calculator-container ${showChart ? 'chart-visible' : 'chart-hidden'}`}>
+        <div className="trading-calculator-container chart-visible">
           {/* Chart Section - ESQUERDA */}
-          {showChart && (
-            <div className="chart-section">
-              <TradingViewChartAdvanced
-                symbol={chartSymbol}
-                theme={theme}
-                entryPrice={formData.entryPrice}
-                stopLoss={formData.stopLoss}
-                targetPrice={formData.targetPrice}
-                tradeDirection={formData.direction}
-                currentPrice={liveCurrentPrice}
-                results={results}
-                onPriceChange={handleInputChange}
-              />
-            </div>
-          )}
+          <div className="chart-section">
+            <TradingViewChartAdvanced
+              symbol={chartSymbol}
+              theme={theme}
+              entryPrice={formData.entryPrice}
+              stopLoss={formData.stopLoss}
+              targetPrice={formData.targetPrice}
+              tradeDirection={formData.direction}
+              currentPrice={liveCurrentPrice}
+              results={results}
+              onPriceChange={handleInputChange}
+            />
+          </div>
 
           {/* Calculator Section - DIREITA */}
           <div className="calculator-section">
