@@ -287,27 +287,27 @@ class UniversalDatafeed {
           break;
           
         case 'bingx':
-          // BingX API nativo - endpoint correto baseado na documentação
-          console.log(`🔄 BingX: Using native API for ${symbol}`);
+          // BingX tem CORS bloqueado - usar fallback para Binance
+          console.warn(`⚠️ BingX: CORS policy blocks direct API access from browser`);
+          console.log(`🔄 BingX Fallback: Using Binance API for ${symbol}`);
           
-          // Converter símbolo para formato BingX (BTC-USDT)
-          const bingxSymbol = symbol.includes('USDT') ? 
-            symbol.replace('USDT', '-USDT') : 
-            symbol.replace('/', '-');
+          // Usar configuração da Binance como fallback
+          const binanceFallbackConfig = this.exchanges.binance;
+          const binanceInterval = binanceFallbackConfig.intervals[resolution];
           
-          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${bingxSymbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
-          console.log(`🌐 BingX URL: ${url}`);
-          
-          try {
-            response = await this.rateLimitedRequest(exchange, url);
+          if (binanceInterval) {
+            // Converter símbolo de BingX para Binance (remover hífen)
+            const binanceSymbol = symbol.replace('-', '');
+            url = `${binanceFallbackConfig.baseUrl}${binanceFallbackConfig.endpoints.klines}?symbol=${binanceSymbol}&interval=${binanceInterval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
+            console.log(`🌐 BingX Fallback URL (Binance): ${url}`);
             
-            if (response.ok) {
-              const data = await response.json();
-              console.log(`🔍 BingX API Response:`, data);
+            try {
+              response = await this.rateLimitedRequest('binance', url);
               
-              if (data.code === 0 && data.data && Array.isArray(data.data)) {
-                console.log(`✅ BingX data received: ${data.data.length} candles`);
-                bars = data.data.map(kline => ({
+              if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ BingX Fallback SUCCESS: ${data.length} candles from Binance API`);
+                bars = data.map(kline => ({
                   time: parseInt(kline[0]),
                   open: parseFloat(kline[1]),
                   high: parseFloat(kline[2]),
@@ -316,26 +316,15 @@ class UniversalDatafeed {
                   volume: parseFloat(kline[5])
                 }));
               } else {
-                console.warn(`⚠️ BingX: Unexpected response format or error code: ${data.code}`, data);
-                if (data.msg) {
-                  console.warn(`⚠️ BingX Error Message: ${data.msg}`);
-                }
+                console.error(`❌ BingX Fallback Error: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`❌ BingX Fallback Details:`, errorText);
               }
-            } else {
-              console.error(`❌ BingX API Error: ${response.status} ${response.statusText}`);
-              const errorText = await response.text();
-              console.error(`❌ BingX Error Details:`, errorText);
-              
-              // Se houver erro CORS, tentar com diferentes configurações
-              if (response.status === 0 || errorText.includes('CORS')) {
-                console.warn(`⚠️ BingX: Possível problema de CORS detectado`);
-              }
+            } catch (error) {
+              console.error(`💥 BingX Fallback Network Error:`, error.message);
             }
-          } catch (error) {
-            console.error(`💥 BingX Network Error:`, error.message);
-            if (error.message.includes('CORS') || error.message.includes('fetch')) {
-              console.warn(`⚠️ BingX: CORS ou problema de rede detectado - ${error.message}`);
-            }
+          } else {
+            console.error(`❌ BingX Fallback: Resolution ${resolution} not supported`);
           }
           break;
       }
@@ -386,13 +375,11 @@ class UniversalDatafeed {
           break;
           
         case 'bingx':
-          // BingX WebSocket nativo
-          console.log(`🔄 BingX: Using native WebSocket for ${symbol}`);
-          const bingxSymbol = symbol.includes('USDT') ? 
-            symbol.replace('USDT', '-USDT') : 
-            symbol.replace('/', '-');
-          wsUrl = `${this.exchanges.bingx.wsUrl}`;
-          wsExchange = 'bingx';
+          // BingX WebSocket fallback - usar Binance devido a problemas CORS e formato
+          console.warn(`⚠️ BingX: WebSocket fallback to Binance for ${symbol}`);
+          const binanceSymbol = symbol.replace('-', ''); // Remover hífen para Binance
+          wsUrl = `${this.exchanges.binance.wsUrl}/${binanceSymbol.toLowerCase()}@kline_${this.exchanges.binance.intervals[resolution]}`;
+          wsExchange = 'binance';
           break;
           
         default:
@@ -407,133 +394,22 @@ class UniversalDatafeed {
         ws.onopen = () => {
           console.log(`✅ WebSocket connected: ${wsExchange} for ${symbol}`);
           
-          // Enviar mensagem de subscrição específica por exchange
-          if (wsExchange === 'bingx') {
-            const bingxSymbol = symbol.includes('USDT') ? 
-              symbol.replace('USDT', '-USDT') : 
-              symbol.replace('/', '-');
-            
-            // BingX WebSocket usa formato: market.kline.SYMBOL.INTERVAL
-            const subscribeMessage = {
-              id: Date.now().toString(),
-              reqType: 'sub',
-              dataType: `market.kline.${bingxSymbol}.${this.exchanges.bingx.intervals[resolution]}`
-            };
-            
-            ws.send(JSON.stringify(subscribeMessage));
-            console.log(`📡 BingX WebSocket subscription sent:`, subscribeMessage);
-          }
+          // WebSocket da Binance não precisa de mensagem de subscrição separada
+          // A subscrição é feita diretamente na URL de conexão
         };
         
         ws.onmessage = async (event) => {
           try {
             let data;
             
-            if (wsExchange === 'bingx') {
-              // BingX usa compressão GZIP - dados vêm como Blob
-              if (event.data instanceof Blob) {
-                console.log(`📦 BingX Blob received (size: ${event.data.size} bytes)`);
-                
-                const arrayBuffer = await event.data.arrayBuffer();
-                const uint8Array = new Uint8Array(arrayBuffer);
-                
-                // Verificar se é GZIP (magic bytes: 1f 8b)
-                if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
-                  console.log('🗜️ GZIP compression detected');
-                  
-                  // Descomprimir GZIP usando DecompressionStream
-                  if (typeof DecompressionStream !== 'undefined') {
-                    try {
-                      const stream = new DecompressionStream('gzip');
-                      const writer = stream.writable.getWriter();
-                      const reader = stream.readable.getReader();
-                      
-                      writer.write(uint8Array);
-                      writer.close();
-                      
-                      const result = await reader.read();
-                      const decompressed = new TextDecoder().decode(result.value);
-                      data = JSON.parse(decompressed);
-                      console.log('✅ GZIP decompression successful');
-                    } catch (error) {
-                      console.error('❌ GZIP decompression failed:', error);
-                      // Fallback: tentar interpretar diretamente
-                      const text = new TextDecoder().decode(uint8Array);
-                      data = JSON.parse(text);
-                    }
-                  } else {
-                    console.warn('⚠️ DecompressionStream not available - using fallback');
-                    // Importar pako dinamicamente se disponível
-                    if (typeof pako !== 'undefined') {
-                      const decompressed = pako.inflate(uint8Array, { to: 'string' });
-                      data = JSON.parse(decompressed);
-                    } else {
-                      throw new Error('GZIP decompression not available');
-                    }
-                  }
-                } else {
-                  // Não é GZIP - tentar interpretar diretamente
-                  const text = new TextDecoder().decode(uint8Array);
-                  data = JSON.parse(text);
-                }
-              } else {
-                // Dados já em texto
-                data = JSON.parse(event.data);
-              }
-              
-              console.log('📊 BingX WebSocket data:', data);
-              
-              // Processar dados do kline BingX - múltiplos formatos possíveis
-              if (data && data.data) {
-                // Formato 1: { data: { K: {...} } }
-                if (data.data.K) {
-                  const kline = data.data.K;
-                  const bar = {
-                    time: parseInt(kline.t),
-                    open: parseFloat(kline.o),
-                    high: parseFloat(kline.h),
-                    low: parseFloat(kline.l),
-                    close: parseFloat(kline.c),
-                    volume: parseFloat(kline.v)
-                  };
-                  onRealtimeCallback(bar);
-                  console.log('✅ BingX kline processed (format K)');
-                }
-                // Formato 2: { data: [...] } - array format
-                else if (Array.isArray(data.data) && data.data.length >= 6) {
-                  const kline = data.data;
-                  const bar = {
-                    time: parseInt(kline[0]),
-                    open: parseFloat(kline[1]),
-                    high: parseFloat(kline[2]),
-                    low: parseFloat(kline[3]),
-                    close: parseFloat(kline[4]),
-                    volume: parseFloat(kline[5])
-                  };
-                  onRealtimeCallback(bar);
-                  console.log('✅ BingX kline processed (array format)');
-                }
-                // Formato 3: { dataType: "...", data: {...} }
-                else if (data.dataType && data.dataType.includes('kline')) {
-                  if (Array.isArray(data.data) && data.data.length >= 6) {
-                    const kline = data.data;
-                    const bar = {
-                      time: parseInt(kline[0]),
-                      open: parseFloat(kline[1]),
-                      high: parseFloat(kline[2]),
-                      low: parseFloat(kline[3]),
-                      close: parseFloat(kline[4]),
-                      volume: parseFloat(kline[5])
-                    };
-                    onRealtimeCallback(bar);
-                    console.log('✅ BingX kline processed (dataType format)');
-                  }
-                }
-              }
-              // Formato direto sem wrapper
-              else if (data.k) {
+            // Binance e outros exchanges (dados em texto)
+            data = JSON.parse(event.data);
+            
+            if (wsExchange === 'binance') {
+              // Formato Binance
+              if (data.k) {
                 const bar = {
-                  time: parseInt(data.k.t),
+                  time: data.k.t,
                   open: parseFloat(data.k.o),
                   high: parseFloat(data.k.h),
                   low: parseFloat(data.k.l),
@@ -541,35 +417,13 @@ class UniversalDatafeed {
                   volume: parseFloat(data.k.v)
                 };
                 onRealtimeCallback(bar);
-                console.log('✅ BingX kline processed (direct format)');
               }
-            } else {
-              // Binance e outros exchanges (dados em texto)
-              data = JSON.parse(event.data);
-              
-              if (wsExchange === 'binance') {
-                // Formato Binance
-                if (data.k) {
-                  const bar = {
-                    time: data.k.t,
-                    open: parseFloat(data.k.o),
-                    high: parseFloat(data.k.h),
-                    low: parseFloat(data.k.l),
-                    close: parseFloat(data.k.c),
-                    volume: parseFloat(data.k.v)
-                  };
-                  onRealtimeCallback(bar);
-                }
-              } else if (wsExchange === 'bybit') {
-                // Formato Bybit - implementar quando necessário
-                console.log('📊 Bybit WebSocket data:', data);
-              }
+            } else if (wsExchange === 'bybit') {
+              // Formato Bybit - implementar quando necessário
+              console.log('📊 Bybit WebSocket data:', data);
             }
           } catch (error) {
             console.error(`❌ WebSocket message parse error (${wsExchange}):`, error);
-            if (wsExchange === 'bingx') {
-              console.warn('⚠️ BingX WebSocket: Error processing data - raw event:', event);
-            }
           }
         };
         
