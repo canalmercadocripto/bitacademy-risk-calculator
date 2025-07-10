@@ -59,12 +59,23 @@ class UniversalDatafeed {
       bitget: {
         baseUrl: 'https://api.bitget.com',
         intervals: {
+          '1': '1min', '5': '5min', '15': '15min', '30': '30min',
+          '60': '1h', '240': '4h', '1D': '1day'
+        },
+        endpoints: {
+          klines: '/api/v2/spot/market/candles',
+          ticker: '/api/v2/spot/market/tickers'
+        }
+      },
+      bingx: {
+        baseUrl: 'https://open-api.bingx.com',
+        intervals: {
           '1': '1m', '5': '5m', '15': '15m', '30': '30m',
           '60': '1h', '240': '4h', '1D': '1d'
         },
         endpoints: {
-          klines: '/api/spot/v1/market/candles',
-          ticker: '/api/spot/v1/market/ticker'
+          klines: '/openApi/spot/v1/market/kline',
+          ticker: '/openApi/spot/v1/ticker/24hr'
         }
       }
     };
@@ -168,19 +179,24 @@ class UniversalDatafeed {
       const cacheKey = `bars_${exchange}_${symbol}_${resolution}_${from}_${to}`;
       const cached = this.getCachedData(cacheKey);
       if (cached) {
+        console.log(`📋 Using cached data for ${exchange}:${symbol}`);
         onHistoryCallback(cached.bars, { noData: cached.noData });
         return;
       }
       
       const exchangeConfig = this.exchanges[exchange];
       if (!exchangeConfig) {
+        console.error(`❌ Exchange ${exchange} not supported. Available: ${Object.keys(this.exchanges).join(', ')}`);
         throw new Error(`Exchange ${exchange} not supported`);
       }
       
       const interval = exchangeConfig.intervals[resolution];
       if (!interval) {
+        console.error(`❌ Resolution ${resolution} not supported on ${exchange}. Available: ${Object.keys(exchangeConfig.intervals).join(', ')}`);
         throw new Error(`Resolution ${resolution} not supported on ${exchange}`);
       }
+      
+      console.log(`🔧 Using exchange config:`, { exchange, baseUrl: exchangeConfig.baseUrl, interval });
       
       let bars = [];
       let url, response;
@@ -188,10 +204,12 @@ class UniversalDatafeed {
       switch (exchange) {
         case 'binance':
           url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
+          console.log(`🌐 Binance URL: ${url}`);
           response = await this.rateLimitedRequest(exchange, url);
           
           if (response.ok) {
             const data = await response.json();
+            console.log(`✅ Binance data received: ${data.length} candles`);
             bars = data.map(kline => ({
               time: parseInt(kline[0]),
               open: parseFloat(kline[1]),
@@ -200,16 +218,24 @@ class UniversalDatafeed {
               close: parseFloat(kline[4]),
               volume: parseFloat(kline[5])
             }));
+          } else {
+            console.error(`❌ Binance API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ Binance Error Details:`, errorText);
           }
           break;
           
         case 'bybit':
           url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?category=spot&symbol=${symbol}&interval=${interval}&start=${from * 1000}&end=${to * 1000}&limit=1000`;
+          console.log(`🌐 Bybit URL: ${url}`);
           response = await this.rateLimitedRequest(exchange, url);
           
           if (response.ok) {
             const data = await response.json();
+            console.log(`🔍 Bybit API Response:`, data);
+            
             if (data.result && data.result.list) {
+              console.log(`✅ Bybit data received: ${data.result.list.length} candles`);
               bars = data.result.list.map(kline => ({
                 time: parseInt(kline[0]),
                 open: parseFloat(kline[1]),
@@ -218,18 +244,28 @@ class UniversalDatafeed {
                 close: parseFloat(kline[4]),
                 volume: parseFloat(kline[5])
               }));
+            } else {
+              console.warn(`⚠️ Bybit: No data in expected format`, data);
             }
+          } else {
+            console.error(`❌ Bybit API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ Bybit Error Details:`, errorText);
           }
           break;
           
         case 'bitget':
-          // Implementação similar para Bitget...
-          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&period=${interval}&after=${from}&before=${to}`;
+          // Bitget V2 API - formato correto
+          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&granularity=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
+          console.log(`🌐 Bitget URL: ${url}`);
           response = await this.rateLimitedRequest(exchange, url);
           
           if (response.ok) {
             const data = await response.json();
-            if (data.data) {
+            console.log('🔍 Bitget API Response:', data);
+            
+            if (data.code === '00000' && data.data) {
+              console.log(`✅ Bitget data received: ${data.data.length} candles`);
               bars = data.data.map(kline => ({
                 time: parseInt(kline[0]),
                 open: parseFloat(kline[1]),
@@ -238,7 +274,43 @@ class UniversalDatafeed {
                 close: parseFloat(kline[4]),
                 volume: parseFloat(kline[5])
               }));
+            } else {
+              console.warn(`⚠️ Bitget: Unexpected response format or error code: ${data.code}`, data);
             }
+          } else {
+            console.error(`❌ Bitget API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ Bitget Error Details:`, errorText);
+          }
+          break;
+          
+        case 'bingx':
+          // BingX API - implementação completa
+          url = `${exchangeConfig.baseUrl}${exchangeConfig.endpoints.klines}?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=1000`;
+          console.log(`🌐 BingX URL: ${url}`);
+          response = await this.rateLimitedRequest(exchange, url);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('🔍 BingX API Response:', data);
+            
+            if (data.code === 0 && data.data) {
+              console.log(`✅ BingX data received: ${data.data.length} candles`);
+              bars = data.data.map(kline => ({
+                time: parseInt(kline[0]),
+                open: parseFloat(kline[1]),
+                high: parseFloat(kline[2]),
+                low: parseFloat(kline[3]),
+                close: parseFloat(kline[4]),
+                volume: parseFloat(kline[5])
+              }));
+            } else {
+              console.warn(`⚠️ BingX: Unexpected response format or error code: ${data.code}`, data);
+            }
+          } else {
+            console.error(`❌ BingX API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ BingX Error Details:`, errorText);
           }
           break;
       }
