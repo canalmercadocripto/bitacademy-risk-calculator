@@ -1012,32 +1012,6 @@ const TradingViewChartAdvanced = ({
     };
   }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
-  // Função de teste para debug
-  const testSyncFunction = () => {
-    console.log('🔧 Testing sync function manually...');
-    console.log('🔧 Chart ready:', chartReady);
-    console.log('🔧 Chart ref:', !!chartRef.current);
-    console.log('🔧 onPriceChange:', !!onPriceChange);
-    console.log('🔧 isUpdatingFromCalculator:', isUpdatingFromCalculator.current);
-    console.log('🔧 priceLineIds:', priceLineIds.current);
-    console.log('🔧 lastKnownPrices:', lastKnownPrices.current);
-    
-    // Capturar no log global
-    window.tradingViewLogs.push(`🔧 Test sync: chartReady=${chartReady}, chartRef=${!!chartRef.current}, onPriceChange=${!!onPriceChange}`);
-    
-    if (chartRef.current) {
-      try {
-        const allShapes = chartRef.current.getAllShapes();
-        console.log('🔧 All shapes:', allShapes.length, allShapes);
-        window.tradingViewLogs.push(`🔧 Shapes found: ${allShapes.length}`);
-      } catch (e) {
-        console.error('🔧 Error getting shapes:', e);
-        window.tradingViewLogs.push(`🔧 Error getting shapes: ${e.message}`);
-      }
-    }
-    
-    syncLinePriceCoordinates();
-  };
 
   return (
     <div className="tradingview-chart-container">
@@ -1051,41 +1025,6 @@ const TradingViewChartAdvanced = ({
         }}
       />
       
-      {chartReady && (
-        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, display: 'flex', gap: '5px' }}>
-          <button 
-            onClick={testSyncFunction}
-            style={{
-              padding: '5px 10px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Test Sync
-          </button>
-          <button 
-            onClick={() => {
-              console.log('📋 TradingView Logs:', window.tradingViewLogs);
-              alert('Logs mostrados no console. Veja o console (F12)');
-            }}
-            style={{
-              padding: '5px 10px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Show Logs
-          </button>
-        </div>
-      )}
       
       {hasError && (
         <div className="chart-error">
