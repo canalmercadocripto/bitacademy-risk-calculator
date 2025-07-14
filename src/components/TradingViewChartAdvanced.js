@@ -10,8 +10,7 @@ const TradingViewChartAdvanced = ({
   tradeDirection = null,
   currentPrice = null,
   results = null,  // Adicionar resultados para alvos inteligentes
-  onPriceChange = null,  // Callback para sincronizar com calculadora
-  onTimeframeChange = null
+  onPriceChange = null  // Callback para sincronizar com calculadora
 }) => {
   
   // Debug apenas em desenvolvimento
@@ -39,7 +38,6 @@ const TradingViewChartAdvanced = ({
   const widgetRef = useRef(null);
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [currentTimeframe, setCurrentTimeframe] = useState('15');
   const lineCounter = useRef(0); // Contador para IDs únicos
   const updateTimeoutRef = useRef(null); // Para debounce
   const lastValuesRef = useRef({}); // Cache dos últimos valores
@@ -124,14 +122,13 @@ const TradingViewChartAdvanced = ({
         // Criar widget TradingView Advanced Charts
         const widget = new window.TradingView.widget({
           symbol: symbol,
-          interval: currentTimeframe,
+          interval: '15',
           container: chartContainerRef.current,
           datafeed: datafeed,
           library_path: '/charting_library/',
           locale: 'pt_BR',
           disabled_features: [
             'header_symbol_search',
-            'header_resolutions',
             'header_chart_type',
             'header_settings',
             'header_indicators',
@@ -1015,29 +1012,8 @@ const TradingViewChartAdvanced = ({
   }, [chartReady, entryPrice, stopLoss, targetPrice, results, tradeDirection]);
 
 
-  // Função para alterar timeframe
-  const handleTimeframeChange = (newTimeframe) => {
-    setCurrentTimeframe(newTimeframe);
-    if (onTimeframeChange) {
-      onTimeframeChange(newTimeframe);
-    }
-  };
-
   return (
     <div className="tradingview-chart-container">
-      {/* Botões de Timeframe */}
-      <div className="timeframe-buttons">
-        {['1', '5', '15', '30', '60', '240', '1D'].map(timeframe => (
-          <button
-            key={timeframe}
-            className={`timeframe-btn ${currentTimeframe === timeframe ? 'active' : ''}`}
-            onClick={() => handleTimeframeChange(timeframe)}
-          >
-            {timeframe === '1D' ? '1D' : timeframe + 'm'}
-          </button>
-        ))}
-      </div>
-      
       <div
         ref={chartContainerRef}
         className="chart-widget"

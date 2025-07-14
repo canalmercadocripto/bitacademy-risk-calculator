@@ -7,14 +7,12 @@ const TradingViewChartNative = ({
   stopLoss = null,
   targetPrice = null,
   tradeDirection = null,
-  currentPrice = null,
-  onTimeframeChange = null
+  currentPrice = null
 }) => {
   const chartContainerRef = useRef(null);
   const widgetRef = useRef(null);
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [currentTimeframe, setCurrentTimeframe] = useState('15');
   const priceLineIds = useRef(new Set());
 
   useEffect(() => {
@@ -168,14 +166,13 @@ const TradingViewChartNative = ({
         // Criar novo widget
         const widget = new window.TradingView.widget({
           symbol: symbol,
-          interval: currentTimeframe,
+          interval: '15',
           container: chartContainerRef.current,
           datafeed: datafeed,
           library_path: '/charting_library/',
           locale: 'pt_BR',
           disabled_features: [
             'header_symbol_search',
-            'header_resolutions',
             'header_chart_type',
             'header_settings',
             'header_indicators',
@@ -325,29 +322,8 @@ const TradingViewChartNative = ({
     }
   }, [chartReady, entryPrice, stopLoss, targetPrice, currentPrice]);
 
-  // Função para alterar timeframe
-  const handleTimeframeChange = (newTimeframe) => {
-    setCurrentTimeframe(newTimeframe);
-    if (onTimeframeChange) {
-      onTimeframeChange(newTimeframe);
-    }
-  };
-
   return (
     <div className="tradingview-chart-container">
-      {/* Botões de Timeframe */}
-      <div className="timeframe-buttons">
-        {['1', '5', '15', '30', '60', '240', '1D'].map(timeframe => (
-          <button
-            key={timeframe}
-            className={`timeframe-btn ${currentTimeframe === timeframe ? 'active' : ''}`}
-            onClick={() => handleTimeframeChange(timeframe)}
-          >
-            {timeframe === '1D' ? '1D' : timeframe + 'm'}
-          </button>
-        ))}
-      </div>
-      
       <div
         ref={chartContainerRef}
         className="chart-widget"
