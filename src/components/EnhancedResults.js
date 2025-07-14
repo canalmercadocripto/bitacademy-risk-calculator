@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import ProfitPrintGenerator from './ProfitPrintGenerator';
-import ScenarioComparator from './ScenarioComparator';
-import TradeMonitor from './TradeMonitor';
 
 const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, currentPrice }) => {
-  const [isMonitoring, setIsMonitoring] = useState(false);
   const [fixedEntryPrice, setFixedEntryPrice] = useState(null);
   
   // Função para classificar nível de risco
@@ -447,12 +444,6 @@ ${targets.map(target =>
             <button className="btn-action secondary" onClick={copyResult}>
               📋 Copiar Análise
             </button>
-            <button 
-              className={`btn-action ${isMonitoring ? 'danger' : 'primary'}`}
-              onClick={() => setIsMonitoring(!isMonitoring)}
-            >
-              {isMonitoring ? '🛑 Parar Monitoramento' : '📡 Iniciar Monitoramento'}
-            </button>
             <ProfitPrintGenerator 
               results={results}
               symbol={selectedSymbol}
@@ -468,32 +459,6 @@ ${targets.map(target =>
 
       </div>
 
-      {/* Monitor de Trade - Separado */}
-      {isMonitoring && (
-        <div className="monitor-section">
-          <TradeMonitor
-            currentPrice={currentPrice}
-            entryPrice={fixedEntryPrice}
-            stopLoss={parseFloat(formData.stopLoss)}
-            targets={targets}
-            tradeType={formData.tradeType}
-            symbol={selectedSymbol}
-            onAlert={(alert) => toast(alert.message, { 
-              icon: alert.type === 'warning' ? '⚠️' : '🎯',
-              duration: 6000
-            })}
-          />
-        </div>
-      )}
-
-      {/* Comparador - Separado */}
-      <div className="comparator-section">
-        <ScenarioComparator 
-          baseFormData={formData}
-          selectedSymbol={selectedSymbol}
-          selectedExchange={selectedExchange}
-        />
-        </div>
       </div>
     </div>
   );
