@@ -8,10 +8,12 @@ const TradingViewChart = ({
   stopLoss = null,
   targetPrice = null,
   tradeDirection = null,
-  currentPrice = null
+  currentPrice = null,
+  onTimeframeChange = null
 }) => {
   const [chartReady, setChartReady] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [currentTimeframe, setCurrentTimeframe] = useState('15');
   const chartContainerRef = useRef(null);
 
   // Effect para marcar chart como ready após carregar
@@ -146,7 +148,7 @@ const TradingViewChart = ({
         <AdvancedRealTimeChart
           symbol={symbol}
           autosize={true}
-          interval="5"
+          interval={currentTimeframe}
           timezone="America/Sao_Paulo"
           theme={theme === "dark" ? "dark" : "light"}
           locale="pt_BR"
@@ -171,8 +173,29 @@ const TradingViewChart = ({
     }
   };
 
+  // Função para alterar timeframe
+  const handleTimeframeChange = (newTimeframe) => {
+    setCurrentTimeframe(newTimeframe);
+    if (onTimeframeChange) {
+      onTimeframeChange(newTimeframe);
+    }
+  };
+
   return (
     <div className="tradingview-chart-container" ref={chartContainerRef}>
+      {/* Botões de Timeframe */}
+      <div className="timeframe-buttons">
+        {['1', '5', '15', '30', '60', '240', '1D'].map(timeframe => (
+          <button
+            key={timeframe}
+            className={`timeframe-btn ${currentTimeframe === timeframe ? 'active' : ''}`}
+            onClick={() => handleTimeframeChange(timeframe)}
+          >
+            {timeframe === '1D' ? '1D' : timeframe + 'm'}
+          </button>
+        ))}
+      </div>
+      
       {/* Widget TradingView */}
       <div className="chart-widget">
         {hasError ? (
