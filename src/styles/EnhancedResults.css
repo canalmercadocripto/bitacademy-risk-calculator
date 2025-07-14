@@ -21,7 +21,7 @@
 .enhanced-results-container {
   background: var(--bg-primary);
   border-radius: 0;
-  padding: 8px;
+  padding: 6px;
   box-shadow: none;
   border: none;
   max-width: 100%;
@@ -32,7 +32,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 /* Header Limpo */
@@ -80,19 +80,19 @@
 .results-main-layout {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 /* Section Cards - Compact for Analysis Container */
 .section-card {
   background: var(--bg-gradient-light);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 6px;
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   transition: all 0.3s ease;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 
@@ -102,12 +102,12 @@
 }
 
 .section-card-title {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   color: var(--text-primary);
-  font-size: 0.9em;
+  font-size: 0.85em;
   font-weight: 600;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 6px;
+  padding-bottom: 3px;
 }
 
 /* 1. POSIÇÃO */
@@ -584,8 +584,8 @@
 
 /* BOTÕES DE AÇÃO */
 .actions-section-smart {
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid var(--border-color);
 }
 
