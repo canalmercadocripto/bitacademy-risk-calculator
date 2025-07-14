@@ -15,6 +15,7 @@ import ExchangeSelector from './ExchangeSelector';
 import AuthModal from './AuthModal';
 import TradingViewChartAdvanced from './TradingViewChartAdvanced';
 import '../styles/TradingViewChart.css';
+import '../styles/ProfessionalLayout.css';
 
 const RiskCalculator = () => {
   const { theme, toggleTheme } = useTheme();
@@ -366,10 +367,10 @@ const RiskCalculator = () => {
         />
         
 
-        {/* Container 1: Gráfico + Calculadora */}
-        <div className="trading-calculator-container chart-visible">
-          {/* Chart Section - ESQUERDA */}
-          <div className="chart-section">
+        {/* Layout Profissional de 3 Colunas */}
+        <div className="professional-trading-layout">
+          {/* Coluna 1: Gráfico */}
+          <div className="chart-column">
             <TradingViewChartAdvanced
               symbol={chartSymbol}
               theme={theme}
@@ -383,9 +384,12 @@ const RiskCalculator = () => {
             />
           </div>
 
-          {/* Calculator Section - DIREITA */}
-          <div className="calculator-section">
-            <div className="calculator-inner">
+          {/* Coluna 2: Calculadora */}
+          <div className="calculator-column">
+            <div className="calculator-header">
+              <h4 className="section-title">🧮 Cálculo de Risco</h4>
+            </div>
+            <div className="calculator-content">
               <div className="form-section">
                 <ExchangeSelector
                   exchanges={exchanges}
@@ -435,30 +439,36 @@ const RiskCalculator = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Container 2: Risk Management Analysis - ABAIXO */}
-        {results && (
-          <div className="risk-management-container">
-            <div className="analysis-header">
-              <h4 className="analysis-title">📊 Análise de Risk Management</h4>
-              <div className="analysis-status">
-                <div className="status-indicator"></div>
-                <span>Análise em Tempo Real</span>
-              </div>
+          {/* Coluna 3: Resultados */}
+          <div className="results-column">
+            <div className="results-header">
+              <h4 className="section-title">📊 Análise de Risk Management</h4>
+              {results && (
+                <div className="analysis-status">
+                  <div className="status-indicator"></div>
+                  <span>Tempo Real</span>
+                </div>
+              )}
             </div>
-            
-            <div className="analysis-content">
-              <EnhancedResults 
-                results={results} 
-                selectedSymbol={selectedSymbol}
-                selectedExchange={selectedExchange}
-                formData={formData}
-                currentPrice={liveCurrentPrice}
-              />
+            <div className="results-content">
+              {results ? (
+                <EnhancedResults 
+                  results={results} 
+                  selectedSymbol={selectedSymbol}
+                  selectedExchange={selectedExchange}
+                  formData={formData}
+                  currentPrice={liveCurrentPrice}
+                />
+              ) : (
+                <div className="empty-results">
+                  <div className="empty-icon">📊</div>
+                  <p>Preencha os dados e clique em "Calcular" para ver sua análise de risco.</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Modais */}
         <AuthModal
