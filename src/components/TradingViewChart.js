@@ -152,8 +152,24 @@ const TradingViewChart = ({
           locale="pt_BR"
           hide_side_toolbar={false}
           hide_top_toolbar={false}
-          disabled_features={[]}
-          enabled_features={["study_templates"]}
+          disabled_features={[
+            'use_localstorage_for_settings'
+          ]}
+          enabled_features={[
+            'study_templates',
+            'header_symbol_search',
+            'header_resolutions',
+            'header_chart_type',
+            'header_settings', 
+            'header_indicators',
+            'header_compare',
+            'header_undo_redo',
+            'header_fullscreen_button',
+            'header_saveload',
+            'header_screenshot',
+            'timeframes_toolbar',
+            'create_volume_indicator_by_default'
+          ]}
           container_id="tradingview_chart"
         />
       );

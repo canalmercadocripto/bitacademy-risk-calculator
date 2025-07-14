@@ -128,18 +128,29 @@ const TradingViewChartAdvanced = ({
           library_path: '/charting_library/',
           locale: 'pt_BR',
           disabled_features: [
+            'use_localstorage_for_settings'
+          ],
+          enabled_features: [
+            'study_templates',
+            'move_logo_to_main_pane',
+            'create_volume_indicator_by_default',
             'header_symbol_search',
+            'header_resolutions',
             'header_chart_type',
             'header_settings',
             'header_indicators',
             'header_compare',
             'header_undo_redo',
             'header_fullscreen_button',
-            'use_localstorage_for_settings'
-          ],
-          enabled_features: [
-            'study_templates',
-            'move_logo_to_main_pane'
+            'header_saveload',
+            'header_screenshot',
+            'timeframes_toolbar',
+            'drawing_templates',
+            'volume_force_overlay',
+            'side_toolbar_in_fullscreen_mode',
+            'header_in_fullscreen_mode',
+            'chart_crosshair_menu',
+            'popup_hints'
           ],
           theme: theme === 'dark' ? 'dark' : 'light',
           timezone: 'America/Sao_Paulo',
