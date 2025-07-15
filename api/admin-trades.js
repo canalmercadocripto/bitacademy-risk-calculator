@@ -33,12 +33,22 @@ module.exports = async function handler(req, res) {
     console.log('Supabase URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
     console.log('Supabase Key:', process.env.SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
     
-    const { action = 'list', exchange = '', status = '' } = req.query;
+    const { 
+      action = 'list', 
+      exchange = '', 
+      status = '',
+      page = 1,
+      limit = 100
+    } = req.query;
     
     if (action === 'list') {
-      console.log('🔍 Buscando TODOS os trades do banco...');
+      const pageNum = parseInt(page) || 1;
+      const limitNum = parseInt(limit) || 100;
+      const offset = (pageNum - 1) * limitNum;
       
-      // Build query to get ALL trades with user information (no pagination)
+      console.log(`🔍 Buscando trades - Página ${pageNum}, Limite ${limitNum}, Offset ${offset}`);
+      
+      // Build query with pagination
       let query = supabase
         .from('trades')
         .select(`
@@ -62,8 +72,9 @@ module.exports = async function handler(req, res) {
           created_at,
           updated_at,
           users(name, email)
-        `)
-        .order('created_at', { ascending: false });
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limitNum - 1);
       
       // Apply filters if provided
       if (exchange && exchange !== 'all') {
@@ -76,7 +87,13 @@ module.exports = async function handler(req, res) {
       
       const { data: trades, error, count } = await query;
       
-      console.log('Supabase query result:', { trades: trades?.length, error: error?.message });
+      console.log('Supabase query result:', { 
+        trades: trades?.length, 
+        totalCount: count,
+        page: pageNum,
+        limit: limitNum,
+        error: error?.message 
+      });
       
       if (error) throw error;
       
@@ -105,15 +122,20 @@ module.exports = async function handler(req, res) {
         updatedAt: trade.updated_at
       })) || [];
       
-      // Calculate statistics
-      const totalTrades = formattedTrades.length;
+      // Calculate statistics for current page
+      const currentPageTrades = formattedTrades.length;
       const activeTrades = formattedTrades.filter(t => t.status === 'active').length;
       const closedTrades = formattedTrades.filter(t => t.status === 'closed').length;
-      const avgRiskReward = totalTrades > 0 ? 
-        formattedTrades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / totalTrades : 0;
+      const avgRiskReward = currentPageTrades > 0 ? 
+        formattedTrades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / currentPageTrades : 0;
+      
+      const totalPages = Math.ceil(count / limitNum);
       
       console.log('📊 Estatísticas dos trades:', {
-        totalTrades,
+        currentPageTrades,
+        totalCount: count,
+        totalPages,
+        page: pageNum,
         activeTrades,
         closedTrades,
         avgRiskReward: parseFloat(avgRiskReward.toFixed(2))
@@ -122,11 +144,17 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({
         success: true,
         data: formattedTrades,
-        meta: {
-          total: totalTrades
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: count,
+          totalPages,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
         },
         stats: {
-          totalTrades,
+          totalTrades: count,
+          currentPageTrades,
           activeTrades,
           closedTrades,
           avgRiskReward: parseFloat(avgRiskReward.toFixed(2))

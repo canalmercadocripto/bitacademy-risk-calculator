@@ -12,6 +12,13 @@ const AdminTrades = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [renewCredentials, setRenewCredentials] = useState({ email: '', password: '' });
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pagination, setPagination] = useState(null);
 
   // Função para formatar valores em USD
   const formatCurrency = (value) => {
@@ -25,30 +32,55 @@ const AdminTrades = () => {
 
   useEffect(() => {
     fetchAllTrades();
-  }, []);
+  }, [currentPage, itemsPerPage, filterExchange, filterStatus]);
 
   const fetchAllTrades = async () => {
     try {
       setLoading(true);
       
-      // Fetch all trades from all users via API
+      // Fetch trades with pagination
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      console.log('🔍 Buscando trades admin...');
-      console.log('Token:', token ? 'PRESENTE' : 'AUSENTE');
-      console.log('Headers:', headers);
+      const params = new URLSearchParams({
+        action: 'list',
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString()
+      });
       
-      const response = await fetch('/api/admin-trades?action=list', { headers });
+      if (filterExchange && filterExchange !== 'all') {
+        params.append('exchange', filterExchange);
+      }
+      
+      if (filterStatus && filterStatus !== 'all') {
+        params.append('status', filterStatus);
+      }
+      
+      console.log(`🔍 Buscando trades admin - Página ${currentPage}, Limite ${itemsPerPage}...`);
+      console.log('Token:', token ? 'PRESENTE' : 'AUSENTE');
+      console.log('Filtros:', { exchange: filterExchange, status: filterStatus });
+      
+      const response = await fetch(`/api/admin-trades?${params.toString()}`, { headers });
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
       
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log('Response data:', {
+        success: data.success,
+        tradesCount: data.data?.length,
+        pagination: data.pagination,
+        stats: data.stats
+      });
       
       if (data.success) {
         console.log('✅ Dados recebidos:', data.data.length, 'trades');
         setTrades(data.data || []);
+        
+        // Update pagination info
+        if (data.pagination) {
+          setPagination(data.pagination);
+          setTotalPages(data.pagination.totalPages);
+          setTotalRecords(data.pagination.total);
+        }
       } else {
         console.error('❌ Erro ao buscar trades:', data.message);
         
@@ -174,7 +206,15 @@ const AdminTrades = () => {
     return matchesSearch && matchesExchange && matchesStatus;
   });
 
-  const stats = {
+  // Use API stats if available, otherwise calculate from current page
+  const stats = pagination ? {
+    totalTrades: totalRecords,
+    activeTrades: trades.filter(t => t.status === 'active').length,
+    closedTrades: trades.filter(t => t.status === 'closed').length,
+    totalVolume: trades.reduce((sum, t) => sum + t.accountSize, 0),
+    avgRiskReward: trades.length > 0 ? 
+      trades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / trades.length : 0
+  } : {
     totalTrades: trades.length,
     activeTrades: trades.filter(t => t.status === 'active').length,
     closedTrades: trades.filter(t => t.status === 'closed').length,
@@ -206,6 +246,21 @@ const AdminTrades = () => {
           <div className="stat-content">
             <h3>Total de Trades</h3>
             <div className="stat-number">{stats.totalTrades}</div>
+            {pagination && (
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                Total no sistema
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">📄</div>
+          <div className="stat-content">
+            <h3>Página Atual</h3>
+            <div className="stat-number">{currentPage} / {totalPages}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {trades.length} registros
+            </div>
           </div>
         </div>
         <div className="stat-card">
@@ -213,13 +268,6 @@ const AdminTrades = () => {
           <div className="stat-content">
             <h3>Trades Ativos</h3>
             <div className="stat-number">{stats.activeTrades}</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-content">
-            <h3>Trades Fechados</h3>
-            <div className="stat-number">{stats.closedTrades}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -244,7 +292,10 @@ const AdminTrades = () => {
           
           <select
             value={filterExchange}
-            onChange={(e) => setFilterExchange(e.target.value)}
+            onChange={(e) => {
+              setFilterExchange(e.target.value);
+              setCurrentPage(1); // Reset to first page when filter changes
+            }}
             className="filter-select"
           >
             <option value="all">Todas as Exchanges</option>
@@ -256,12 +307,29 @@ const AdminTrades = () => {
           
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1); // Reset to first page when filter changes
+            }}
             className="filter-select"
           >
             <option value="all">Todos os Status</option>
             <option value="active">Ativos</option>
             <option value="closed">Fechados</option>
+          </select>
+          
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(parseInt(e.target.value));
+              setCurrentPage(1); // Reset to first page when limit changes
+            }}
+            className="filter-select"
+          >
+            <option value="50">50 por página</option>
+            <option value="100">100 por página</option>
+            <option value="200">200 por página</option>
+            <option value="500">500 por página</option>
           </select>
         </div>
         
@@ -311,6 +379,84 @@ const AdminTrades = () => {
             </div>
           </div>
         ) : null}
+        
+        {/* Pagination Controls */}
+        {pagination && totalPages > 1 && (
+          <div className="pagination-controls" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '10px',
+            margin: '20px 0',
+            padding: '20px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px'
+          }}>
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: currentPage === 1 ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              ⏮️ Primeira
+            </button>
+            
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: currentPage === 1 ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              ⏪ Anterior
+            </button>
+            
+            <span style={{ margin: '0 15px', fontWeight: 'bold' }}>
+              Página {currentPage} de {totalPages} ({totalRecords} total)
+            </span>
+            
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: currentPage === totalPages ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Próxima ⏩
+            </button>
+            
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: currentPage === totalPages ? '#ccc' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Última ⏭️
+            </button>
+          </div>
+        )}
         
         {filteredTrades.map(trade => (
           <div key={trade.id} className="trade-row">
