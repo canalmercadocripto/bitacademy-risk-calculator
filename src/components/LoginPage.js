@@ -175,21 +175,6 @@ const LoginPage = () => {
                 <span className="feature-text">Dados seguros e privados</span>
               </div>
             </div>
-
-            {/* Aviso Profissional */}
-            <div className="professional-notice">
-              <span className="notice-icon">📈</span>
-              <h3 className="notice-title">Calculadora Profissional</h3>
-              <p className="notice-text">
-                Ferramenta completa de risk management para traders profissionais.
-              </p>
-              <div className="notice-info">
-                <p>
-                  ✅ <strong>Totalmente funcional e otimizada</strong><br/>
-                  Cadastre-se agora e comece a usar imediatamente!
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Formulário de Login/Registro */}
