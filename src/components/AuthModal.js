@@ -38,10 +38,31 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    if (e.target.name === 'phone') {
+      const phoneValue = e.target.value;
+      let detectedCountryCode = '+55'; // default Brazil
+      
+      // Auto-detect country code from phone number
+      if (phoneValue.startsWith('+1')) detectedCountryCode = '+1';
+      else if (phoneValue.startsWith('+44')) detectedCountryCode = '+44';
+      else if (phoneValue.startsWith('+33')) detectedCountryCode = '+33';
+      else if (phoneValue.startsWith('+49')) detectedCountryCode = '+49';
+      else if (phoneValue.startsWith('+39')) detectedCountryCode = '+39';
+      else if (phoneValue.startsWith('+34')) detectedCountryCode = '+34';
+      else if (phoneValue.startsWith('+351')) detectedCountryCode = '+351';
+      else if (phoneValue.startsWith('+55')) detectedCountryCode = '+55';
+      
+      setFormData({
+        ...formData,
+        phone: phoneValue,
+        countryCode: detectedCountryCode
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [e.target.name]: e.target.value
+      });
+    }
   };
 
   const handlePhoneChange = (phone, countryCode) => {
@@ -128,34 +149,20 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           {mode === 'register' && (
             <div className="form-group">
               <label htmlFor="phone">Telefone</label>
-              <div className="phone-input-container">
-                <select 
-                  name="countryCode" 
-                  value={formData.countryCode}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="country-select"
-                >
-                  <option value="+55">🇧🇷 +55</option>
-                  <option value="+1">🇺🇸 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                  <option value="+33">🇫🇷 +33</option>
-                  <option value="+49">🇩🇪 +49</option>
-                  <option value="+39">🇮🇹 +39</option>
-                  <option value="+34">🇪🇸 +34</option>
-                  <option value="+351">🇵🇹 +351</option>
-                </select>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Digite seu telefone"
-                  required
-                  disabled={loading}
-                  className="phone-input"
-                />
-              </div>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Digite o telefone com código do país (ex: +5511999999999)"
+                required
+                disabled={loading}
+              />
+              {formData.phone && (
+                <div className="phone-detected">
+                  País detectado: {formData.countryCode}
+                </div>
+              )}
             </div>
           )}
 

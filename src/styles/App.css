@@ -1649,11 +1649,12 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.8);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 999999;
-  padding: 1rem;
+  padding: 2rem 1rem;
   backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .auth-modal-content {
@@ -1893,6 +1894,17 @@
 .phone-input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.phone-detected {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* User Menu Styles */
