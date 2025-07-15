@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import PhoneInput from './PhoneInput';
+import SimplePhoneInput from './SimplePhoneInput';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState(initialMode);
@@ -129,13 +129,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           {mode === 'register' && (
             <div className="form-group">
               <label htmlFor="phone">Telefone</label>
-              <PhoneInput
+              <SimplePhoneInput
                 value={formData.phone}
                 countryCode={formData.countryCode}
-                onChange={(phone) => setFormData({...formData, phone})}
-                onCountryCodeChange={(phone, countryCode) => {
-                  setFormData(prev => ({...prev, countryCode}));
-                }}
+                onPhoneChange={(phone) => setFormData(prev => ({...prev, phone}))}
+                onCountryChange={(countryCode) => setFormData(prev => ({...prev, countryCode}))}
                 disabled={loading}
                 required
               />
