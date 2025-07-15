@@ -133,7 +133,9 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 value={formData.phone}
                 countryCode={formData.countryCode}
                 onChange={(phone) => setFormData({...formData, phone})}
-                onCountryCodeChange={(phone, countryCode) => setFormData({...formData, countryCode})}
+                onCountryCodeChange={(phone, countryCode) => {
+                  setFormData({...formData, countryCode});
+                }}
                 disabled={loading}
                 required
               />

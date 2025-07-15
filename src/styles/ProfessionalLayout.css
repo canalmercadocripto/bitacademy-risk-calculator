@@ -56,7 +56,7 @@
 
 .calculator-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
   padding: 16px;
   box-sizing: border-box;
   height: 100%;
@@ -94,7 +94,7 @@
 
 .results-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   background: var(--bg-primary);
   border-radius: 16px;
