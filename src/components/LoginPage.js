@@ -4,7 +4,7 @@ import { useTheme } from '../hooks/useTheme';
 import './LoginPage.css';
 
 const LoginPage = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { login, register, loading } = useAuth();
   const [mode, setMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -152,16 +152,6 @@ const LoginPage = () => {
 
   return (
     <div className="login-container">
-      {/* Header com tema */}
-      <header className="login-header">
-        <h1>🚀 Calculadora de Gerenciamento de Risco</h1>
-        <div className="theme-toggle" onClick={toggleTheme}>
-          <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
-          <span className="theme-toggle-text">
-            {theme === 'dark' ? 'Claro' : 'Escuro'}
-          </span>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="login-main">
@@ -350,10 +340,10 @@ const LoginPage = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      placeholder="Digite o telefone com código do país (ex: +5511999999999)"
+                      placeholder="📱 Digite o telefone com código do país (ex: +5511999999999)"
                       required
                       disabled={loading}
-                      className="form-input"
+                      className="field-input phone-input-field"
                     />
                     {formData.phone && (
                       <div className="phone-detected">

@@ -154,9 +154,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="Digite o telefone com código do país (ex: +5511999999999)"
+                placeholder="📱 Digite o telefone com código do país (ex: +5511999999999)"
                 required
                 disabled={loading}
+                className="phone-input-field"
               />
               {formData.phone && (
                 <div className="phone-detected">
