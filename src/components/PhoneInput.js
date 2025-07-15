@@ -28,7 +28,9 @@ const PhoneInput = ({
   const selectedCountry = countryCodes.find(country => country.code === countryCode) || countryCodes[0];
 
   const handleCountrySelect = (country) => {
-    onCountryCodeChange(country.code);
+    if (onCountryCodeChange) {
+      onCountryCodeChange(value, country.code);
+    }
     setIsDropdownOpen(false);
     setSearchTerm('');
   };
