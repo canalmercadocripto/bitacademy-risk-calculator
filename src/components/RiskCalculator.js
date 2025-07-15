@@ -250,12 +250,11 @@ const RiskCalculator = () => {
       const response = await calculatorApi.calculateRisk(params);
       setResults(response.data);
       
-      // Adicionar ao histórico local apenas se não for cálculo automático
-      if (!silent) {
-        addCalculation(response.data, selectedSymbol, selectedExchange);
-        
-        // Se usuário logado, salvar no backend também
-        if (isAuthenticated && token) {
+      // Sempre adicionar ao histórico (local e backend) quando há resultados válidos
+      addCalculation(response.data, selectedSymbol, selectedExchange);
+      
+      // Se usuário logado, salvar no backend também
+      if (isAuthenticated && token) {
           try {
             const calculatedData = response.data;
             
@@ -277,14 +276,17 @@ const RiskCalculator = () => {
             };
             
             await tradeApi.saveCalculation(tradeData, token);
-            toast.success('Cálculo salvo no seu histórico!');
+            if (!silent) {
+              toast.success('Cálculo salvo no seu histórico!');
+            }
           } catch (error) {
             console.error('Erro ao salvar no backend:', error);
-            toast.success('Cálculo realizado! (Erro ao salvar no histórico)');
+            if (!silent) {
+              toast.success('Cálculo realizado! (Erro ao salvar no histórico)');
+            }
           }
-        } else {
-          toast.success('Cálculo realizado com sucesso!');
-        }
+      } else if (!silent) {
+        toast.success('Cálculo realizado com sucesso!');
       }
     } catch (error) {
       if (!silent) {
