@@ -307,37 +307,13 @@ ${targets.map(target =>
           </div>
         </div>
 
-        {/* 2. RESULTADO FINANCEIRO MELHORADO */}
+        {/* 2. GESTÃO DE RISCO */}
         <div className="section-card">
-          <h4 className="section-card-title">💰 Análise Financeira Completa</h4>
+          <h4 className="section-card-title">🛡️ Gestão de Risco</h4>
           
-          {/* Resultado Principal */}
-          <div className="financial-highlight-new">
-            <div className={`result-main ${profitLoss.status}`} 
-                 style={{ 
-                   backgroundColor: profitLoss.bgColor,
-                   borderLeft: `4px solid ${profitLoss.borderColor}`
-                 }}>
-              <div className="result-header">
-                <span className="result-icon">{profitLoss.icon}</span>
-                <span className="result-type">{profitLoss.type}</span>
-              </div>
-              <div className="result-amount" style={{ color: profitLoss.color }}>
-                ${profitLoss.amount.toFixed(2)}
-              </div>
-              <div className="result-impact">
-                {profitLoss.percentage.toFixed(2)}% do capital da conta
-              </div>
-              <div className="result-position-info">
-                Posição: ${results.positionValue.toFixed(2)} • Direção: {results.direction}
-              </div>
-            </div>
-          </div>
-
           {/* Risk & Reward Detalhado */}
           <div className="risk-reward-detailed">
             <div className="rr-section">
-              <h5>🛡️ Gestão de Risco</h5>
               <div className="rr-grid">
                 <div className="rr-card risk">
                   <div className="rr-card-label">Risco Máximo</div>
