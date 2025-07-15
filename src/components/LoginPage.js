@@ -179,14 +179,14 @@ const LoginPage = () => {
             {/* Aviso Profissional */}
             <div className="professional-notice">
               <span className="notice-icon">📈</span>
-              <h3 className="notice-title">Acesso Antecipado</h3>
+              <h3 className="notice-title">Calculadora Profissional</h3>
               <p className="notice-text">
-                Calculadora profissional de risk management para traders sérios.
+                Ferramenta completa de risk management para traders profissionais.
               </p>
-              <div className="notice-warning">
+              <div className="notice-info">
                 <p>
-                  ⚠️ <strong>Algumas funcionalidades em desenvolvimento</strong><br/>
-                  Cadastre-se agora e tenha acesso antecipado às novidades!
+                  ✅ <strong>Totalmente funcional e otimizada</strong><br/>
+                  Cadastre-se agora e comece a usar imediatamente!
                 </p>
               </div>
             </div>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import SimplePhoneInput from './SimplePhoneInput';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState(initialMode);
@@ -129,14 +128,34 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           {mode === 'register' && (
             <div className="form-group">
               <label htmlFor="phone">Telefone</label>
-              <SimplePhoneInput
-                value={formData.phone}
-                countryCode={formData.countryCode}
-                onPhoneChange={(phone) => setFormData(prev => ({...prev, phone}))}
-                onCountryChange={(countryCode) => setFormData(prev => ({...prev, countryCode}))}
-                disabled={loading}
-                required
-              />
+              <div className="phone-input-container">
+                <select 
+                  name="countryCode" 
+                  value={formData.countryCode}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="country-select"
+                >
+                  <option value="+55">🇧🇷 +55</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+39">🇮🇹 +39</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+351">🇵🇹 +351</option>
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Digite seu telefone"
+                  required
+                  disabled={loading}
+                  className="phone-input"
+                />
+              </div>
             </div>
           )}
 
