@@ -1652,19 +1652,21 @@
   align-items: center;
   justify-content: center;
   z-index: var(--z-overlay);
+  overflow-y: auto;
+  padding: 1rem;
 }
 
 .modal-content {
   background: var(--bg-container);
   border-radius: 16px;
   padding: 2rem;
-  width: 90%;
+  width: 100%;
   max-width: 450px;
   box-shadow: var(--shadow-heavy);
   border: 1px solid var(--border-color);
   backdrop-filter: blur(10px);
-  max-height: 90vh;
-  overflow-y: auto;
+  margin: auto;
+  overflow: visible;
 }
 
 .modal-header {
