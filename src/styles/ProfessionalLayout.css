@@ -5,13 +5,14 @@
 .professional-trading-layout {
   display: grid;
   grid-template-columns: 1.8fr 0.7fr 0.9fr;
-  gap: 10px;
+  gap: 8px;
   height: calc(100vh - 100px);
   min-height: 680px;
   max-width: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ========================================
@@ -204,15 +205,15 @@
 /* Tablet Landscape - 2 Colunas */
 @media (max-width: 1400px) {
   .professional-trading-layout {
-    grid-template-columns: 1.4fr 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: 1.4fr 0.8fr 1fr;
+    gap: 8px;
   }
 }
 
 @media (max-width: 1200px) {
   .professional-trading-layout {
-    grid-template-columns: 1.2fr 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: 1.2fr 0.7fr 0.9fr;
+    gap: 6px;
   }
 }
 
