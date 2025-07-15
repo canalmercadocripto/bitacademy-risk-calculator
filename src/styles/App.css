@@ -176,7 +176,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  margin-bottom: 8px;
 }
 
 .input-group label {
@@ -216,10 +217,10 @@
 }
 
 .question {
-  font-size: 0.9em;
+  font-size: 0.85em;
   font-weight: 600;
   text-align: center;
-  margin: 6px 0 4px 0;
+  margin: 4px 0 6px 0;
   color: var(--text-secondary);
 }
 
@@ -234,9 +235,9 @@
 
 .direction-button {
   flex: 1;
-  padding: 8px;
+  padding: 6px;
   font-weight: 600;
-  font-size: 0.85em;
+  font-size: 0.8em;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background-color: var(--bg-button);
@@ -2111,19 +2112,19 @@
    ======================================== */
 
 .auto-calc-info {
-  margin-top: 15px;
-  padding: 12px;
+  margin-top: 8px;
+  padding: 8px;
   background: rgba(102, 126, 234, 0.1);
   border: 1px solid rgba(102, 126, 234, 0.3);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .auto-calc-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--text-primary);
-  font-size: 0.9em;
+  font-size: 0.8em;
   font-weight: 500;
 }
 
