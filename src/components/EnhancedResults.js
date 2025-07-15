@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import ProfitPrintGenerator from './ProfitPrintGenerator';
+import { formatPrice, formatCurrency, formatPercentage, formatQuantity } from '../utils/numberFormatter';
 
 const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, currentPrice }) => {
   const [fixedEntryPrice, setFixedEntryPrice] = useState(null);
+  
+  // Obter símbolo para formatação
+  const symbolStr = selectedSymbol?.symbol || selectedSymbol?.baseAsset + selectedSymbol?.quoteAsset || 'BTCUSDT';
   
   // Função para classificar nível de risco
   const getRiskLevel = (ratio) => {
@@ -209,23 +213,23 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
 📅 Data: ${new Date().toLocaleDateString('pt-BR')}
 
 📍 PONTOS DE OPERAÇÃO:
-🟢 Entrada: $${fixedEntryPrice?.toFixed(4) || 'N/A'}
+🟢 Entrada: $${fixedEntryPrice ? formatPrice(fixedEntryPrice, symbolStr) : 'N/A'}
 🎯 Saída: $${formData?.exitPrice || 'N/A'}
 🛑 Stop Loss: $${formData?.stopLoss || 'N/A'}
 💰 Risco por Trade: ${formData?.riskPercentage || 'N/A'}%
 
 💼 POSIÇÃO:
-🪙 Quantidade: ${displayResults.positionSize.toFixed(6)} moedas
-💵 Valor Total: $${displayResults.positionValue.toFixed(2)}
+🪙 Quantidade: ${formatQuantity(displayResults.positionSize)} moedas
+💵 Valor Total: ${formatCurrency(displayResults.positionValue)}
 📈 Direção: ${displayResults.direction}
 
 ${profitLoss.icon} ${profitLoss.type.toUpperCase()}:
-💰 Valor: $${profitLoss.amount.toFixed(2)}
-📊 Percentual: ${profitLoss.percentage.toFixed(1)}% da conta
-🛡️ Risco Máximo: $${displayResults.riskAmount.toFixed(2)}
+💰 Valor: ${formatCurrency(profitLoss.amount)}
+📊 Percentual: ${formatPercentage(profitLoss.percentage, 1)} da conta
+🛡️ Risco Máximo: ${formatCurrency(displayResults.riskAmount)}
 
 ⚖️ ANÁLISE RISK/REWARD:
-🎯 Ratio: ${displayResults.riskRewardRatio.toFixed(2)}/1
+🎯 Ratio: ${formatPercentage(displayResults.riskRewardRatio, 1).replace('%', '')}/1
 📋 Classificação: ${getRiskLevel(displayResults.riskRewardRatio)}
 
 🎯 PONTOS DE REALIZAÇÃO ESTRATÉGICOS:
@@ -276,10 +280,8 @@ ${targets.map(target =>
 
 
   return (
-    <div className="results-section enhanced">
-      <div className="enhanced-results-container">
-        {/* Layout Principal - Sequência Vertical */}
-        <div className="results-main-layout">
+    <div className="enhanced-results">
+      <div className="results-grid">
         
         {/* 1. POSIÇÃO */}
         <div className="section-card">
@@ -287,11 +289,11 @@ ${targets.map(target =>
           <div className="position-grid-vertical">
             <div className="position-item">
               <span className="item-label">Quantidade:</span>
-              <span className="item-value">{displayResults.positionSize ? displayResults.positionSize.toFixed(6) : '0.000000'}</span>
+              <span className="item-value">{displayResults.positionSize ? formatQuantity(displayResults.positionSize) : '0.0000'}</span>
             </div>
             <div className="position-item">
               <span className="item-label">Valor Total:</span>
-              <span className="item-value">${displayResults.positionValue ? displayResults.positionValue.toFixed(2) : '0.00'}</span>
+              <span className="item-value">{displayResults.positionValue ? formatCurrency(displayResults.positionValue) : '$0.00'}</span>
             </div>
             <div className="position-item">
               <span className="item-label">Direção:</span>
@@ -316,13 +318,13 @@ ${targets.map(target =>
               <div className="rr-grid">
                 <div className="rr-card risk">
                   <div className="rr-card-label">Risco Máximo</div>
-                  <div className="rr-card-value">-${displayResults.riskAmount ? displayResults.riskAmount.toFixed(2) : '0.00'}</div>
-                  <div className="rr-card-desc">{displayResults.riskPercent ? displayResults.riskPercent.toFixed(1) : '0.0'}% da conta</div>
+                  <div className="rr-card-value">-{displayResults.riskAmount ? formatCurrency(displayResults.riskAmount) : '$0.00'}</div>
+                  <div className="rr-card-desc">{displayResults.riskPercent ? formatPercentage(displayResults.riskPercent, 1) : '0.0%'} da conta</div>
                 </div>
                 <div className="rr-card reward">
                   <div className="rr-card-label">Potencial de Lucro</div>
-                  <div className="rr-card-value">+${profitLoss.amount.toFixed(2)}</div>
-                  <div className="rr-card-desc">{profitLoss.percentage.toFixed(1)}% da conta</div>
+                  <div className="rr-card-value">+{formatCurrency(profitLoss.amount)}</div>
+                  <div className="rr-card-desc">{formatPercentage(profitLoss.percentage, 1)} da conta</div>
                 </div>
               </div>
             </div>
@@ -381,7 +383,7 @@ ${targets.map(target =>
               <div className="point-item entry">
                 <span className="point-icon">🟢</span>
                 <span className="point-label">Entrada</span>
-                <span className="point-price">${fixedEntryPrice?.toFixed(4) || 'N/A'}</span>
+                <span className="point-price">${fixedEntryPrice ? formatPrice(fixedEntryPrice, symbolStr) : 'N/A'}</span>
               </div>
               <div className="point-item target">
                 <span className="point-icon">🎯</span>
@@ -403,7 +405,7 @@ ${targets.map(target =>
                   <div key={index} className="target-item-smart">
                     <div className="target-header-smart">
                       <div className="target-level">{target.level}</div>
-                      <div className="target-price">${target.price.toFixed(4)}</div>
+                      <div className="target-price">${formatPrice(target.price, symbolStr)}</div>
                       <div className="target-rr">R/R {target.riskReward}:1</div>
                     </div>
                     <div className="target-desc">{target.description}</div>
@@ -415,8 +417,6 @@ ${targets.map(target =>
         </div>
 
 
-
-      </div>
 
       </div>
     </div>

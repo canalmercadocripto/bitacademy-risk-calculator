@@ -13,6 +13,31 @@ const TradingViewChartAdvanced = ({
   onPriceChange = null  // Callback para sincronizar com calculadora
 }) => {
   
+  // Função para determinar precisão decimal baseada na moeda
+  const getPricePrecision = (symbolStr) => {
+    const cleanSymbol = symbolStr.replace(/^[A-Z]+:/, ''); // Remove exchange prefix
+    
+    // Moedas com alta precisão (muitas casas decimais)
+    if (cleanSymbol.includes('SHIB') || cleanSymbol.includes('PEPE') || 
+        cleanSymbol.includes('FLOKI') || cleanSymbol.includes('DOGE')) {
+      return 8;
+    }
+    
+    // Moedas de baixo valor
+    if (cleanSymbol.includes('XRP') || cleanSymbol.includes('ADA') || 
+        cleanSymbol.includes('MATIC') || cleanSymbol.includes('DOT')) {
+      return 4;
+    }
+    
+    // Bitcoin e moedas de alto valor
+    if (cleanSymbol.includes('BTC') || cleanSymbol.includes('ETH')) {
+      return 2;
+    }
+    
+    // Padrão para outras moedas
+    return 3;
+  };
+  
   // Debug apenas em desenvolvimento
   if (process.env.NODE_ENV === 'development') {
     console.log('🚀 TradingViewChartAdvanced mounted');
@@ -119,6 +144,9 @@ const TradingViewChartAdvanced = ({
           }
         }
 
+        // Obter precisão decimal para o símbolo atual
+        const pricePrecision = getPricePrecision(symbol);
+        
         // Criar widget TradingView Advanced Charts
         const widget = new window.TradingView.widget({
           symbol: symbol,
@@ -163,7 +191,16 @@ const TradingViewChartAdvanced = ({
             "paneProperties.horzGridProperties.color": theme === 'dark' ? '#2e2e2e' : '#e1e1e1',
             "symbolWatermarkProperties.transparency": 90,
             "scalesProperties.textColor": theme === 'dark' ? '#cccccc' : '#333333',
-            "scalesProperties.backgroundColor": theme === 'dark' ? '#1e1e1e' : '#ffffff'
+            "scalesProperties.backgroundColor": theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            "mainSeriesProperties.priceAxisProperties.percentage": false,
+            "mainSeriesProperties.priceAxisProperties.indexedTo100": false,
+            "scalesProperties.fontSize": 11
+          },
+          // Configurações específicas do símbolo
+          symbol_info: {
+            pricescale: Math.pow(10, pricePrecision),
+            minmov: 1,
+            fractional: false
           },
           autosize: true,
           fullscreen: false,
