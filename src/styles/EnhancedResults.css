@@ -262,8 +262,8 @@
 /* Análise R/R */
 .rr-analysis-card {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 10px;
+  border-radius: 4px;
+  padding: 6px;
   text-align: center;
 }
 
@@ -271,32 +271,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  margin-bottom: 8px;
+  gap: 2px;
+  margin-bottom: 4px;
 }
 
 .ratio-number {
-  font-size: 1.8em;
+  font-size: 1.4em;
   font-weight: 700;
   color: var(--text-primary);
   font-family: 'Courier New', monospace;
 }
 
 .ratio-separator {
-  font-size: 1.4em;
+  font-size: 1em;
   color: var(--text-secondary);
   font-weight: 300;
 }
 
 .ratio-base {
-  font-size: 1.8em;
+  font-size: 1.4em;
   font-weight: 700;
   color: var(--text-primary);
   font-family: 'Courier New', monospace;
 }
 
 .rr-classification {
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .classification-label {
@@ -313,33 +313,33 @@
 }
 
 .rr-explanation {
-  font-size: 0.85em;
+  font-size: 0.7em;
   color: var(--text-secondary);
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.2;
 }
 
 /* 3. PONTOS DA OPERAÇÃO */
 .points-layout {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .points-main {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 4px;
 }
 
 .point-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px;
+  padding: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  border-left: 3px solid;
+  border-radius: 4px;
+  border-left: 2px solid;
   text-align: center;
 }
 
@@ -348,52 +348,52 @@
 .point-item.stop { border-left-color: #dc3545; }
 
 .point-icon {
-  font-size: 1.2em;
-  margin-bottom: 2px;
+  font-size: 1em;
+  margin-bottom: 1px;
 }
 
 .point-label {
-  font-size: 0.7em;
+  font-size: 0.6em;
   color: var(--text-secondary);
   font-weight: 500;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .point-price {
   font-family: 'Courier New', monospace;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.85em;
+  font-size: 0.7em;
 }
 
 /* Alvos Inteligentes */
 .targets-smart {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  padding: 8px;
+  border-radius: 4px;
+  padding: 6px;
   border: 1px solid var(--border-color);
 }
 
 .targets-smart h5 {
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
   color: var(--text-primary);
-  font-size: 0.8em;
+  font-size: 0.7em;
   font-weight: 600;
 }
 
 .targets-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .target-item-smart {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 3px;
   border-left: 2px solid #17a2b8;
-  padding: 6px;
+  padding: 4px;
   transition: all 0.3s ease;
 }
 

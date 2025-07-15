@@ -345,11 +345,11 @@ ${targets.map(target =>
                 <div className="rr-explanation">
                   Para cada $1 arriscado, o potencial é de ${results.riskRewardRatio.toFixed(1)} de lucro
                 </div>
-                <div className="win-rate-needed" style={{ marginTop: '10px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', border: `1px solid ${calculateWinRateNeeded(results.riskRewardRatio).classification.color}` }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <strong>Taxa de Acerto Necessária:</strong>
+                <div className="win-rate-needed" style={{ marginTop: '4px', padding: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', border: `1px solid ${calculateWinRateNeeded(results.riskRewardRatio).classification.color}` }}>
+                  <div style={{ marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '0.8em' }}>Taxa de Acerto Necessária:</strong>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.85em' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', fontSize: '0.7em' }}>
                     <div>
                       <span style={{ color: '#6c757d' }}>Breakeven:</span><br/>
                       <strong>{calculateWinRateNeeded(results.riskRewardRatio).breakeven.toFixed(1)}%</strong>
@@ -363,7 +363,7 @@ ${targets.map(target =>
                       <strong>{calculateWinRateNeeded(results.riskRewardRatio).conservative.toFixed(1)}%</strong>
                     </div>
                   </div>
-                  <div style={{ marginTop: '8px', fontSize: '0.8em', fontWeight: '600', color: calculateWinRateNeeded(results.riskRewardRatio).classification.color }}>
+                  <div style={{ marginTop: '4px', fontSize: '0.65em', fontWeight: '600', color: calculateWinRateNeeded(results.riskRewardRatio).classification.color }}>
                     {calculateWinRateNeeded(results.riskRewardRatio).classification.level} - {calculateWinRateNeeded(results.riskRewardRatio).classification.desc}
                   </div>
                 </div>
