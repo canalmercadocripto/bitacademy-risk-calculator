@@ -61,11 +61,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className="auth-modal-overlay" onClick={onClose}>
+      <div className="auth-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="auth-modal-header">
           <h2>{mode === 'login' ? 'Entrar' : 'Criar Conta'}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="auth-modal-close" onClick={onClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

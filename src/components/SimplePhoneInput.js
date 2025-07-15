@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const SimplePhoneInput = ({ 
   value = '', 
@@ -11,6 +11,15 @@ const SimplePhoneInput = ({
 }) => {
   const [selectedCountry, setSelectedCountry] = useState(countryCode);
   const [phoneNumber, setPhoneNumber] = useState(value);
+
+  // Sincronizar com props
+  useEffect(() => {
+    setSelectedCountry(countryCode);
+  }, [countryCode]);
+
+  useEffect(() => {
+    setPhoneNumber(value);
+  }, [value]);
 
   const countries = [
     { code: '+55', name: 'Brasil', flag: '🇧🇷' },

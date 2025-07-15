@@ -1641,7 +1641,7 @@
 }
 
 /* Auth Modal Styles - New Layout */
-.modal-overlay {
+.auth-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -1651,12 +1651,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-overlay);
+  z-index: 999999;
   padding: 1rem;
   backdrop-filter: blur(8px);
 }
 
-.modal-content {
+.auth-modal-content {
   background: var(--bg-container);
   border-radius: 24px;
   padding: 2.5rem;
@@ -1666,18 +1666,19 @@
   border: 1px solid var(--border-color);
   backdrop-filter: blur(20px);
   margin: auto;
-  overflow: visible;
   transform: scale(0.95);
-  animation: modalSlideIn 0.3s ease-out forwards;
+  animation: authModalSlideIn 0.3s ease-out forwards;
+  max-height: calc(90vh - 2rem);
+  overflow: visible;
 }
 
-@keyframes modalSlideIn {
+@keyframes authModalSlideIn {
   to {
     transform: scale(1);
   }
 }
 
-.modal-header {
+.auth-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1686,7 +1687,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.modal-header h2 {
+.auth-modal-header h2 {
   margin: 0;
   color: var(--text-primary);
   font-size: 1.8rem;
@@ -1697,7 +1698,7 @@
   background-clip: text;
 }
 
-.modal-close {
+.auth-modal-close {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
@@ -1713,7 +1714,7 @@
   transition: all 0.3s ease;
 }
 
-.modal-close:hover {
+.auth-modal-close:hover {
   background: var(--bg-hover);
   transform: scale(1.1);
   color: var(--text-primary);
