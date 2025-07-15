@@ -386,9 +386,6 @@ const RiskCalculator = () => {
 
           {/* Coluna 2: Calculadora */}
           <div className="calculator-column">
-            <div className="calculator-header">
-              <h4 className="section-title">🧮 Cálculo de Risco</h4>
-            </div>
             <div className="calculator-content">
               <div className="form-section">
                 <ExchangeSelector
@@ -442,15 +439,6 @@ const RiskCalculator = () => {
 
           {/* Coluna 3: Resultados */}
           <div className="results-column">
-            <div className="results-header">
-              <h4 className="section-title">📊 Análise de Risk Management</h4>
-              {results && (
-                <div className="analysis-status">
-                  <div className="status-indicator"></div>
-                  <span>Tempo Real</span>
-                </div>
-              )}
-            </div>
             <div className="results-content">
               {results ? (
                 <EnhancedResults 
