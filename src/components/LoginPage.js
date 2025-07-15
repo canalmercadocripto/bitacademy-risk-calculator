@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
-import PhoneInput from './PhoneInput';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -96,10 +95,31 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    
+    if (name === 'phone') {
+      let detectedCountryCode = '+55'; // default Brazil
+      
+      // Auto-detect country code from phone number
+      if (value.startsWith('+1')) detectedCountryCode = '+1';
+      else if (value.startsWith('+44')) detectedCountryCode = '+44';
+      else if (value.startsWith('+33')) detectedCountryCode = '+33';
+      else if (value.startsWith('+49')) detectedCountryCode = '+49';
+      else if (value.startsWith('+39')) detectedCountryCode = '+39';
+      else if (value.startsWith('+34')) detectedCountryCode = '+34';
+      else if (value.startsWith('+351')) detectedCountryCode = '+351';
+      else if (value.startsWith('+55')) detectedCountryCode = '+55';
+      
+      setFormData({
+        ...formData,
+        phone: value,
+        countryCode: detectedCountryCode
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
     
     // Validação em tempo real
     validateField(name, value);
@@ -325,14 +345,21 @@ const LoginPage = () => {
                 <div className="form-field">
                   <div className="field-group">
                     <label className="field-label">Telefone</label>
-                    <PhoneInput
+                    <input
+                      type="tel"
+                      name="phone"
                       value={formData.phone}
-                      countryCode={formData.countryCode}
-                      onChange={(phone) => setFormData({...formData, phone})}
-                      onCountryCodeChange={(countryCode) => setFormData({...formData, countryCode})}
-                      disabled={loading}
+                      onChange={handleChange}
+                      placeholder="Digite o telefone com código do país (ex: +5511999999999)"
                       required
+                      disabled={loading}
+                      className="form-input"
                     />
+                    {formData.phone && (
+                      <div className="phone-detected">
+                        País detectado: {formData.countryCode}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

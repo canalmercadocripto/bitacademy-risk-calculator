@@ -718,4 +718,13 @@
 
 [data-theme="light"] .field-input {
   background: rgba(255, 255, 255, 0.8);
+}.phone-detected {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }

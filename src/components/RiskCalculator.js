@@ -8,7 +8,6 @@ import { useCalculationHistory } from '../hooks/useCalculationHistory';
 import { usePriceUpdater } from '../hooks/usePriceUpdater';
 import { calculatorApi } from '../services/api';
 import { tradeApi } from '../services/authApi';
-import Header from './Header';
 import CalculatorForm from './CalculatorForm';
 import EnhancedResults from './EnhancedResults';
 import ExchangeSelector from './ExchangeSelector';
@@ -414,11 +413,6 @@ const RiskCalculator = () => {
   return (
     <div className="App">
       <div style={{ padding: '20px' }}>
-        <Header 
-          theme={theme} 
-          onToggleTheme={toggleTheme}
-        />
-        
 
         {/* Layout Profissional de 3 Colunas */}
         <div className="professional-trading-layout">
