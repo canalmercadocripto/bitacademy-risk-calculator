@@ -22,51 +22,51 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
     {
       id: 'calculator',
       label: 'Calculadora',
-      icon: '🧮',
+      icon: '⚡',
       description: 'Risk Management'
     },
     {
       id: 'history',
-      label: 'Meu Histórico',
-      icon: '📊',
+      label: 'Histórico',
+      icon: '📈',
       description: 'Trades e Cálculos'
     },
     {
       id: 'profile',
-      label: 'Meu Perfil',
-      icon: '👤',
-      description: 'Configurações Pessoais'
+      label: 'Perfil',
+      icon: '⚙️',
+      description: 'Configurações'
     },
     // Itens apenas para admin
     ...(user?.role === 'admin' ? [
       {
         id: 'divider',
         type: 'divider',
-        label: 'Administração'
+        label: 'Admin'
       },
       {
         id: 'admin-dashboard',
-        label: 'Dashboard Admin',
+        label: 'Dashboard',
         icon: '📊',
-        description: 'Visão Geral do Sistema'
+        description: 'Sistema'
       },
       {
         id: 'users',
-        label: '👥 Gestão de Usuários',
+        label: 'Usuários',
         icon: '👥',
-        description: 'Gerenciar Usuários'
+        description: 'Gerenciar'
       },
       {
         id: 'trades',
-        label: '💰 Histórico de Trades',
+        label: 'Trades',
         icon: '💰',
-        description: 'Todos os Trades'
+        description: 'Histórico'
       },
       {
         id: 'analytics',
-        label: '📈 Analytics Avançado',
-        icon: '📈',
-        description: 'Relatórios e Métricas'
+        label: 'Analytics',
+        icon: '📊',
+        description: 'Métricas'
       }
     ] : [])
   ];
