@@ -2166,6 +2166,14 @@
   width: 100%;
 }
 
+.results-single-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: fit-content;
+}
+
 .results-column-left {
   display: flex;
   flex-direction: column;
@@ -2181,8 +2189,8 @@
 .section-card {
   background: var(--bg-section);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 12px;
   box-shadow: var(--shadow-light);
   transition: all 0.3s ease;
   height: fit-content;
@@ -2195,14 +2203,14 @@
 
 .section-card-title {
   color: var(--text-primary);
-  font-size: 1em;
+  font-size: 0.9em;
   font-weight: 600;
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--border-color);
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Position Grid Styles */
@@ -2253,15 +2261,15 @@
 .rr-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .rr-card {
   background: var(--bg-gradient-light);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 6px;
+  padding: 8px;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -2355,8 +2363,8 @@
 .points-main {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .point-item {
