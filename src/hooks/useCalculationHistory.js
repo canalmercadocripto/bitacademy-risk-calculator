@@ -32,7 +32,7 @@ export const useCalculationHistory = () => {
       }
     };
 
-    const updatedHistory = [newEntry, ...history].slice(0, 20); // Manter apenas os últimos 20
+    const updatedHistory = [newEntry, ...history].slice(0, 100); // Manter apenas os últimos 100
     setHistory(updatedHistory);
     
     try {

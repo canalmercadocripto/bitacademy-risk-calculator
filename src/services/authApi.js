@@ -39,28 +39,35 @@ export const tradeApi = {
   // Salvar cálculo
   saveCalculation: async (data, token) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.post('/trades', data, { headers });
+    const response = await api.post('/trades/calculate', data, { headers });
     return response.data;
   },
 
   // Obter histórico
-  getHistory: async (token, page = 1, limit = 20) => {
+  getHistory: async (token, page = 1, limit = 100) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.get(`/trades?action=history&page=${page}&limit=${limit}`, { headers });
+    const response = await api.get(`/trades/history?page=${page}&limit=${limit}`, { headers });
+    return response.data;
+  },
+
+  // Obter histórico completo (para análises)
+  getTradeHistory: async (token, page = 1, limit = 1000) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.get(`/trades/history?page=${page}&limit=${limit}`, { headers });
     return response.data;
   },
 
   // Obter estatísticas
   getStats: async (token) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.get('/trades?action=history&page=1&limit=1000', { headers });
+    const response = await api.get('/trades/stats', { headers });
     return response.data;
   },
 
   // Exportar dados
   exportData: async (token, format = 'json') => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.get(`/trades?action=export&format=${format}`, { headers });
+    const response = await api.get(`/trades/export?format=${format}`, { headers });
     return response.data;
   }
 };

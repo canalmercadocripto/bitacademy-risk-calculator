@@ -65,7 +65,7 @@ class TradeHistory {
   }
   
   // Buscar trades por usuário
-  static async getByUser(userId, page = 1, limit = 20) {
+  static async getByUser(userId, page = 1, limit = 100) {
     const offset = (page - 1) * limit;
     
     const result = await query(`

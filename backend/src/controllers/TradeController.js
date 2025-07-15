@@ -99,7 +99,7 @@ class TradeController {
   // Buscar histórico do usuário logado
   static async getUserHistory(req, res) {
     try {
-      const { page = 1, limit = 20 } = req.query;
+      const { page = 1, limit = 100 } = req.query; // Aumentado limite padrão para 100
       
       const result = await TradeHistory.getByUser(
         req.user.userId,
