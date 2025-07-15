@@ -166,6 +166,28 @@ const RiskCalculator = () => {
     }
   }, [currentPrice]);
 
+  // Cálculo automático quando campos principais mudarem
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (selectedExchange && selectedSymbol && 
+          formData.entryPrice && formData.stopLoss && formData.targetPrice && 
+          formData.accountSize && formData.riskPercent) {
+        handleCalculate(true); // true = silent mode (sem toast/histórico)
+      }
+    }, 500); // Debounce de 500ms para evitar muitas chamadas
+
+    return () => clearTimeout(timer);
+  }, [
+    formData.entryPrice, 
+    formData.stopLoss, 
+    formData.targetPrice, 
+    formData.accountSize, 
+    formData.riskPercent, 
+    formData.direction,
+    selectedExchange,
+    selectedSymbol
+  ]);
+
   const handleInputChange = (field, value) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`📝 handleInputChange called: ${field} = ${value}`);
@@ -183,8 +205,8 @@ const RiskCalculator = () => {
     }));
   };
 
-  const handleCalculate = async () => {
-    if (!validateForm()) return;
+  const handleCalculate = async (silent = false) => {
+    if (!validateForm(silent)) return;
 
     setCalculating(true);
     try {
@@ -203,42 +225,46 @@ const RiskCalculator = () => {
       const response = await calculatorApi.calculateRisk(params);
       setResults(response.data);
       
-      // Adicionar ao histórico local
-      addCalculation(response.data, selectedSymbol, selectedExchange);
-      
-      // Se usuário logado, salvar no backend também
-      if (isAuthenticated && token) {
-        try {
-          const calculatedData = response.data;
-          
-          const tradeData = {
-            exchange: selectedExchange?.name || 'Manual',
-            symbol: selectedSymbol?.symbol || 'CUSTOM',
-            accountSize: parseFloat(calculatedData.accountSize),
-            riskPercentage: parseFloat(calculatedData.riskPercent),
-            entryPrice: parseFloat(calculatedData.entryPrice),
-            stopLoss: parseFloat(calculatedData.stopLoss),
-            takeProfit: parseFloat(calculatedData.targetPrice),
-            positionSize: parseFloat(calculatedData.positionSize),
-            riskAmount: parseFloat(calculatedData.riskAmount),
-            rewardAmount: parseFloat(calculatedData.rewardAmount),
-            riskRewardRatio: parseFloat(calculatedData.riskRewardRatio),
-            currentPrice: parseFloat(calculatedData.currentPrice || calculatedData.entryPrice),
-            tradeType: calculatedData.direction?.toLowerCase() || 'long',
-            notes: `R/R: ${calculatedData.riskRewardRatio.toFixed(2)}:1 - Calculado automaticamente em ${new Date().toLocaleString('pt-BR')}`
-          };
-          
-          await tradeApi.saveCalculation(tradeData, token);
-          toast.success('Cálculo salvo no seu histórico!');
-        } catch (error) {
-          console.error('Erro ao salvar no backend:', error);
-          toast.success('Cálculo realizado! (Erro ao salvar no histórico)');
+      // Adicionar ao histórico local apenas se não for cálculo automático
+      if (!silent) {
+        addCalculation(response.data, selectedSymbol, selectedExchange);
+        
+        // Se usuário logado, salvar no backend também
+        if (isAuthenticated && token) {
+          try {
+            const calculatedData = response.data;
+            
+            const tradeData = {
+              exchange: selectedExchange?.name || 'Manual',
+              symbol: selectedSymbol?.symbol || 'CUSTOM',
+              accountSize: parseFloat(calculatedData.accountSize),
+              riskPercentage: parseFloat(calculatedData.riskPercent),
+              entryPrice: parseFloat(calculatedData.entryPrice),
+              stopLoss: parseFloat(calculatedData.stopLoss),
+              takeProfit: parseFloat(calculatedData.targetPrice),
+              positionSize: parseFloat(calculatedData.positionSize),
+              riskAmount: parseFloat(calculatedData.riskAmount),
+              rewardAmount: parseFloat(calculatedData.rewardAmount),
+              riskRewardRatio: parseFloat(calculatedData.riskRewardRatio),
+              currentPrice: parseFloat(calculatedData.currentPrice || calculatedData.entryPrice),
+              tradeType: calculatedData.direction?.toLowerCase() || 'long',
+              notes: `R/R: ${calculatedData.riskRewardRatio.toFixed(2)}:1 - Calculado automaticamente em ${new Date().toLocaleString('pt-BR')}`
+            };
+            
+            await tradeApi.saveCalculation(tradeData, token);
+            toast.success('Cálculo salvo no seu histórico!');
+          } catch (error) {
+            console.error('Erro ao salvar no backend:', error);
+            toast.success('Cálculo realizado! (Erro ao salvar no histórico)');
+          }
+        } else {
+          toast.success('Cálculo realizado com sucesso!');
         }
-      } else {
-        toast.success('Cálculo realizado com sucesso!');
       }
     } catch (error) {
-      toast.error(error.message || 'Erro ao calcular');
+      if (!silent) {
+        toast.error(error.message || 'Erro ao calcular');
+      }
       console.error('Erro no cálculo:', error);
     } finally {
       setCalculating(false);
@@ -251,16 +277,16 @@ const RiskCalculator = () => {
     setShowAuthModal(true);
   };
 
-  const validateForm = () => {
+  const validateForm = (silent = false) => {
     // Validar seleção de exchange
     if (!selectedExchange) {
-      toast.error('Por favor, selecione uma exchange antes de calcular');
+      if (!silent) toast.error('Por favor, selecione uma exchange antes de calcular');
       return false;
     }
     
     // Validar seleção de par/símbolo
     if (!selectedSymbol) {
-      toast.error('Por favor, selecione um par de moedas antes de calcular');
+      if (!silent) toast.error('Por favor, selecione um par de moedas antes de calcular');
       return false;
     }
     
@@ -269,13 +295,13 @@ const RiskCalculator = () => {
     for (const field of requiredFields) {
       const rawValue = formData[field];
       if (!rawValue || rawValue.trim() === '') {
-        toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
+        if (!silent) toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
         return false;
       }
       
       const value = parseFloat(rawValue);
       if (isNaN(value) || value <= 0) {
-        toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
+        if (!silent) toast.error(`Por favor, preencha corretamente: ${getFieldLabel(field)}`);
         return false;
       }
     }
@@ -287,20 +313,20 @@ const RiskCalculator = () => {
 
     if (formData.direction === 'LONG') {
       if (stopLoss >= entryPrice) {
-        toast.error('Para LONG: Stop Loss deve ser menor que o preço de entrada');
+        if (!silent) toast.error('Para LONG: Stop Loss deve ser menor que o preço de entrada');
         return false;
       }
       if (targetPrice <= entryPrice) {
-        toast.error('Para LONG: Target deve ser maior que o preço de entrada');
+        if (!silent) toast.error('Para LONG: Target deve ser maior que o preço de entrada');
         return false;
       }
     } else {
       if (stopLoss <= entryPrice) {
-        toast.error('Para SHORT: Stop Loss deve ser maior que o preço de entrada');
+        if (!silent) toast.error('Para SHORT: Stop Loss deve ser maior que o preço de entrada');
         return false;
       }
       if (targetPrice >= entryPrice) {
-        toast.error('Para SHORT: Target deve ser menor que o preço de entrada');
+        if (!silent) toast.error('Para SHORT: Target deve ser menor que o preço de entrada');
         return false;
       }
     }
@@ -428,7 +454,6 @@ const RiskCalculator = () => {
                   formData={formData}
                   onInputChange={handleInputChange}
                   onDirectionChange={handleDirectionChange}
-                  onCalculate={handleCalculate}
                   calculating={calculating}
                   loading={loading}
                   currentPrice={liveCurrentPrice}

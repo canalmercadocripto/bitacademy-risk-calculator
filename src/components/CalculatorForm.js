@@ -4,7 +4,6 @@ const CalculatorForm = ({
   formData, 
   onInputChange, 
   onDirectionChange, 
-  onCalculate, 
   calculating, 
   loading,
   currentPrice 
@@ -92,21 +91,22 @@ const CalculatorForm = ({
         />
       </div>
 
-      <button
-        type="button"
-        className="calculate-button"
-        onClick={onCalculate}
-        disabled={calculating}
-      >
-        {calculating ? (
-          <>
-            <div className="spinner" style={{ width: '20px', height: '20px', marginRight: '10px' }}></div>
-            Calculando...
-          </>
-        ) : (
-          '🧮 Calcular Risk Management'
-        )}
-      </button>
+      {/* Cálculo automático ativado - resultados aparecem automaticamente */}
+      <div className="auto-calc-info">
+        <div className="auto-calc-indicator">
+          {calculating ? (
+            <>
+              <div className="spinner" style={{ width: '16px', height: '16px', marginRight: '8px' }}></div>
+              <span>Calculando automaticamente...</span>
+            </>
+          ) : (
+            <>
+              <span className="auto-calc-dot"></span>
+              <span>Cálculo automático ativo</span>
+            </>
+          )}
+        </div>
+      </div>
     </>
   );
 };
