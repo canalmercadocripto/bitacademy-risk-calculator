@@ -32,7 +32,7 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     // Verificar múltiplos campos para alvo final
     const finalTarget = formData.exitPrice || formData.targetPrice || formData.target;
     
-    if (!results || !fixedEntryPrice || !finalTarget) {
+    if (!fixedEntryPrice || !finalTarget) {
       if (process.env.NODE_ENV === 'development') {
         console.log('❌ Alvos não calculados - dados insuficientes');
       }
@@ -48,7 +48,7 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
     const riskLimit = parseFloat(formData.riskPercent || 2);
     const accountSize = parseFloat(formData.accountSize);
     const maxRiskAmount = (accountSize * riskLimit) / 100;
-    const currentRisk = Math.abs((entry - stop) * results.positionSize);
+    const currentRisk = Math.abs((entry - stop) * displayResults.positionSize);
     
     if (currentRisk > maxRiskAmount) {
       console.warn('⚠️ RISCO EXCEDIDO:', {
@@ -163,13 +163,11 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
   };
 
   const organizeResultsByType = () => {
-    if (!results) return null;
-    
     // Usar rewardAmount como lucro potencial no target
-    const profitAmount = results.rewardAmount || 0;
+    const profitAmount = displayResults.rewardAmount || 0;
     const isProfit = profitAmount > 0;
     // Calcular % correto do lucro em relação ao capital da conta
-    const profitPercentage = results.accountSize ? (profitAmount / results.accountSize) * 100 : 0;
+    const profitPercentage = displayResults.accountSize ? (profitAmount / displayResults.accountSize) * 100 : 0;
     
     const profitLoss = {
       type: isProfit ? 'LUCRO POTENCIAL' : 'PREJUÍZO POTENCIAL',
@@ -187,7 +185,7 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
 
 
   const copyResult = async () => {
-    if (!results) return;
+    if (!displayResults || displayResults.positionSize === 0) return;
 
     const resultText = formatEnhancedResultForCopy();
     
@@ -217,18 +215,18 @@ const EnhancedResults = ({ results, selectedSymbol, selectedExchange, formData, 
 💰 Risco por Trade: ${formData?.riskPercentage || 'N/A'}%
 
 💼 POSIÇÃO:
-🪙 Quantidade: ${results.positionSize.toFixed(6)} moedas
-💵 Valor Total: $${results.positionValue.toFixed(2)}
-📈 Direção: ${results.direction}
+🪙 Quantidade: ${displayResults.positionSize.toFixed(6)} moedas
+💵 Valor Total: $${displayResults.positionValue.toFixed(2)}
+📈 Direção: ${displayResults.direction}
 
 ${profitLoss.icon} ${profitLoss.type.toUpperCase()}:
 💰 Valor: $${profitLoss.amount.toFixed(2)}
 📊 Percentual: ${profitLoss.percentage.toFixed(1)}% da conta
-🛡️ Risco Máximo: $${results.riskAmount.toFixed(2)}
+🛡️ Risco Máximo: $${displayResults.riskAmount.toFixed(2)}
 
 ⚖️ ANÁLISE RISK/REWARD:
-🎯 Ratio: ${results.riskRewardRatio.toFixed(2)}/1
-📋 Classificação: ${getRiskLevel(results.riskRewardRatio)}
+🎯 Ratio: ${displayResults.riskRewardRatio.toFixed(2)}/1
+📋 Classificação: ${getRiskLevel(displayResults.riskRewardRatio)}
 
 🎯 PONTOS DE REALIZAÇÃO ESTRATÉGICOS:
 ${targets.map(target => 
@@ -250,22 +248,23 @@ ${targets.map(target =>
     }
   };
 
-  if (!results) {
-    return (
-      <div className="results-section">
-        <h3 className="section-title">📊 Análise de Risk Management</h3>
-        <div className="result">
-          <div className="empty-state">
-            <div className="empty-icon">📈</div>
-            <p>Preencha os dados da operação e clique em "Calcular" para ver sua análise completa de risco.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Criar objeto de resultados padrão se não existir
+  const displayResults = results || {
+    positionSize: 0,
+    positionValue: 0,
+    direction: formData?.direction || 'LONG',
+    riskAmount: 0,
+    riskPercent: 0,
+    rewardAmount: 0,
+    riskRewardRatio: 0,
+    accountSize: parseFloat(formData?.accountSize || 0),
+    entryPrice: parseFloat(formData?.entryPrice || 0),
+    stopLoss: parseFloat(formData?.stopLoss || 0),
+    targetPrice: parseFloat(formData?.targetPrice || formData?.exitPrice || 0)
+  };
 
   // Otimizar cálculos com useMemo para evitar re-renders constantes
-  const profitLoss = useMemo(() => organizeResultsByType(), [results, currentPrice, selectedSymbol]);
+  const profitLoss = useMemo(() => organizeResultsByType(), [displayResults, currentPrice, selectedSymbol]);
   
   const targets = useMemo(() => {
     const calculated = calculateProfitTargets();
@@ -273,7 +272,7 @@ ${targets.map(target =>
       console.log('🔍 No targets calculated');
     }
     return calculated;
-  }, [results, fixedEntryPrice, formData.stopLoss, formData.exitPrice, formData.targetPrice, formData.target]);
+  }, [displayResults, fixedEntryPrice, formData.stopLoss, formData.exitPrice, formData.targetPrice, formData.target]);
 
 
   return (
@@ -288,16 +287,16 @@ ${targets.map(target =>
           <div className="position-grid-vertical">
             <div className="position-item">
               <span className="item-label">Quantidade:</span>
-              <span className="item-value">{results.positionSize.toFixed(6)}</span>
+              <span className="item-value">{displayResults.positionSize ? displayResults.positionSize.toFixed(6) : '0.000000'}</span>
             </div>
             <div className="position-item">
               <span className="item-label">Valor Total:</span>
-              <span className="item-value">${results.positionValue.toFixed(2)}</span>
+              <span className="item-value">${displayResults.positionValue ? displayResults.positionValue.toFixed(2) : '0.00'}</span>
             </div>
             <div className="position-item">
               <span className="item-label">Direção:</span>
-              <span className={`item-value direction ${results.direction.toLowerCase()}`}>
-                {results.direction} {results.direction === 'LONG' ? '📈' : '📉'}
+              <span className={`item-value direction ${displayResults.direction.toLowerCase()}`}>
+                {displayResults.direction} {displayResults.direction === 'LONG' ? '📈' : '📉'}
               </span>
             </div>
             <div className="position-item">
@@ -317,8 +316,8 @@ ${targets.map(target =>
               <div className="rr-grid">
                 <div className="rr-card risk">
                   <div className="rr-card-label">Risco Máximo</div>
-                  <div className="rr-card-value">-${results.riskAmount.toFixed(2)}</div>
-                  <div className="rr-card-desc">{results.riskPercent.toFixed(1)}% da conta</div>
+                  <div className="rr-card-value">-${displayResults.riskAmount ? displayResults.riskAmount.toFixed(2) : '0.00'}</div>
+                  <div className="rr-card-desc">{displayResults.riskPercent ? displayResults.riskPercent.toFixed(1) : '0.0'}% da conta</div>
                 </div>
                 <div className="rr-card reward">
                   <div className="rr-card-label">Potencial de Lucro</div>
@@ -332,41 +331,43 @@ ${targets.map(target =>
               <h5>⚖️ Avaliação Risk/Reward</h5>
               <div className="rr-analysis-card">
                 <div className="rr-ratio-big">
-                  <span className="ratio-number">{results.riskRewardRatio.toFixed(1)}</span>
+                  <span className="ratio-number">{displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'}</span>
                   <span className="ratio-separator">:</span>
                   <span className="ratio-base">1</span>
                 </div>
                 <div className="rr-classification">
                   <span className="classification-label">Classificação:</span>
-                  <span className="classification-value" style={{ color: getRiskLevelColor(getRiskLevel(results.riskRewardRatio)) }}>
-                    {getRiskLevel(results.riskRewardRatio)}
+                  <span className="classification-value" style={{ color: getRiskLevelColor(getRiskLevel(displayResults.riskRewardRatio || 0)) }}>
+                    {getRiskLevel(displayResults.riskRewardRatio || 0)}
                   </span>
                 </div>
                 <div className="rr-explanation">
-                  Para cada $1 arriscado, o potencial é de ${results.riskRewardRatio.toFixed(1)} de lucro
+                  Para cada $1 arriscado, o potencial é de ${displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'} de lucro
                 </div>
-                <div className="win-rate-needed" style={{ marginTop: '8px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', border: `1px solid ${calculateWinRateNeeded(results.riskRewardRatio).classification.color}` }}>
-                  <div style={{ marginBottom: '6px' }}>
-                    <strong style={{ fontSize: '0.85em' }}>Taxa de Acerto Necessária:</strong>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '0.75em' }}>
-                    <div>
-                      <span style={{ color: '#6c757d' }}>Breakeven:</span><br/>
-                      <strong>{calculateWinRateNeeded(results.riskRewardRatio).breakeven.toFixed(1)}%</strong>
+                {displayResults.riskRewardRatio > 0 && (
+                  <div className="win-rate-needed" style={{ marginTop: '8px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', border: `1px solid ${calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color}` }}>
+                    <div style={{ marginBottom: '6px' }}>
+                      <strong style={{ fontSize: '0.85em' }}>Taxa de Acerto Necessária:</strong>
                     </div>
-                    <div>
-                      <span style={{ color: '#6c757d' }}>Lucro:</span><br/>
-                      <strong>{calculateWinRateNeeded(results.riskRewardRatio).profitable.toFixed(1)}%</strong>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '0.75em' }}>
+                      <div>
+                        <span style={{ color: '#6c757d' }}>Breakeven:</span><br/>
+                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).breakeven.toFixed(1)}%</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#6c757d' }}>Lucro:</span><br/>
+                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).profitable.toFixed(1)}%</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#6c757d' }}>Conservador:</span><br/>
+                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).conservative.toFixed(1)}%</strong>
+                      </div>
                     </div>
-                    <div>
-                      <span style={{ color: '#6c757d' }}>Conservador:</span><br/>
-                      <strong>{calculateWinRateNeeded(results.riskRewardRatio).conservative.toFixed(1)}%</strong>
+                    <div style={{ marginTop: '6px', fontSize: '0.7em', fontWeight: '600', color: calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color }}>
+                      {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.level} - {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.desc}
                     </div>
                   </div>
-                  <div style={{ marginTop: '6px', fontSize: '0.7em', fontWeight: '600', color: calculateWinRateNeeded(results.riskRewardRatio).classification.color }}>
-                    {calculateWinRateNeeded(results.riskRewardRatio).classification.level} - {calculateWinRateNeeded(results.riskRewardRatio).classification.desc}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

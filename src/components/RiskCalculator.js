@@ -465,20 +465,13 @@ const RiskCalculator = () => {
           {/* Coluna 3: Resultados */}
           <div className="results-column">
             <div className="results-content">
-              {results ? (
-                <EnhancedResults 
-                  results={results} 
-                  selectedSymbol={selectedSymbol}
-                  selectedExchange={selectedExchange}
-                  formData={formData}
-                  currentPrice={liveCurrentPrice}
-                />
-              ) : (
-                <div className="empty-results">
-                  <div className="empty-icon">📊</div>
-                  <p>Preencha os dados e clique em "Calcular" para ver sua análise de risco.</p>
-                </div>
-              )}
+              <EnhancedResults 
+                results={results} 
+                selectedSymbol={selectedSymbol}
+                selectedExchange={selectedExchange}
+                formData={formData}
+                currentPrice={liveCurrentPrice}
+              />
             </div>
           </div>
         </div>
