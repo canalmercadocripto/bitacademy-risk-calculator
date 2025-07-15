@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import UniversalDatafeed from '../utils/UniversalDatafeed';
+import CandleTimer from './CandleTimer';
 
 const TradingViewChartAdvanced = ({ 
-  symbol = "BINANCE:BTCUSDT", 
+  symbol = "BINGX:BTCUSDT", 
   theme = "dark",
   entryPrice = null,
   stopLoss = null,
@@ -44,6 +45,7 @@ const TradingViewChartAdvanced = ({
   const chartRef = useRef(null); // Referência direta do chart
   const lastKnownPrices = useRef({}); // Cache dos últimos preços conhecidos
   const isUpdatingFromCalculator = useRef(false); // Flag para evitar loops de sincronização
+  const [currentInterval, setCurrentInterval] = useState('30'); // Intervalo atual do gráfico
   
   // Função helper para sincronizar preços de forma centralizada
   const syncPriceChange = (fieldName, currentPrice, lineType) => {
@@ -122,7 +124,7 @@ const TradingViewChartAdvanced = ({
         // Criar widget TradingView Advanced Charts
         const widget = new window.TradingView.widget({
           symbol: symbol,
-          interval: '15',
+          interval: '30',
           container: chartContainerRef.current,
           datafeed: datafeed,
           library_path: '/charting_library/',
@@ -202,6 +204,16 @@ const TradingViewChartAdvanced = ({
           
           // Armazenar referência para uso posterior
           chartRef.current = chart;
+          
+          // Detectar mudanças de intervalo
+          try {
+            chart.onIntervalChanged().subscribe(null, (interval) => {
+              console.log('📊 Interval changed to:', interval);
+              setCurrentInterval(interval);
+            });
+          } catch (e) {
+            console.warn('⚠️ Could not set up interval change listener');
+          }
           
           setChartReady(true);
           setHasError(false);
@@ -1025,6 +1037,9 @@ const TradingViewChartAdvanced = ({
 
   return (
     <div className="tradingview-chart-container">
+      {/* Timer de vela */}
+      {chartReady && <CandleTimer interval={currentInterval} />}
+      
       <div
         ref={chartContainerRef}
         className="chart-widget"

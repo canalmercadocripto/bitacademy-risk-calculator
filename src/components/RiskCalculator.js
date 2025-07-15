@@ -79,7 +79,7 @@ const RiskCalculator = () => {
   const [authModalMode, setAuthModalMode] = useState('login');
   
   // States do TradingView
-  const [chartSymbol, setChartSymbol] = useState("BTCUSDT");
+  const [chartSymbol, setChartSymbol] = useState("BINGX:BTCUSDT");
 
   // Callback para atualização de preço - MANTÉM cotação atual, MAS NÃO altera entrada
   const handlePriceUpdate = useCallback((newPrice) => {
@@ -165,6 +165,31 @@ const RiskCalculator = () => {
       setLiveCurrentPrice(currentPrice);
     }
   }, [currentPrice]);
+
+  // Configurar BingX e Bitcoin como padrão na inicialização
+  useEffect(() => {
+    if (exchanges.length > 0 && !selectedExchange) {
+      const bingxExchange = exchanges.find(ex => ex.id === 'bingx' || ex.name.toLowerCase().includes('bingx'));
+      if (bingxExchange) {
+        setSelectedExchange(bingxExchange);
+        console.log('📊 BingX selecionado automaticamente como padrão');
+      }
+    }
+  }, [exchanges, selectedExchange]);
+
+  // Configurar Bitcoin como padrão quando símbolos carregarem
+  useEffect(() => {
+    if (symbols.length > 0 && !selectedSymbol && selectedExchange) {
+      const btcSymbol = symbols.find(symbol => 
+        symbol.symbol === 'BTCUSDT' || 
+        symbol.baseAsset === 'BTC' && symbol.quoteAsset === 'USDT'
+      );
+      if (btcSymbol) {
+        setSelectedSymbol(btcSymbol);
+        console.log('₿ Bitcoin (BTCUSDT) selecionado automaticamente como padrão');
+      }
+    }
+  }, [symbols, selectedSymbol, selectedExchange]);
 
   // Cálculo automático quando campos principais mudarem
   useEffect(() => {

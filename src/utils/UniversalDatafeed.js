@@ -4,7 +4,7 @@
 class UniversalDatafeed {
   constructor() {
     this.configuration = {
-      supported_resolutions: ['1', '5', '15', '30', '60', '240', '1D'],
+      supported_resolutions: ['1', '3', '5', '15', '30', '60', '120', '180', '240', '360', '720', '1D', '5D', '1W', '1M'],
       exchanges: [
         { value: 'BINANCE', name: 'Binance', desc: 'Binance Spot' },
         { value: 'BYBIT', name: 'Bybit', desc: 'Bybit Spot' },
@@ -37,8 +37,9 @@ class UniversalDatafeed {
         baseUrl: 'https://api.binance.com',
         wsUrl: 'wss://stream.binance.com:9443/ws',
         intervals: {
-          '1': '1m', '5': '5m', '15': '15m', '30': '30m', 
-          '60': '1h', '240': '4h', '1D': '1d'
+          '1': '1m', '3': '3m', '5': '5m', '15': '15m', '30': '30m', 
+          '60': '1h', '120': '2h', '180': '3h', '240': '4h', '360': '6h', 
+          '720': '12h', '1D': '1d', '5D': '5d', '1W': '1w', '1M': '1M'
         },
         endpoints: {
           klines: '/api/v3/klines',
@@ -49,8 +50,9 @@ class UniversalDatafeed {
         baseUrl: 'https://api.bybit.com',
         wsUrl: 'wss://stream.bybit.com/v5/public/spot',
         intervals: {
-          '1': '1', '5': '5', '15': '15', '30': '30',
-          '60': '60', '240': '240', '1D': 'D'
+          '1': '1', '3': '3', '5': '5', '15': '15', '30': '30',
+          '60': '60', '120': '120', '180': '180', '240': '240', '360': '360',
+          '720': '720', '1D': 'D', '5D': '5D', '1W': 'W', '1M': 'M'
         },
         endpoints: {
           klines: '/v5/market/kline',
@@ -60,8 +62,9 @@ class UniversalDatafeed {
       bitget: {
         baseUrl: 'https://api.bitget.com',
         intervals: {
-          '1': '1min', '5': '5min', '15': '15min', '30': '30min',
-          '60': '1h', '240': '4h', '1D': '1day'
+          '1': '1min', '3': '3min', '5': '5min', '15': '15min', '30': '30min',
+          '60': '1h', '120': '2h', '180': '3h', '240': '4h', '360': '6h',
+          '720': '12h', '1D': '1day', '5D': '5day', '1W': '1week', '1M': '1month'
         },
         endpoints: {
           klines: '/api/v2/spot/market/candles',
@@ -72,8 +75,9 @@ class UniversalDatafeed {
         baseUrl: 'https://open-api.bingx.com',
         wsUrl: 'wss://open-api-ws.bingx.com/market',
         intervals: {
-          '1': '1min', '5': '5min', '15': '15min', '30': '30min',
-          '60': '1h', '240': '4h', '1D': '1d'
+          '1': '1min', '3': '3min', '5': '5min', '15': '15min', '30': '30min',
+          '60': '1h', '120': '2h', '180': '3h', '240': '4h', '360': '6h',
+          '720': '12h', '1D': '1d', '5D': '5d', '1W': '1w', '1M': '1M'
         },
         endpoints: {
           klines: '/openApi/spot/v1/market/kline',
