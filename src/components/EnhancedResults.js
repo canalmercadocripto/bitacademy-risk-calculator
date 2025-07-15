@@ -414,24 +414,6 @@ ${targets.map(target =>
         </div>
 
 
-        {/* BOTÕES DE AÇÃO */}
-        <div className="actions-section-smart">
-          <div className="actions-grid-smart">
-            <button className="btn-action secondary" onClick={copyResult}>
-              📋 Copiar Análise
-            </button>
-            <ProfitPrintGenerator 
-              results={results}
-              symbol={selectedSymbol}
-              exchange={selectedExchange}
-              formData={{
-                ...formData,
-                fixedEntryPrice,
-                profitTargets: targets
-              }}
-            />
-          </div>
-        </div>
 
       </div>
 
