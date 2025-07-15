@@ -283,100 +283,105 @@ ${targets.map(target =>
     <div className="enhanced-results">
       <div className="results-grid">
         
-        {/* 1. POSIÇÃO */}
-        <div className="section-card">
-          <h4 className="section-card-title">💼 Detalhes da Posição</h4>
-          <div className="position-grid-vertical">
-            <div className="position-item">
-              <span className="item-label">Quantidade:</span>
-              <span className="item-value">{displayResults.positionSize ? formatQuantity(displayResults.positionSize) : '0.0000'}</span>
-            </div>
-            <div className="position-item">
-              <span className="item-label">Valor Total:</span>
-              <span className="item-value">{displayResults.positionValue ? formatCurrency(displayResults.positionValue) : '$0.00'}</span>
-            </div>
-            <div className="position-item">
-              <span className="item-label">Direção:</span>
-              <span className={`item-value direction ${displayResults.direction.toLowerCase()}`}>
-                {displayResults.direction} {displayResults.direction === 'LONG' ? '📈' : '📉'}
-              </span>
-            </div>
-            <div className="position-item">
-              <span className="item-label">Tamanho da Conta:</span>
-              <span className="item-value">${formData?.accountSize || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. GESTÃO DE RISCO */}
-        <div className="section-card">
-          <h4 className="section-card-title">🛡️ Gestão de Risco</h4>
-          
-          {/* Risk & Reward Detalhado */}
-          <div className="risk-reward-detailed">
-            <div className="rr-section">
-              <div className="rr-grid">
-                <div className="rr-card risk">
-                  <div className="rr-card-label">Risco Máximo</div>
-                  <div className="rr-card-value">-{displayResults.riskAmount ? formatCurrency(displayResults.riskAmount) : '$0.00'}</div>
-                  <div className="rr-card-desc">{displayResults.riskPercent ? formatPercentage(displayResults.riskPercent, 1) : '0.0%'} da conta</div>
-                </div>
-                <div className="rr-card reward">
-                  <div className="rr-card-label">Potencial de Lucro</div>
-                  <div className="rr-card-value">+{formatCurrency(profitLoss.amount)}</div>
-                  <div className="rr-card-desc">{formatPercentage(profitLoss.percentage, 1)} da conta</div>
-                </div>
+        {/* Coluna 1: POSIÇÃO + GESTÃO DE RISCO */}
+        <div className="results-column-left">
+          {/* 1. POSIÇÃO */}
+          <div className="section-card">
+            <h4 className="section-card-title">💼 Detalhes da Posição</h4>
+            <div className="position-grid-vertical">
+              <div className="position-item">
+                <span className="item-label">Quantidade:</span>
+                <span className="item-value">{displayResults.positionSize ? formatQuantity(displayResults.positionSize) : '0.0000'}</span>
+              </div>
+              <div className="position-item">
+                <span className="item-label">Valor Total:</span>
+                <span className="item-value">{displayResults.positionValue ? formatCurrency(displayResults.positionValue) : '$0.00'}</span>
+              </div>
+              <div className="position-item">
+                <span className="item-label">Direção:</span>
+                <span className={`item-value direction ${displayResults.direction.toLowerCase()}`}>
+                  {displayResults.direction} {displayResults.direction === 'LONG' ? '📈' : '📉'}
+                </span>
+              </div>
+              <div className="position-item">
+                <span className="item-label">Tamanho da Conta:</span>
+                <span className="item-value">${formData?.accountSize || 'N/A'}</span>
               </div>
             </div>
+          </div>
+
+          {/* 2. GESTÃO DE RISCO */}
+          <div className="section-card">
+            <h4 className="section-card-title">🛡️ Gestão de Risco</h4>
             
-            <div className="rr-section">
-              <h5>⚖️ Avaliação Risk/Reward</h5>
-              <div className="rr-analysis-card">
-                <div className="rr-ratio-big">
-                  <span className="ratio-number">{displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'}</span>
-                  <span className="ratio-separator">:</span>
-                  <span className="ratio-base">1</span>
-                </div>
-                <div className="rr-classification">
-                  <span className="classification-label">Classificação:</span>
-                  <span className="classification-value" style={{ color: getRiskLevelColor(getRiskLevel(displayResults.riskRewardRatio || 0)) }}>
-                    {getRiskLevel(displayResults.riskRewardRatio || 0)}
-                  </span>
-                </div>
-                <div className="rr-explanation">
-                  Para cada $1 arriscado, o potencial é de ${displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'} de lucro
-                </div>
-                {displayResults.riskRewardRatio > 0 && (
-                  <div className="win-rate-needed" style={{ marginTop: '8px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', border: `1px solid ${calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color}` }}>
-                    <div style={{ marginBottom: '6px' }}>
-                      <strong style={{ fontSize: '0.85em' }}>Taxa de Acerto Necessária:</strong>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '0.75em' }}>
-                      <div>
-                        <span style={{ color: '#6c757d' }}>Breakeven:</span><br/>
-                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).breakeven.toFixed(1)}%</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#6c757d' }}>Lucro:</span><br/>
-                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).profitable.toFixed(1)}%</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#6c757d' }}>Conservador:</span><br/>
-                        <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).conservative.toFixed(1)}%</strong>
-                      </div>
-                    </div>
-                    <div style={{ marginTop: '6px', fontSize: '0.7em', fontWeight: '600', color: calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color }}>
-                      {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.level} - {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.desc}
-                    </div>
+            {/* Risk & Reward Detalhado */}
+            <div className="risk-reward-detailed">
+              <div className="rr-section">
+                <div className="rr-grid">
+                  <div className="rr-card risk">
+                    <div className="rr-card-label">Risco Máximo</div>
+                    <div className="rr-card-value">-{displayResults.riskAmount ? formatCurrency(displayResults.riskAmount) : '$0.00'}</div>
+                    <div className="rr-card-desc">{displayResults.riskPercent ? formatPercentage(displayResults.riskPercent, 1) : '0.0%'} da conta</div>
                   </div>
-                )}
+                  <div className="rr-card reward">
+                    <div className="rr-card-label">Potencial de Lucro</div>
+                    <div className="rr-card-value">+{formatCurrency(profitLoss.amount)}</div>
+                    <div className="rr-card-desc">{formatPercentage(profitLoss.percentage, 1)} da conta</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="rr-section">
+                <h5>⚖️ Avaliação Risk/Reward</h5>
+                <div className="rr-analysis-card">
+                  <div className="rr-ratio-big">
+                    <span className="ratio-number">{displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'}</span>
+                    <span className="ratio-separator">:</span>
+                    <span className="ratio-base">1</span>
+                  </div>
+                  <div className="rr-classification">
+                    <span className="classification-label">Classificação:</span>
+                    <span className="classification-value" style={{ color: getRiskLevelColor(getRiskLevel(displayResults.riskRewardRatio || 0)) }}>
+                      {getRiskLevel(displayResults.riskRewardRatio || 0)}
+                    </span>
+                  </div>
+                  <div className="rr-explanation">
+                    Para cada $1 arriscado, o potencial é de ${displayResults.riskRewardRatio ? displayResults.riskRewardRatio.toFixed(1) : '0.0'} de lucro
+                  </div>
+                  {displayResults.riskRewardRatio > 0 && (
+                    <div className="win-rate-needed" style={{ marginTop: '8px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', border: `1px solid ${calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color}` }}>
+                      <div style={{ marginBottom: '6px' }}>
+                        <strong style={{ fontSize: '0.85em' }}>Taxa de Acerto Necessária:</strong>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '0.75em' }}>
+                        <div>
+                          <span style={{ color: '#6c757d' }}>Breakeven:</span><br/>
+                          <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).breakeven.toFixed(1)}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#6c757d' }}>Lucro:</span><br/>
+                          <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).profitable.toFixed(1)}%</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#6c757d' }}>Conservador:</span><br/>
+                          <strong>{calculateWinRateNeeded(displayResults.riskRewardRatio).conservative.toFixed(1)}%</strong>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '6px', fontSize: '0.7em', fontWeight: '600', color: calculateWinRateNeeded(displayResults.riskRewardRatio).classification.color }}>
+                        {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.level} - {calculateWinRateNeeded(displayResults.riskRewardRatio).classification.desc}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 3. PONTOS DA OPERAÇÃO */}
-        <div className="section-card">
+        {/* Coluna 2: PONTOS DA OPERAÇÃO */}
+        <div className="results-column-right">
+          {/* 3. PONTOS DA OPERAÇÃO */}
+          <div className="section-card">
           <h4 className="section-card-title">📍 Pontos da Operação</h4>
           <div className="points-layout">
             <div className="points-main">
@@ -415,8 +420,7 @@ ${targets.map(target =>
             </div>
           </div>
         </div>
-
-
+        </div>
 
       </div>
     </div>

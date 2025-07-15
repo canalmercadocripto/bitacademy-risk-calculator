@@ -2166,6 +2166,18 @@
   width: 100%;
 }
 
+.results-column-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.results-column-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .section-card {
   background: var(--bg-section);
   border: 1px solid var(--border-color);
@@ -2443,6 +2455,13 @@
 @media (max-width: 1400px) {
   .results-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .results-column-left,
+  .results-column-right {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
   
