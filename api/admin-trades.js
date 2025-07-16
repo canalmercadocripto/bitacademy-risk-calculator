@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
       
       console.log(`🔍 Buscando trades - Página ${pageNum}, Limite ${limitNum}, Offset ${offset}`);
       
-      // Build query with pagination
+      // Build query with pagination and LEFT JOIN to include orphaned trades
       let query = supabase
         .from('trades')
         .select(`
@@ -71,7 +71,7 @@ module.exports = async function handler(req, res) {
           notes,
           created_at,
           updated_at,
-          users(name, email)
+          users!left(name, email)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(offset, offset + limitNum - 1);
@@ -92,7 +92,8 @@ module.exports = async function handler(req, res) {
         totalCount: count,
         page: pageNum,
         limit: limitNum,
-        error: error?.message 
+        error: error?.message,
+        orphanedTrades: trades?.filter(t => !t.users || !t.users.name).length || 0
       });
       
       if (error) throw error;
@@ -101,8 +102,8 @@ module.exports = async function handler(req, res) {
       const formattedTrades = trades?.map(trade => ({
         id: trade.id,
         userId: trade.user_id,
-        userName: trade.users?.name || 'Usuário Desconhecido',
-        userEmail: trade.users?.email || 'email@desconhecido.com',
+        userName: trade.users?.name || (trade.user_id ? 'Usuário Desconhecido' : 'Usuário Anônimo'),
+        userEmail: trade.users?.email || (trade.user_id ? 'email@desconhecido.com' : 'anonimo@sistema.com'),
         exchange: trade.exchange,
         symbol: trade.symbol,
         accountSize: parseFloat(trade.account_size || 0),
