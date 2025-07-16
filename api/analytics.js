@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     
     console.log(`🔍 Gerando analytics para período: ${period}, view: ${view}`);
     
-    // Get all trades and users
+    // Get all trades and users (using LEFT JOIN to include orphaned trades)
     const [tradesResult, usersResult] = await Promise.all([
       supabase
         .from('trades')
@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
           id, user_id, exchange, symbol, account_size, risk_percentage,
           entry_price, stop_loss, take_profit, position_size, risk_amount,
           reward_amount, risk_reward_ratio, trade_type, status, created_at,
-          users(name, email)
+          users!left(name, email)
         `)
         .order('created_at', { ascending: false }),
       
@@ -167,8 +167,8 @@ module.exports = async function handler(req, res) {
       if (!userPerformance[userId]) {
         userPerformance[userId] = {
           userId,
-          userName: trade.users?.name || 'Usuário Desconhecido',
-          userEmail: trade.users?.email || 'N/A',
+          userName: trade.users?.name || (trade.user_id ? 'Usuário Desconhecido' : 'Usuário Anônimo'),
+          userEmail: trade.users?.email || (trade.user_id ? 'email@desconhecido.com' : 'anonimo@sistema.com'),
           totalTrades: 0,
           totalVolume: 0,
           avgRiskReward: 0,
