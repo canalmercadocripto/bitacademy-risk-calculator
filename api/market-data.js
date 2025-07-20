@@ -20,9 +20,7 @@ module.exports = async function handler(req, res) {
   const rateLimitResult = securityMiddleware.apiRateLimit(req, res);
   if (rateLimitResult) return rateLimitResult;
   
-  // Validate token
-  const tokenResult = securityMiddleware.validateToken(req, res);
-  if (tokenResult) return tokenResult;
+  // Market data is public - no token validation required
   
   try {
     const { category = 'crypto' } = req.query;
