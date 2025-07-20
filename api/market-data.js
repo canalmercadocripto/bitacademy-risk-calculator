@@ -81,23 +81,57 @@ module.exports = async function handler(req, res) {
 // Crypto Market Data from CoinGecko
 async function getCryptoMarketData() {
   try {
+    const API_KEY = 'CG-wW7zVyYNt4zzQ7uo3iVk5u5A';
+    const headers = {
+      'accept': 'application/json',
+      'x-cg-demo-api-key': API_KEY
+    };
+    
+    console.log('🔍 Buscando dados reais do CoinGecko...');
+    
     // Get global crypto market data
-    const globalResponse = await fetch('https://api.coingecko.com/api/v3/global');
+    const globalResponse = await fetch('https://api.coingecko.com/api/v3/global', { headers });
+    
+    if (!globalResponse.ok) {
+      throw new Error(`Global API failed: ${globalResponse.status} ${globalResponse.statusText}`);
+    }
+    
     const globalData = await globalResponse.json();
+    console.log('✅ Global data received:', globalData.data ? 'OK' : 'EMPTY');
     
     // Get top cryptocurrencies
     const coinsResponse = await fetch(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d'
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d',
+      { headers }
     );
+    
+    if (!coinsResponse.ok) {
+      throw new Error(`Coins API failed: ${coinsResponse.status} ${coinsResponse.statusText}`);
+    }
+    
     const coinsData = await coinsResponse.json();
+    console.log('✅ Coins data received:', coinsData.length, 'coins');
     
     // Get trending coins
-    const trendingResponse = await fetch('https://api.coingecko.com/api/v3/search/trending');
-    const trendingData = await trendingResponse.json();
+    const trendingResponse = await fetch('https://api.coingecko.com/api/v3/search/trending', { headers });
     
-    // Get fear & greed index
+    if (!trendingResponse.ok) {
+      throw new Error(`Trending API failed: ${trendingResponse.status} ${trendingResponse.statusText}`);
+    }
+    
+    const trendingData = await trendingResponse.json();
+    console.log('✅ Trending data received:', trendingData.coins ? trendingData.coins.length : 0, 'coins');
+    
+    // Get fear & greed index (no API key needed)
     const fearGreedResponse = await fetch('https://api.alternative.me/fng/');
-    const fearGreedData = await fearGreedResponse.json();
+    let fearGreedData = null;
+    
+    if (fearGreedResponse.ok) {
+      fearGreedData = await fearGreedResponse.json();
+      console.log('✅ Fear & Greed data received:', fearGreedData.data ? 'OK' : 'EMPTY');
+    } else {
+      console.warn('⚠️ Fear & Greed API failed, using fallback');
+    }
     
     // Process and format data
     const processedData = {
@@ -131,140 +165,199 @@ async function getCryptoMarketData() {
         image: trend.item.large,
         score: trend.item.score
       })) || [],
-      fearGreed: {
+      fearGreed: fearGreedData ? {
         value: parseInt(fearGreedData.data?.[0]?.value || 50),
         classification: fearGreedData.data?.[0]?.value_classification || 'Neutral',
         timestamp: fearGreedData.data?.[0]?.timestamp || Date.now()
+      } : {
+        value: 50,
+        classification: 'Neutral',
+        timestamp: Date.now()
       },
       categories: await getCryptoCategoriesData()
     };
     
     return processedData;
   } catch (error) {
-    console.error('Erro ao buscar dados crypto:', error);
-    // Return fallback data
-    return getFallbackCryptoData();
+    console.error('❌ Erro ao buscar dados crypto:', error.message);
+    throw new Error(`Falha ao buscar dados de criptomoedas: ${error.message}`);
   }
 }
 
 // Traditional Market Data (Stocks, Forex, Commodities)
 async function getTraditionalMarketData() {
   try {
-    // For now, return mock data - in production you would integrate with financial APIs
-    // like Alpha Vantage, Yahoo Finance, or Bloomberg Terminal API
-    return {
+    console.log('🔍 Buscando dados reais do mercado tradicional...');
+    
+    // Using Yahoo Finance API (free alternative)
+    const symbols = [
+      '^GSPC', // S&P 500
+      '^IXIC', // NASDAQ
+      '^DJI',  // Dow Jones
+      '^BVSP', // IBOVESPA
+      'EURUSD=X', // EUR/USD
+      'GBPUSD=X', // GBP/USD
+      'USDJPY=X', // USD/JPY
+      'USDBRL=X', // USD/BRL
+      'GC=F',     // Gold Futures
+      'SI=F',     // Silver Futures
+      'CL=F',     // Crude Oil
+      'NG=F'      // Natural Gas
+    ];
+    
+    const promises = symbols.map(async (symbol) => {
+      try {
+        const response = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Yahoo Finance API failed for ${symbol}: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const result = data.chart?.result?.[0];
+        const meta = result?.meta;
+        const quote = result?.indicators?.quote?.[0];
+        
+        if (!meta || !quote) {
+          throw new Error(`Invalid data for ${symbol}`);
+        }
+        
+        const currentPrice = meta.regularMarketPrice || quote.close?.[quote.close.length - 1];
+        const previousClose = meta.previousClose;
+        const change = currentPrice - previousClose;
+        const changePercent = (change / previousClose) * 100;
+        
+        return {
+          symbol,
+          currentPrice,
+          change,
+          changePercent,
+          volume: meta.regularMarketVolume,
+          previousClose,
+          marketCap: meta.marketCap,
+          currency: meta.currency
+        };
+      } catch (error) {
+        console.error(`❌ Erro ao buscar ${symbol}:`, error.message);
+        return null;
+      }
+    });
+    
+    const results = await Promise.all(promises);
+    const validResults = results.filter(r => r !== null);
+    
+    console.log(`✅ Yahoo Finance data received: ${validResults.length}/${symbols.length} símbolos`);
+    
+    // Helper function to find data by symbol
+    const findBySymbol = (symbol) => validResults.find(r => r.symbol === symbol);
+    
+    // Process results into categories
+    const processedData = {
       indices: [
         {
           name: 'S&P 500',
           symbol: 'SPX',
-          price: 4756.50,
-          change: 23.45,
-          changePercent: 0.49,
-          volume: 3245000000
+          ...(findBySymbol('^GSPC') || { price: 0, change: 0, changePercent: 0, volume: 0 })
         },
         {
           name: 'NASDAQ',
-          symbol: 'IXIC',
-          price: 14845.73,
-          change: -45.32,
-          changePercent: -0.30,
-          volume: 4123000000
+          symbol: 'IXIC', 
+          ...(findBySymbol('^IXIC') || { price: 0, change: 0, changePercent: 0, volume: 0 })
         },
         {
           name: 'Dow Jones',
           symbol: 'DJI',
-          price: 37123.89,
-          change: 156.78,
-          changePercent: 0.42,
-          volume: 2876000000
+          ...(findBySymbol('^DJI') || { price: 0, change: 0, changePercent: 0, volume: 0 })
         },
         {
           name: 'IBOVESPA',
           symbol: 'IBOV',
-          price: 134567.89,
-          change: -234.56,
-          changePercent: -0.17,
-          volume: 15600000000
+          ...(findBySymbol('^BVSP') || { price: 0, change: 0, changePercent: 0, volume: 0 })
         }
-      ],
+      ].map(index => ({
+        ...index,
+        price: index.currentPrice || index.price,
+        change: index.change || 0,
+        changePercent: index.changePercent || 0,
+        volume: index.volume || 0
+      })),
+      
       forex: [
         {
           pair: 'EUR/USD',
-          price: 1.0845,
-          change: 0.0012,
-          changePercent: 0.11,
-          bid: 1.0843,
-          ask: 1.0847
+          ...(findBySymbol('EURUSD=X') || { currentPrice: 0, change: 0, changePercent: 0 }),
+          bid: 0, // Yahoo doesn't provide bid/ask
+          ask: 0
         },
         {
           pair: 'GBP/USD',
-          price: 1.2634,
-          change: -0.0023,
-          changePercent: -0.18,
-          bid: 1.2632,
-          ask: 1.2636
+          ...(findBySymbol('GBPUSD=X') || { currentPrice: 0, change: 0, changePercent: 0 }),
+          bid: 0,
+          ask: 0
         },
         {
           pair: 'USD/JPY',
-          price: 149.67,
-          change: 0.34,
-          changePercent: 0.23,
-          bid: 149.65,
-          ask: 149.69
+          ...(findBySymbol('USDJPY=X') || { currentPrice: 0, change: 0, changePercent: 0 }),
+          bid: 0,
+          ask: 0
         },
         {
           pair: 'USD/BRL',
-          price: 4.9234,
-          change: 0.0123,
-          changePercent: 0.25,
-          bid: 4.9230,
-          ask: 4.9238
+          ...(findBySymbol('USDBRL=X') || { currentPrice: 0, change: 0, changePercent: 0 }),
+          bid: 0,
+          ask: 0
         }
-      ],
+      ].map(forex => ({
+        ...forex,
+        price: forex.currentPrice || 0,
+        change: forex.change || 0,
+        changePercent: forex.changePercent || 0
+      })),
+      
       commodities: [
         {
           name: 'Gold',
-          symbol: 'XAU/USD',
-          price: 2034.56,
-          change: 12.34,
-          changePercent: 0.61,
-          unit: 'oz'
+          symbol: 'GC=F',
+          unit: 'oz',
+          ...(findBySymbol('GC=F') || { currentPrice: 0, change: 0, changePercent: 0 })
         },
         {
-          name: 'Silver',
-          symbol: 'XAG/USD',
-          price: 24.67,
-          change: -0.23,
-          changePercent: -0.92,
-          unit: 'oz'
+          name: 'Silver', 
+          symbol: 'SI=F',
+          unit: 'oz',
+          ...(findBySymbol('SI=F') || { currentPrice: 0, change: 0, changePercent: 0 })
         },
         {
           name: 'Oil (WTI)',
-          symbol: 'CL',
-          price: 78.45,
-          change: 1.23,
-          changePercent: 1.59,
-          unit: 'barrel'
+          symbol: 'CL=F',
+          unit: 'barrel',
+          ...(findBySymbol('CL=F') || { currentPrice: 0, change: 0, changePercent: 0 })
         },
         {
           name: 'Natural Gas',
-          symbol: 'NG',
-          price: 2.456,
-          change: -0.034,
-          changePercent: -1.37,
-          unit: 'MMBtu'
+          symbol: 'NG=F',
+          unit: 'MMBtu',
+          ...(findBySymbol('NG=F') || { currentPrice: 0, change: 0, changePercent: 0 })
         }
-      ],
+      ].map(commodity => ({
+        ...commodity,
+        price: commodity.currentPrice || 0,
+        change: commodity.change || 0,
+        changePercent: commodity.changePercent || 0
+      })),
+      
       bonds: [
         {
           name: 'US 10Y Treasury',
           symbol: 'TNX',
-          yield: 4.567,
+          yield: 4.567, // Yahoo doesn't provide bond yields in this endpoint
           change: 0.023,
           changePercent: 0.51
         },
         {
-          name: 'US 2Y Treasury',
+          name: 'US 2Y Treasury', 
           symbol: 'TU',
           yield: 4.234,
           change: -0.012,
@@ -279,17 +372,31 @@ async function getTraditionalMarketData() {
         }
       ]
     };
+    
+    return processedData;
   } catch (error) {
-    console.error('Erro ao buscar dados tradicionais:', error);
-    return getFallbackTraditionalData();
+    console.error('❌ Erro ao buscar dados tradicionais:', error.message);
+    throw new Error(`Falha ao buscar dados de mercado tradicional: ${error.message}`);
   }
 }
 
 // Get crypto categories performance
 async function getCryptoCategoriesData() {
   try {
-    const response = await fetch('https://api.coingecko.com/api/v3/coins/categories');
+    const API_KEY = 'CG-wW7zVyYNt4zzQ7uo3iVk5u5A';
+    const headers = {
+      'accept': 'application/json',
+      'x-cg-demo-api-key': API_KEY
+    };
+    
+    const response = await fetch('https://api.coingecko.com/api/v3/coins/categories', { headers });
+    
+    if (!response.ok) {
+      throw new Error(`Categories API failed: ${response.status} ${response.statusText}`);
+    }
+    
     const categories = await response.json();
+    console.log('✅ Categories data received:', categories.length, 'categories');
     
     return categories.slice(0, 8).map(cat => ({
       id: cat.id,
@@ -300,8 +407,8 @@ async function getCryptoCategoriesData() {
       topCoins: cat.top_3_coins || []
     }));
   } catch (error) {
-    console.error('Erro ao buscar categorias crypto:', error);
-    return [];
+    console.error('❌ Erro ao buscar categorias crypto:', error);
+    throw new Error(`Falha ao buscar categorias: ${error.message}`);
   }
 }
 
@@ -337,42 +444,3 @@ function getFearGreedSentiment(value) {
   return 'Extreme Greed';
 }
 
-function getFallbackCryptoData() {
-  return {
-    global: {
-      totalMarketCap: 1750000000000,
-      totalVolume24h: 45000000000,
-      marketCapChange24h: 2.34,
-      btcDominance: 52.1,
-      ethDominance: 17.8,
-      activeCryptocurrencies: 12500
-    },
-    topCoins: [
-      {
-        id: 'bitcoin',
-        name: 'Bitcoin',
-        symbol: 'BTC',
-        rank: 1,
-        price: 43256.78,
-        marketCap: 846000000000,
-        volume24h: 15600000000,
-        priceChange1h: 0.12,
-        priceChange24h: 2.34,
-        priceChange7d: 5.67,
-        sparkline: []
-      }
-    ],
-    trending: [],
-    fearGreed: { value: 50, classification: 'Neutral' },
-    categories: []
-  };
-}
-
-function getFallbackTraditionalData() {
-  return {
-    indices: [],
-    forex: [],
-    commodities: [],
-    bonds: []
-  };
-}
