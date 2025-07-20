@@ -32,6 +32,12 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
       description: 'Trades e Cálculos'
     },
     {
+      id: 'market-overview',
+      label: 'Market Overview',
+      icon: '📊',
+      description: 'Mercado Global'
+    },
+    {
       id: 'profile',
       label: 'Perfil',
       icon: '⚙️',

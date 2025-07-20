@@ -12,6 +12,7 @@ import Users from './pages/Users';
 import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import MarketOverview from './pages/MarketOverview';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
@@ -23,6 +24,7 @@ import './styles/Settings.css';
 import './styles/Analytics.css';
 import './styles/AnalyticsExtended.css';
 import './styles/AdminDashboard.css';
+import './styles/MarketOverview.css';
 
 const AppContent = () => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -90,6 +92,8 @@ const AppContent = () => {
         return <RiskCalculator />;
       case 'history':
         return <History />;
+      case 'market-overview':
+        return <MarketOverview />;
       case 'profile':
         return <Profile />;
       case 'dashboard':
