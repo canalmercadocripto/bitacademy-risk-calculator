@@ -132,6 +132,11 @@ async function getCryptoMarketData() {
       await globalResponse.value.json() : null;
     console.log('✅ Global data:', globalData?.data ? 'OK' : 'FAILED');
 
+    // Process Coins Data
+    const coinsData = coinsResponse.status === 'fulfilled' && coinsResponse.value.ok ? 
+      await coinsResponse.value.json() : [];
+    console.log('✅ Coins data:', coinsData.length, 'coins');
+
     // Process all API responses
     const gainersData = gainersResponse.status === 'fulfilled' && gainersResponse.value.ok ? 
       await gainersResponse.value.json() : [];

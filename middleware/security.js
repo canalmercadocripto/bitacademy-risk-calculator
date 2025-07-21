@@ -9,7 +9,7 @@ const securityMiddleware = {
   // CORS with restricted origins
   corsHeaders: (req, res) => {
     const corsConfig = security.getCORSConfig();
-    const origin = req.headers.origin;
+    const origin = req.headers?.origin;
     
     if (corsConfig.origin.includes(origin) || process.env.NODE_ENV === 'development') {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
@@ -32,7 +32,7 @@ const securityMiddleware = {
 
   // Rate limiting for login endpoints
   loginRateLimit: (req, res) => {
-    const identifier = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+    const identifier = req.headers?.['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
     
     if (!loginRateLimit(identifier, 5, 15 * 60 * 1000)) { // 5 attempts per 15 minutes
       return res.status(429).json({
@@ -47,7 +47,7 @@ const securityMiddleware = {
 
   // Rate limiting for general API endpoints
   apiRateLimit: (req, res) => {
-    const identifier = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+    const identifier = req.headers?.['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
     
     if (!apiRateLimit(identifier, 100, 60 * 1000)) { // 100 requests per minute
       return res.status(429).json({
