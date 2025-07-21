@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 const MarketOverview = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeSubSection, setActiveSubSection] = useState('global');
   const [marketData, setMarketData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -120,6 +121,24 @@ const MarketOverview = () => {
           onClick={() => setActiveTab('crypto')}
         >
           ₿ Cripto
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'gainers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('gainers')}
+        >
+          📈 Gainers/Losers
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'exchanges' ? 'active' : ''}`}
+          onClick={() => setActiveTab('exchanges')}
+        >
+          🏦 Exchanges
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'companies' ? 'active' : ''}`}
+          onClick={() => setActiveTab('companies')}
+        >
+          🏢 Empresas
         </button>
         <button
           className={`tab-button ${activeTab === 'traditional' ? 'active' : ''}`}
@@ -314,6 +333,221 @@ const MarketOverview = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Gainers/Losers Tab */}
+      {activeTab === 'gainers' && marketData?.crypto && (
+        <div className="gainers-content">
+          <div className="gainers-losers-grid">
+            {/* Top Gainers */}
+            <div className="market-section">
+              <h3>📈 Top Gainers (24h)</h3>
+              <div className="coins-list">
+                {marketData.crypto.topGainers?.map(coin => (
+                  <div key={coin.id} className="coin-item">
+                    <img src={coin.image} alt={coin.symbol} className="coin-icon" />
+                    <div className="coin-info">
+                      <div className="coin-name">{coin.name}</div>
+                      <div className="coin-symbol">{coin.symbol}</div>
+                    </div>
+                    <div className="coin-price">{formatCurrency(coin.price)}</div>
+                    <div className="coin-change positive">
+                      {formatPercentage(coin.priceChange24h)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Losers */}
+            <div className="market-section">
+              <h3>📉 Top Losers (24h)</h3>
+              <div className="coins-list">
+                {marketData.crypto.topLosers?.map(coin => (
+                  <div key={coin.id} className="coin-item">
+                    <img src={coin.image} alt={coin.symbol} className="coin-icon" />
+                    <div className="coin-info">
+                      <div className="coin-name">{coin.name}</div>
+                      <div className="coin-symbol">{coin.symbol}</div>
+                    </div>
+                    <div className="coin-price">{formatCurrency(coin.price)}</div>
+                    <div className="coin-change negative">
+                      {formatPercentage(coin.priceChange24h)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Market Health */}
+          {marketData.crypto.marketMetrics && (
+            <div className="market-section">
+              <h3>🔍 Análise de Mercado</h3>
+              <div className="metrics-grid">
+                <div className="metric-card">
+                  <div className="metric-icon">📊</div>
+                  <div className="metric-content">
+                    <h4>Volatilidade Média</h4>
+                    <div className="metric-value">
+                      {marketData.crypto.marketMetrics.volatility?.avgVolatility?.toFixed(2)}%
+                    </div>
+                    <div className="metric-subtext">
+                      Alta: {marketData.crypto.marketMetrics.volatility?.high} | 
+                      Média: {marketData.crypto.marketMetrics.volatility?.medium} | 
+                      Baixa: {marketData.crypto.marketMetrics.volatility?.low}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="metric-card">
+                  <div className="metric-icon">📈</div>
+                  <div className="metric-content">
+                    <h4>Sentimento de Mercado</h4>
+                    <div className="metric-value">
+                      {marketData.crypto.marketMetrics.health?.marketSentiment}
+                    </div>
+                    <div className="metric-subtext">
+                      Bull: {marketData.crypto.marketMetrics.health?.bullishCoins} | 
+                      Bear: {marketData.crypto.marketMetrics.health?.bearishCoins}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="metric-card">
+                  <div className="metric-icon">🎯</div>
+                  <div className="metric-content">
+                    <h4>Proximidade ATH</h4>
+                    <div className="metric-value">
+                      {marketData.crypto.marketMetrics.health?.athProximity?.toFixed(1)}%
+                    </div>
+                    <div className="metric-subtext">Média do mercado</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Exchanges Tab */}
+      {activeTab === 'exchanges' && marketData?.crypto && (
+        <div className="exchanges-content">
+          <div className="market-section">
+            <h3>🏦 Top Exchanges</h3>
+            <div className="exchanges-grid">
+              {marketData.crypto.topExchanges?.map(exchange => (
+                <div key={exchange.id} className="exchange-card">
+                  <img src={exchange.image} alt={exchange.name} className="exchange-logo" />
+                  <div className="exchange-info">
+                    <h4>{exchange.name}</h4>
+                    <div className="exchange-trust">
+                      Trust Score: <span className={`trust-score ${exchange.trustScore >= 8 ? 'high' : exchange.trustScore >= 6 ? 'medium' : 'low'}`}>
+                        {exchange.trustScore}/10
+                      </span>
+                    </div>
+                    <div className="exchange-volume">
+                      Volume 24h: {exchange.tradeVolume24hBtc?.toFixed(0)} BTC
+                    </div>
+                    {exchange.country && (
+                      <div className="exchange-country">📍 {exchange.country}</div>
+                    )}
+                    {exchange.yearEstablished && (
+                      <div className="exchange-year">🗓️ {exchange.yearEstablished}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Companies Tab */}
+      {activeTab === 'companies' && marketData?.crypto && (
+        <div className="companies-content">
+          {/* Bitcoin Holdings */}
+          <div className="market-section">
+            <h3>₿ Holdings Bitcoin Corporativos</h3>
+            <div className="companies-summary">
+              <div className="summary-card">
+                <h4>Total Holdings</h4>
+                <div className="summary-value">
+                  {marketData.crypto.companyHoldings?.bitcoin?.totalHoldings?.toLocaleString()} BTC
+                </div>
+              </div>
+              <div className="summary-card">
+                <h4>Valor Total</h4>
+                <div className="summary-value">
+                  {formatNumber(marketData.crypto.companyHoldings?.bitcoin?.totalValueUsd)}
+                </div>
+              </div>
+              <div className="summary-card">
+                <h4>Dominância</h4>
+                <div className="summary-value">
+                  {marketData.crypto.companyHoldings?.bitcoin?.marketCapDominance?.toFixed(2)}%
+                </div>
+              </div>
+            </div>
+            <div className="companies-list">
+              {marketData.crypto.companyHoldings?.bitcoin?.companies?.map((company, index) => (
+                <div key={index} className="company-item">
+                  <div className="company-info">
+                    <h4>{company.name}</h4>
+                    <div className="company-symbol">{company.symbol}</div>
+                    <div className="company-country">📍 {company.country}</div>
+                  </div>
+                  <div className="company-holdings">
+                    <div className="holdings-amount">{company.totalHoldings?.toLocaleString()} BTC</div>
+                    <div className="holdings-value">{formatNumber(company.totalCurrentValueUsd)}</div>
+                    <div className="holdings-percent">{company.percentageOfTotalSupply?.toFixed(4)}% do supply</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Ethereum Holdings */}
+          <div className="market-section">
+            <h3>⟠ Holdings Ethereum Corporativos</h3>
+            <div className="companies-summary">
+              <div className="summary-card">
+                <h4>Total Holdings</h4>
+                <div className="summary-value">
+                  {marketData.crypto.companyHoldings?.ethereum?.totalHoldings?.toLocaleString()} ETH
+                </div>
+              </div>
+              <div className="summary-card">
+                <h4>Valor Total</h4>
+                <div className="summary-value">
+                  {formatNumber(marketData.crypto.companyHoldings?.ethereum?.totalValueUsd)}
+                </div>
+              </div>
+              <div className="summary-card">
+                <h4>Dominância</h4>
+                <div className="summary-value">
+                  {marketData.crypto.companyHoldings?.ethereum?.marketCapDominance?.toFixed(2)}%
+                </div>
+              </div>
+            </div>
+            <div className="companies-list">
+              {marketData.crypto.companyHoldings?.ethereum?.companies?.map((company, index) => (
+                <div key={index} className="company-item">
+                  <div className="company-info">
+                    <h4>{company.name}</h4>
+                    <div className="company-symbol">{company.symbol}</div>
+                    <div className="company-country">📍 {company.country}</div>
+                  </div>
+                  <div className="company-holdings">
+                    <div className="holdings-amount">{company.totalHoldings?.toLocaleString()} ETH</div>
+                    <div className="holdings-value">{formatNumber(company.totalCurrentValueUsd)}</div>
+                    <div className="holdings-percent">{company.percentageOfTotalSupply?.toFixed(4)}% do supply</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

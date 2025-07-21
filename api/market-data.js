@@ -85,30 +85,81 @@ async function getCryptoMarketData() {
       'x-cg-demo-api-key': API_KEY
     };
     
-    console.log('🔍 Buscando dados reais do CoinGecko...');
+    console.log('🔍 Buscando dados completos do CoinGecko...');
     
-    // Get global crypto market data
-    const globalResponse = await fetch('https://api.coingecko.com/api/v3/global', { headers });
-    
-    if (!globalResponse.ok) {
-      throw new Error(`Global API failed: ${globalResponse.status} ${globalResponse.statusText}`);
-    }
-    
-    const globalData = await globalResponse.json();
-    console.log('✅ Global data received:', globalData.data ? 'OK' : 'EMPTY');
-    
-    // Get top cryptocurrencies
-    const coinsResponse = await fetch(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d',
-      { headers }
-    );
-    
-    if (!coinsResponse.ok) {
-      throw new Error(`Coins API failed: ${coinsResponse.status} ${coinsResponse.statusText}`);
-    }
-    
-    const coinsData = await coinsResponse.json();
-    console.log('✅ Coins data received:', coinsData.length, 'coins');
+    // Parallel API calls for all data
+    const [
+      globalResponse,
+      coinsResponse,
+      gainersResponse,
+      losersResponse,
+      exchangesResponse,
+      btcCompaniesResponse,
+      ethCompaniesResponse,
+      newCoinsResponse,
+      exchangeRatesResponse
+    ] = await Promise.allSettled([
+      // Global crypto market data
+      fetch('https://api.coingecko.com/api/v3/global', { headers }),
+      
+      // Top cryptocurrencies with extended data
+      fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d%2C14d%2C30d%2C200d%2C1y', { headers }),
+      
+      // Top gainers (24h)
+      fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_desc&per_page=10&page=1&price_change_percentage=24h', { headers }),
+      
+      // Top losers (24h)
+      fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=price_change_percentage_24h_asc&per_page=10&page=1&price_change_percentage=24h', { headers }),
+      
+      // Top exchanges
+      fetch('https://api.coingecko.com/api/v3/exchanges?per_page=20', { headers }),
+      
+      // Bitcoin company holdings
+      fetch('https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin', { headers }),
+      
+      // Ethereum company holdings
+      fetch('https://api.coingecko.com/api/v3/companies/public_treasury/ethereum', { headers }),
+      
+      // Recently added coins
+      fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=id_asc&per_page=10&page=1', { headers }),
+      
+      // Exchange rates
+      fetch('https://api.coingecko.com/api/v3/exchange_rates', { headers })
+    ]);
+
+    // Process Global Data
+    const globalData = globalResponse.status === 'fulfilled' && globalResponse.value.ok ? 
+      await globalResponse.value.json() : null;
+    console.log('✅ Global data:', globalData?.data ? 'OK' : 'FAILED');
+
+    // Process all API responses
+    const gainersData = gainersResponse.status === 'fulfilled' && gainersResponse.value.ok ? 
+      await gainersResponse.value.json() : [];
+    console.log('✅ Gainers data:', gainersData.length, 'coins');
+
+    const losersData = losersResponse.status === 'fulfilled' && losersResponse.value.ok ? 
+      await losersResponse.value.json() : [];
+    console.log('✅ Losers data:', losersData.length, 'coins');
+
+    const exchangesData = exchangesResponse.status === 'fulfilled' && exchangesResponse.value.ok ? 
+      await exchangesResponse.value.json() : [];
+    console.log('✅ Exchanges data:', exchangesData.length, 'exchanges');
+
+    const btcCompaniesData = btcCompaniesResponse.status === 'fulfilled' && btcCompaniesResponse.value.ok ? 
+      await btcCompaniesResponse.value.json() : { companies: [] };
+    console.log('✅ BTC Companies data:', btcCompaniesData.companies?.length || 0, 'companies');
+
+    const ethCompaniesData = ethCompaniesResponse.status === 'fulfilled' && ethCompaniesResponse.value.ok ? 
+      await ethCompaniesResponse.value.json() : { companies: [] };
+    console.log('✅ ETH Companies data:', ethCompaniesData.companies?.length || 0, 'companies');
+
+    const newCoinsData = newCoinsResponse.status === 'fulfilled' && newCoinsResponse.value.ok ? 
+      await newCoinsResponse.value.json() : [];
+    console.log('✅ New Coins data:', newCoinsData.length, 'coins');
+
+    const exchangeRatesData = exchangeRatesResponse.status === 'fulfilled' && exchangeRatesResponse.value.ok ? 
+      await exchangeRatesResponse.value.json() : { rates: {} };
+    console.log('✅ Exchange Rates data:', Object.keys(exchangeRatesData.rates || {}).length, 'rates');
     
     // Get trending coins
     const trendingResponse = await fetch('https://api.coingecko.com/api/v3/search/trending', { headers });
@@ -134,14 +185,18 @@ async function getCryptoMarketData() {
     // Process and format data
     const processedData = {
       global: {
-        totalMarketCap: globalData.data?.total_market_cap?.usd || 0,
-        totalVolume24h: globalData.data?.total_volume?.usd || 0,
-        marketCapChange24h: globalData.data?.market_cap_change_percentage_24h_usd || 0,
-        btcDominance: globalData.data?.market_cap_percentage?.btc || 0,
-        ethDominance: globalData.data?.market_cap_percentage?.eth || 0,
-        activeCryptocurrencies: globalData.data?.active_cryptocurrencies || 0
+        totalMarketCap: globalData?.data?.total_market_cap?.usd || 0,
+        totalVolume24h: globalData?.data?.total_volume?.usd || 0,
+        marketCapChange24h: globalData?.data?.market_cap_change_percentage_24h_usd || 0,
+        btcDominance: globalData?.data?.market_cap_percentage?.btc || 0,
+        ethDominance: globalData?.data?.market_cap_percentage?.eth || 0,
+        activeCryptocurrencies: globalData?.data?.active_cryptocurrencies || 0,
+        activeMarkets: globalData?.data?.markets || 0,
+        endedIcos: globalData?.data?.ended_icos || 0,
+        upcomingIcos: globalData?.data?.upcoming_icos || 0,
+        ongoingIcos: globalData?.data?.ongoing_icos || 0
       },
-      topCoins: coinsData.slice(0, 10).map(coin => ({
+      topCoins: coinsData.slice(0, 20).map(coin => ({
         id: coin.id,
         name: coin.name,
         symbol: coin.symbol.toUpperCase(),
@@ -152,9 +207,123 @@ async function getCryptoMarketData() {
         priceChange1h: coin.price_change_percentage_1h_in_currency || 0,
         priceChange24h: coin.price_change_percentage_24h || 0,
         priceChange7d: coin.price_change_percentage_7d_in_currency || 0,
+        priceChange14d: coin.price_change_percentage_14d_in_currency || 0,
+        priceChange30d: coin.price_change_percentage_30d_in_currency || 0,
+        priceChange200d: coin.price_change_percentage_200d_in_currency || 0,
+        priceChange1y: coin.price_change_percentage_1y_in_currency || 0,
         image: coin.image,
-        sparkline: coin.sparkline_in_7d?.price || []
+        sparkline: coin.sparkline_in_7d?.price || [],
+        ath: coin.ath,
+        athDate: coin.ath_date,
+        atl: coin.atl,
+        atlDate: coin.atl_date,
+        maxSupply: coin.max_supply,
+        circulatingSupply: coin.circulating_supply,
+        totalSupply: coin.total_supply
       })),
+      
+      // Top Gainers (24h)
+      topGainers: gainersData.slice(0, 10).map(coin => ({
+        id: coin.id,
+        name: coin.name,
+        symbol: coin.symbol.toUpperCase(),
+        rank: coin.market_cap_rank,
+        price: coin.current_price,
+        priceChange24h: coin.price_change_percentage_24h || 0,
+        image: coin.image,
+        marketCap: coin.market_cap,
+        volume24h: coin.total_volume
+      })),
+
+      // Top Losers (24h)
+      topLosers: losersData.slice(0, 10).map(coin => ({
+        id: coin.id,
+        name: coin.name,
+        symbol: coin.symbol.toUpperCase(),
+        rank: coin.market_cap_rank,
+        price: coin.current_price,
+        priceChange24h: coin.price_change_percentage_24h || 0,
+        image: coin.image,
+        marketCap: coin.market_cap,
+        volume24h: coin.total_volume
+      })),
+
+      // Top Exchanges
+      topExchanges: exchangesData.slice(0, 15).map(exchange => ({
+        id: exchange.id,
+        name: exchange.name,
+        image: exchange.image,
+        trustScore: exchange.trust_score,
+        trustScoreRank: exchange.trust_score_rank,
+        tradeVolume24hBtc: exchange.trade_volume_24h_btc,
+        tradeVolume24hBtcNormalized: exchange.trade_volume_24h_btc_normalized,
+        yearEstablished: exchange.year_established,
+        country: exchange.country,
+        description: exchange.description?.slice(0, 100) + '...' || '',
+        url: exchange.url,
+        hasTradingIncentive: exchange.has_trading_incentive
+      })),
+
+      // Company Holdings
+      companyHoldings: {
+        bitcoin: {
+          totalHoldings: btcCompaniesData.total_holdings || 0,
+          totalValueUsd: btcCompaniesData.total_value_usd || 0,
+          marketCapDominance: btcCompaniesData.market_cap_dominance || 0,
+          companies: btcCompaniesData.companies?.slice(0, 10).map(company => ({
+            name: company.name,
+            symbol: company.symbol,
+            country: company.country,
+            totalHoldings: company.total_holdings,
+            totalEntryValueUsd: company.total_entry_value_usd,
+            totalCurrentValueUsd: company.total_current_value_usd,
+            percentageOfTotalSupply: company.percentage_of_total_supply
+          })) || []
+        },
+        ethereum: {
+          totalHoldings: ethCompaniesData.total_holdings || 0,
+          totalValueUsd: ethCompaniesData.total_value_usd || 0,
+          marketCapDominance: ethCompaniesData.market_cap_dominance || 0,
+          companies: ethCompaniesData.companies?.slice(0, 10).map(company => ({
+            name: company.name,
+            symbol: company.symbol,
+            country: company.country,
+            totalHoldings: company.total_holdings,
+            totalEntryValueUsd: company.total_entry_value_usd,
+            totalCurrentValueUsd: company.total_current_value_usd,
+            percentageOfTotalSupply: company.percentage_of_total_supply
+          })) || []
+        }
+      },
+
+      // Recently Added Coins
+      newCoins: newCoinsData.slice(0, 10).map(coin => ({
+        id: coin.id,
+        name: coin.name,
+        symbol: coin.symbol.toUpperCase(),
+        rank: coin.market_cap_rank,
+        price: coin.current_price,
+        marketCap: coin.market_cap,
+        volume24h: coin.total_volume,
+        priceChange24h: coin.price_change_percentage_24h || 0,
+        image: coin.image,
+        addedDate: coin.atl_date // Approximation
+      })),
+
+      // Exchange Rates (Major Fiat)
+      exchangeRates: {
+        btcToUsd: exchangeRatesData.rates?.usd?.value || 0,
+        btcToEur: exchangeRatesData.rates?.eur?.value || 0,
+        btcToBrl: exchangeRatesData.rates?.brl?.value || 0,
+        btcToJpy: exchangeRatesData.rates?.jpy?.value || 0,
+        btcToGbp: exchangeRatesData.rates?.gbp?.value || 0,
+        rates: Object.keys(exchangeRatesData.rates || {}).slice(0, 20).map(key => ({
+          currency: key.toUpperCase(),
+          name: exchangeRatesData.rates[key]?.name || key,
+          value: exchangeRatesData.rates[key]?.value || 0,
+          type: exchangeRatesData.rates[key]?.type || 'fiat'
+        }))
+      },
       trending: trendingData.coins?.slice(0, 5).map(trend => ({
         id: trend.item.id,
         name: trend.item.name,
@@ -172,7 +341,80 @@ async function getCryptoMarketData() {
         classification: 'Neutral',
         timestamp: Date.now()
       },
-      categories: await getCryptoCategoriesData()
+
+      // Advanced Market Metrics
+      marketMetrics: {
+        // Volatility Analysis
+        volatility: {
+          high: coinsData.filter(coin => Math.abs(coin.price_change_percentage_24h || 0) > 20).length,
+          medium: coinsData.filter(coin => {
+            const change = Math.abs(coin.price_change_percentage_24h || 0);
+            return change > 10 && change <= 20;
+          }).length,
+          low: coinsData.filter(coin => Math.abs(coin.price_change_percentage_24h || 0) <= 10).length,
+          avgVolatility: coinsData.length > 0 ? 
+            coinsData.reduce((sum, coin) => sum + Math.abs(coin.price_change_percentage_24h || 0), 0) / coinsData.length : 0
+        },
+        
+        // Supply Metrics
+        supply: {
+          totalMarketSupply: coinsData.reduce((sum, coin) => sum + (coin.circulating_supply || 0), 0),
+          inflationaryCoins: coinsData.filter(coin => !coin.max_supply).length,
+          deflationaryCoins: coinsData.filter(coin => coin.max_supply && coin.circulating_supply >= coin.max_supply * 0.9).length,
+          distributedCoins: coinsData.filter(coin => coin.circulating_supply && coin.total_supply && 
+            coin.circulating_supply / coin.total_supply > 0.8).length
+        },
+
+        // Performance Rankings
+        performance: {
+          topPerformers1h: coinsData
+            .filter(coin => coin.price_change_percentage_1h_in_currency)
+            .sort((a, b) => (b.price_change_percentage_1h_in_currency || 0) - (a.price_change_percentage_1h_in_currency || 0))
+            .slice(0, 5)
+            .map(coin => ({
+              name: coin.name,
+              symbol: coin.symbol.toUpperCase(),
+              change: coin.price_change_percentage_1h_in_currency,
+              image: coin.image
+            })),
+          
+          topPerformers7d: coinsData
+            .filter(coin => coin.price_change_percentage_7d_in_currency)
+            .sort((a, b) => (b.price_change_percentage_7d_in_currency || 0) - (a.price_change_percentage_7d_in_currency || 0))
+            .slice(0, 5)
+            .map(coin => ({
+              name: coin.name,
+              symbol: coin.symbol.toUpperCase(),
+              change: coin.price_change_percentage_7d_in_currency,
+              image: coin.image
+            })),
+
+          topPerformers30d: coinsData
+            .filter(coin => coin.price_change_percentage_30d_in_currency)
+            .sort((a, b) => (b.price_change_percentage_30d_in_currency || 0) - (a.price_change_percentage_30d_in_currency || 0))
+            .slice(0, 5)
+            .map(coin => ({
+              name: coin.name,
+              symbol: coin.symbol.toUpperCase(),
+              change: coin.price_change_percentage_30d_in_currency,
+              image: coin.image
+            }))
+        },
+
+        // Market Health
+        health: {
+          bullishCoins: coinsData.filter(coin => (coin.price_change_percentage_24h || 0) > 5).length,
+          bearishCoins: coinsData.filter(coin => (coin.price_change_percentage_24h || 0) < -5).length,
+          stableCoins: coinsData.filter(coin => Math.abs(coin.price_change_percentage_24h || 0) <= 5).length,
+          marketSentiment: coinsData.filter(coin => (coin.price_change_percentage_24h || 0) > 0).length > coinsData.length / 2 ? 'Bullish' : 'Bearish',
+          athProximity: coinsData
+            .filter(coin => coin.ath && coin.current_price)
+            .map(coin => (coin.current_price / coin.ath) * 100)
+            .reduce((sum, ratio) => sum + ratio, 0) / coinsData.filter(coin => coin.ath).length || 0
+        }
+      },
+
+      categories: await getCryptoCategoriesData(headers)
     };
     
     return processedData;
@@ -379,13 +621,8 @@ async function getTraditionalMarketData() {
 }
 
 // Get crypto categories performance
-async function getCryptoCategoriesData() {
+async function getCryptoCategoriesData(headers) {
   try {
-    const API_KEY = 'CG-wW7zVyYNt4zzQ7uo3iVk5u5A';
-    const headers = {
-      'accept': 'application/json',
-      'x-cg-demo-api-key': API_KEY
-    };
     
     const response = await fetch('https://api.coingecko.com/api/v3/coins/categories', { headers });
     
