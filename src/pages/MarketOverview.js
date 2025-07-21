@@ -1,6 +1,211 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
+// SoSoValue Section Component
+const SoSoValueSection = () => {
+  const [sosoData, setSosoData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchSoSoValueData();
+  }, []);
+
+  const fetchSoSoValueData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/sosovalue?category=currencies');
+      const data = await response.json();
+      
+      if (data.success) {
+        setSosoData(data.data);
+        setError(null);
+      } else {
+        setError(data.error || 'Erro ao buscar dados SoSoValue');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="sosovalue-loading">
+        <div className="loading-spinner"></div>
+        <p>Carregando dados SoSoValue...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="sosovalue-error">
+        <h3>❌ Erro ao carregar dados SoSoValue</h3>
+        <p>{error}</p>
+        <button onClick={fetchSoSoValueData} className="retry-button">
+          🔄 Tentar novamente
+        </button>
+      </div>
+    );
+  }
+
+  if (!sosoData?.processed) {
+    return (
+      <div className="sosovalue-empty">
+        <h3>📝 Dados SoSoValue não disponíveis</h3>
+      </div>
+    );
+  }
+
+  const { processed } = sosoData;
+
+  return (
+    <div className="sosovalue-section">
+      {/* Summary Cards */}
+      <div className="sosovalue-summary">
+        <div className="summary-card">
+          <div className="summary-icon">🪙</div>
+          <div className="summary-content">
+            <h3>Total Currencies</h3>
+            <div className="summary-value">{processed.total?.toLocaleString()}</div>
+            <div className="summary-subtitle">Suportadas pela SoSoValue</div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-icon">🏆</div>
+          <div className="summary-content">
+            <h3>Top Currencies</h3>
+            <div className="summary-value">{processed.topCurrencies?.length || 0}</div>
+            <div className="summary-subtitle">Principais criptomoedas</div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-icon">💰</div>
+          <div className="summary-content">
+            <h3>Stablecoins</h3>
+            <div className="summary-value">{processed.categories?.stablecoins || 0}</div>
+            <div className="summary-subtitle">Moedas estáveis</div>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="summary-icon">🦄</div>
+          <div className="summary-content">
+            <h3>DeFi Tokens</h3>
+            <div className="summary-value">{processed.categories?.defi || 0}</div>
+            <div className="summary-subtitle">Finanças descentralizadas</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Currencies */}
+      {processed.topCurrencies && processed.topCurrencies.length > 0 && (
+        <div className="market-section">
+          <h3>🏆 Top Currencies - SoSoValue</h3>
+          <div className="currencies-grid">
+            {processed.topCurrencies.map(currency => (
+              <div key={currency.id} className="currency-card">
+                <div className="currency-header">
+                  <div className="currency-symbol">{currency.symbol}</div>
+                  <div className="currency-status">
+                    {currency.supported ? '✅' : '❌'}
+                  </div>
+                </div>
+                <div className="currency-name">{currency.name}</div>
+                <div className="currency-id">ID: {currency.id}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Categories Overview */}
+      <div className="market-section">
+        <h3>📊 Categories Overview</h3>
+        <div className="categories-grid">
+          <div className="category-item">
+            <div className="category-icon">🏦</div>
+            <div className="category-info">
+              <h4>Layer 1</h4>
+              <div className="category-count">{processed.categories?.layer1 || 0}</div>
+              <div className="category-desc">Blockchains principais</div>
+            </div>
+          </div>
+
+          <div className="category-item">
+            <div className="category-icon">💰</div>
+            <div className="category-info">
+              <h4>Stablecoins</h4>
+              <div className="category-count">{processed.categories?.stablecoins || 0}</div>
+              <div className="category-desc">Moedas estáveis</div>
+            </div>
+          </div>
+
+          <div className="category-item">
+            <div className="category-icon">🦄</div>
+            <div className="category-info">
+              <h4>DeFi</h4>
+              <div className="category-count">{processed.categories?.defi || 0}</div>
+              <div className="category-desc">Finanças descentralizadas</div>
+            </div>
+          </div>
+
+          <div className="category-item">
+            <div className="category-icon">🐕</div>
+            <div className="category-info">
+              <h4>Meme Coins</h4>
+              <div className="category-count">{processed.categories?.meme || 0}</div>
+              <div className="category-desc">Moedas meme</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* All Currencies Sample */}
+      {processed.currencies && processed.currencies.length > 0 && (
+        <div className="market-section">
+          <h3>💎 Sample Currencies (Top 20)</h3>
+          <div className="currencies-list">
+            {processed.currencies.slice(0, 20).map(currency => (
+              <div key={currency.id} className="currency-item">
+                <div className="currency-symbol">{currency.symbol}</div>
+                <div className="currency-name">{currency.name}</div>
+                <div className="currency-id">ID: {currency.id}</div>
+                <div className="currency-supported">
+                  {currency.isSupported ? '✅ Supported' : '❌ Not Supported'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* API Info */}
+      <div className="market-section">
+        <h3>ℹ️ SoSoValue API Info</h3>
+        <div className="api-info">
+          <div className="info-card">
+            <h4>📡 Endpoint</h4>
+            <p>{sosoData.endpoint}</p>
+          </div>
+          <div className="info-card">
+            <h4>⏱️ Last Update</h4>
+            <p>{new Date().toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="info-card">
+            <h4>🔑 Status</h4>
+            <p className="status-active">✅ API Ativa</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MarketOverview = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
@@ -139,6 +344,12 @@ const MarketOverview = () => {
           onClick={() => setActiveTab('companies')}
         >
           🏢 Empresas
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'sosovalue' ? 'active' : ''}`}
+          onClick={() => setActiveTab('sosovalue')}
+        >
+          🌟 SoSoValue
         </button>
         <button
           className={`tab-button ${activeTab === 'traditional' ? 'active' : ''}`}
@@ -548,6 +759,13 @@ const MarketOverview = () => {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* SoSoValue Tab */}
+      {activeTab === 'sosovalue' && (
+        <div className="sosovalue-content">
+          <SoSoValueSection />
         </div>
       )}
 
