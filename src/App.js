@@ -13,6 +13,7 @@ import AdminTrades from './pages/AdminTrades';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import MarketOverview from './pages/MarketOverview';
+import EconomicCalendar from './pages/EconomicCalendar';
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 import './styles/EnhancedResults.css';
@@ -94,6 +95,8 @@ const AppContent = () => {
         return <History />;
       case 'market-overview':
         return <MarketOverview />;
+      case 'economic-calendar':
+        return <EconomicCalendar />;
       case 'profile':
         return <Profile />;
       case 'dashboard':

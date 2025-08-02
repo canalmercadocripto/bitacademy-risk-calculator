@@ -38,6 +38,12 @@ const Sidebar = ({ currentView, onViewChange, onToggleTheme, theme, onSidebarTog
       description: 'Mercado Global'
     },
     {
+      id: 'economic-calendar',
+      label: 'Calendário Econômico',
+      icon: '📅',
+      description: 'Eventos do Mercado'
+    },
+    {
       id: 'profile',
       label: 'Perfil',
       icon: '⚙️',
