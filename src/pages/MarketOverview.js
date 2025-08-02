@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { API_ENDPOINTS, apiCall } from '../config/api';
 
 // Professional Analytics Section Component
 const ProfessionalAnalyticsSection = () => {
@@ -15,8 +16,7 @@ const ProfessionalAnalyticsSection = () => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/market/coingecko-professional?endpoint=${activeAnalytics}`);
-      const data = await response.json();
+      const data = await apiCall(`${API_ENDPOINTS.market.coingecko}?endpoint=${activeAnalytics}`);
       
       if (data.success) {
         setAnalyticsData(data.data);
@@ -1274,8 +1274,7 @@ const AdvancedSoSoValueSection = () => {
   const fetchSosoAdvancedData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/market/sosovalue-advanced?endpoint=${activeEndpoint}`);
-      const data = await response.json();
+      const data = await apiCall(`${API_ENDPOINTS.market.sosovalue}?endpoint=${activeEndpoint}`);
       
       if (data.success) {
         setSosoAdvancedData(data.data);
@@ -1876,8 +1875,7 @@ const SoSoValueSection = () => {
   const fetchSoSoValueData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/market/sosovalue?category=currencies');
-      const data = await response.json();
+      const data = await apiCall(`${API_ENDPOINTS.market.sosovalue}?category=currencies`);
       
       if (data.success) {
         setSosoData(data.data);
@@ -2092,8 +2090,7 @@ const MarketOverview = () => {
       
       console.log(`🔍 Buscando dados de mercado: ${activeTab}`);
       
-      const response = await fetch(`http://localhost:3001/api/market-data?category=${activeTab}`, { headers });
-      const data = await response.json();
+      const data = await apiCall(`${API_ENDPOINTS.marketData}?category=${activeTab}`, { headers });
       
       if (data.success) {
         setMarketData(data.data);
