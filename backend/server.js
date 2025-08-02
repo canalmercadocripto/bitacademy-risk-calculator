@@ -6,7 +6,7 @@ const path = require('path');
 // Importar rotas
 const authRoutes = require('./src/routes/authRoutes');
 const calculatorRoutes = require('./src/routes/calculatorRoutes');
-const tradeRoutes = require('./src/routes/tradeRoutes');
+const marketRoutes = require('./src/routes/marketRoutes');
 
 // SEMPRE usar SQLite para simplicidade
 const { testConnection } = require('./src/config/database-sqlite');
@@ -39,7 +39,7 @@ app.get('/api/health', (req, res) => {
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/calculator', calculatorRoutes);
-app.use('/api/trades', tradeRoutes);
+app.use('/api/market', marketRoutes);
 
 // Fallback para React Router (SPA)
 app.get('*', (req, res) => {
